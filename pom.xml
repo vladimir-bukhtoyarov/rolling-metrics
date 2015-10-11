@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.github.metrics-core-addons</groupId>
+    <artifactId>metrics-core-addons</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
+
+    <packaging>jar</packaging>
+    <name>Addons for the metrics core library</name>
+
+    <description>Addons for the metrics core library</description>
+    <url>https://github.com/vladimir-bukhtoyarov/metrics-core-addons</url>
+
+    <scm>
+        <url>https://github.com/vladimir-bukhtoyarov/metrics-core-addons</url>
+        <connection>scm:git:git://github.com/vladimir-bukhtoyarov/metrics-core-addons.git</connection>
+    </scm>
+    <developers>
+        <developer>
+            <id>vladimir.bukhtoyarov</id>
+            <name>Vladimir Bukhtoyarov</name>
+            <email>jsecoder@mail.ru</email>
+            <url>https://github.com/vladimir-bukhtoyarov</url>
+        </developer>
+    </developers>
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>jcenter</id>
+            <url>http://jcenter.bintray.com</url>
+        </repository>
+    </repositories>
+
+
+    <dependencies>
+        <dependency>
+            <groupId>io.dropwizard.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+            <version>3.1.2</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Test dependencies-->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+
+</project>
