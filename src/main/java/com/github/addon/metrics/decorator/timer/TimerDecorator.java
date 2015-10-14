@@ -10,11 +10,13 @@ import java.util.concurrent.TimeUnit;
 public class TimerDecorator extends Timer {
 
     private final Timer timer;
-    private List<TimerListener> listeners;
+    private final List<TimerListener> listeners;
+    private final SnapshotExtractor snapshotExtractor;
 
-    public TimerDecorator(Timer timer, List<TimerListener> listeners) {
+    public TimerDecorator(Timer timer, List<TimerListener> listeners, SnapshotExtractor snapshotExtractor) {
         this.timer = timer;
         this.listeners = listeners;
+        this.snapshotExtractor = snapshotExtractor;
     }
 
     @Override
@@ -60,7 +62,7 @@ public class TimerDecorator extends Timer {
 
     @Override
     public Snapshot getSnapshot() {
-        return timer.getSnapshot();
+        return snapshotExtractor.extract(timer);
     }
 
 }
