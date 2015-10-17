@@ -2,6 +2,7 @@ package com.github.addon.metrics.decorator.timer;
 
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import com.github.addon.metrics.SnapshotExtractor;
 
 import java.util.List;
 import java.util.concurrent.Callable;

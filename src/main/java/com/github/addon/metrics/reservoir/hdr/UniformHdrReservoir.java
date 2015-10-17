@@ -24,7 +24,7 @@ public class UniformHdrReservoir implements Reservoir {
 
     @Override
     public Snapshot getSnapshot() {
-        return new HdrSnapshot(histogram.copy());
+        return new UniformHdrSnapshot(histogram.copy());
     }
 
 }
