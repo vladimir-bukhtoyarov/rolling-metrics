@@ -11,11 +11,11 @@ import java.util.Arrays;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-public class UniformHdrSnapshot extends Snapshot {
+public class HdrSnapshot extends Snapshot {
 
     private final Histogram histogram;
 
-    public UniformHdrSnapshot(Histogram histogram) {
+    public HdrSnapshot(Histogram histogram) {
         this.histogram = histogram;
     }
 
@@ -66,7 +66,6 @@ public class UniformHdrSnapshot extends Snapshot {
 
     @Override
     public void dump(OutputStream output) {
-        // do nothing
         try (PrintWriter p = new PrintWriter(new OutputStreamWriter(output, UTF_8))) {
             for (HistogramIterationValue value : histogram.recordedValues()) {
                 for (int j = 0; j < value.getCountAddedInThisIterationStep(); j++) {
