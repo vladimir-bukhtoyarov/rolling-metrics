@@ -46,9 +46,9 @@ public class SnapshotCachingExtractor implements SnapshotExtractor {
                 long writeStamp = stampedLock.tryConvertToWriteLock(stamp);
                 if (writeStamp != 0) {
                     stamp = writeStamp;
-                    snapshot = sampling.getSnapshot();
-                    expirationTimestamp = currentTimeMillis + maxAgeMillis;
-                    return snapshot;
+                    this.snapshot = sampling.getSnapshot();
+                    this.expirationTimestamp = currentTimeMillis + maxAgeMillis;
+                    return this.snapshot;
                 } else {
                     stampedLock.unlockRead(stamp);
                     stamp = stampedLock.writeLock();

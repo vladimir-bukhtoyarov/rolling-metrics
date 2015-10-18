@@ -19,7 +19,7 @@ public class RegistryAwareHealthContextListener extends HealthCheckServlet.Conte
 
     @Override
     protected HealthCheckRegistry getHealthCheckRegistry() {
-        return null;
+        return registry;
     }
 
 }
