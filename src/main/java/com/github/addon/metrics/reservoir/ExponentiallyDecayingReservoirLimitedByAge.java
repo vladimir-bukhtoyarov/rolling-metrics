@@ -1,7 +1,6 @@
 package com.github.addon.metrics.reservoir;
 
 import com.codahale.metrics.*;
-import com.github.addon.metrics.ExpirableWeightedSample;
 
 import java.time.Duration;
 import java.util.ArrayList;

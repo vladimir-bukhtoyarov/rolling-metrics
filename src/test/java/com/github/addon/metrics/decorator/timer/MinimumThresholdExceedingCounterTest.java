@@ -2,7 +2,7 @@ package com.github.addon.metrics.decorator.timer;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
-import com.github.addon.metrics.decorator.Decorators;
+import com.github.addon.metrics.decorator.MetricDecorators;
 import junit.framework.TestCase;
 import org.junit.Test;
 
@@ -15,7 +15,7 @@ public class MinimumThresholdExceedingCounterTest extends TestCase {
 
     private final Counter exceedingCounter = new Counter();
     private final Timer targetTimer = new Timer();
-    private final Timer decorator = Decorators.forTimer(targetTimer).withMinimumExceedingThresholdCounter(exceedingCounter, THRESHOLD).build();
+    private final Timer decorator = MetricDecorators.forTimer(targetTimer).withMinimumThreshold(exceedingCounter, THRESHOLD).build();
 
     @Test
     public void test() {

@@ -1,7 +1,11 @@
 package com.github.addon.metrics.decorator.timer;
 
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
+import com.github.addon.metrics.decorator.MaximumThresholdExceedingCounter;
+import com.github.addon.metrics.decorator.MinimumThresholdExceedingCounter;
+import com.github.addon.metrics.decorator.UpdateListener;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -11,7 +15,7 @@ import java.util.Objects;
 
 public class TimerDecoratorBuilder {
 
-    private final List<TimerListener> listeners = new ArrayList<>();
+    private final List<UpdateListener> listeners = new ArrayList<>();
     private final Timer timer;
 
     public TimerDecoratorBuilder(Timer timer) {
@@ -22,13 +26,19 @@ public class TimerDecoratorBuilder {
         return new TimerDecorator(timer, listeners);
     }
 
-    public TimerDecoratorBuilder withMinimumExceedingThresholdCounter(Counter exceedingCounter, Duration thresholdDuration) {
-        listeners.add(new MinimumThresholdExceedingCounter(exceedingCounter, thresholdDuration));
+    public Timer buildAndRegister(String name, MetricRegistry registry) {
+        Timer timer = build();
+        registry.register(name, timer);
+        return timer;
+    }
+
+    public TimerDecoratorBuilder withMinimumThreshold(Counter exceedingCounter, Duration thresholdDuration) {
+        listeners.add(new MinimumThresholdExceedingCounter(exceedingCounter, thresholdDuration.toNanos()));
         return this;
     }
 
-    public TimerDecoratorBuilder withMaximumExceedingThresholdCounter(Counter exceedingCounter, Duration thresholdDuration) {
-        listeners.add(new MaximumThresholdExceedingCounter(exceedingCounter, thresholdDuration));
+    public TimerDecoratorBuilder withMaximumThreshold(Counter exceedingCounter, Duration thresholdDuration) {
+        listeners.add(new MaximumThresholdExceedingCounter(exceedingCounter, thresholdDuration.toNanos()));
         return this;
     }
 

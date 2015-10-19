@@ -1,8 +1,9 @@
-package com.github.addon.metrics.reporter;
+package com.github.addon.metrics;
 
 import com.codahale.metrics.Clock;
 
 import java.time.Duration;
+import java.util.Objects;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Supplier;
 
@@ -20,10 +21,10 @@ public class CachedValue<T> {
         this(cachingDuration, supplier, Clock.defaultClock());
     }
 
-    CachedValue(Duration cachingDuration, Supplier<T> supplier, Clock clock) {
+    public CachedValue(Duration cachingDuration, Supplier<T> supplier, Clock clock) {
         this.maxAgeMillis = cachingDuration.toMillis();
-        this.supplier = supplier;
-        this.clock = clock;
+        this.supplier = Objects.requireNonNull(supplier);
+        this.clock = Objects.requireNonNull(clock);
         this.stampedLock = new StampedLock();
     }
 
@@ -40,7 +41,7 @@ public class CachedValue<T> {
             }
         }
 
-        // conditionally write
+        // conditionally update
         stamp = stampedLock.readLock();
         try {
             while (this.value == null || currentTimeMillis > this.expirationTimestamp) {

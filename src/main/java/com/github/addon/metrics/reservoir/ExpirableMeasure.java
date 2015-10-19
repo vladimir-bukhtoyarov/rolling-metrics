@@ -1,4 +1,6 @@
-package com.github.addon.metrics;
+package com.github.addon.metrics.reservoir;
+
+import com.github.addon.metrics.reservoir.Expirable;
 
 public class ExpirableMeasure implements Expirable {
 

@@ -4,9 +4,9 @@ import com.codahale.metrics.health.HealthCheckRegistry;
 
 import java.util.Collection;
 
-public class HealthCheckCollection extends HealthCheckRegistry {
+public class HealthCheckAwareRegistry extends HealthCheckRegistry {
 
-    public HealthCheckCollection(Collection<HealthChecked> observables) {
+    public HealthCheckAwareRegistry(Collection<HealthChecked> observables) {
         super();
         for (HealthChecked observable: observables) {
             register(observable.getName(), observable.getHealthCheck());

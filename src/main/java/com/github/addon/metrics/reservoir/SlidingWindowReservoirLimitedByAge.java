@@ -4,8 +4,7 @@ import com.codahale.metrics.Clock;
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.UniformSnapshot;
-import com.github.addon.metrics.RoundRobinSequence;
-import com.github.addon.metrics.ExpirableMeasure;
+import com.github.addon.metrics.RingSequence;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -13,7 +12,7 @@ import java.util.Arrays;
 public class SlidingWindowReservoirLimitedByAge implements Reservoir {
 
     private final ExpirableMeasure[] measurements;
-    private final RoundRobinSequence sequence;
+    private final RingSequence sequence;
     private final long maxAgeMillis;
     private final Clock clock;
 
@@ -26,7 +25,7 @@ public class SlidingWindowReservoirLimitedByAge implements Reservoir {
             throw new IllegalArgumentException("maxAge should be positive");
         }
         this.measurements = new ExpirableMeasure[size];
-        this.sequence = new RoundRobinSequence(size);
+        this.sequence = new RingSequence(size);
         this.maxAgeMillis = maxAge.toMillis();
         this.clock = clock;
     }

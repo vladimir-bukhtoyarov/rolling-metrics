@@ -1,4 +1,4 @@
-package com.github.addon.metrics;
+package com.github.addon.metrics.reservoir;
 
 
 import com.codahale.metrics.WeightedSnapshot;
