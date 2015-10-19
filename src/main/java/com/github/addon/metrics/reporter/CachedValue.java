@@ -1,60 +1,61 @@
-package com.github.addon.metrics;
+package com.github.addon.metrics.reporter;
 
 import com.codahale.metrics.Clock;
-import com.codahale.metrics.Sampling;
-import com.codahale.metrics.Snapshot;
 
 import java.time.Duration;
 import java.util.concurrent.locks.StampedLock;
+import java.util.function.Supplier;
 
-public class SnapshotCachingExtractor implements SnapshotExtractor {
+public class CachedValue<T> {
 
     private final StampedLock stampedLock;
     private final long maxAgeMillis;
     private final Clock clock;
+    private final Supplier<T> supplier;
 
-    private Snapshot snapshot;
+    private T value;
     private long expirationTimestamp;
 
-    public SnapshotCachingExtractor(Duration cachingDuration) {
-        this(cachingDuration, Clock.defaultClock());
+    public CachedValue(Duration cachingDuration, Supplier<T> supplier) {
+        this(cachingDuration, supplier, Clock.defaultClock());
     }
 
-    SnapshotCachingExtractor(Duration cachingDuration, Clock clock) {
+    CachedValue(Duration cachingDuration, Supplier<T> supplier, Clock clock) {
         this.maxAgeMillis = cachingDuration.toMillis();
+        this.supplier = supplier;
         this.clock = clock;
         this.stampedLock = new StampedLock();
     }
 
-    @Override
-    public Snapshot extract(Sampling sampling) {
+    public T get() {
         long currentTimeMillis = clock.getTime();
 
         // try optimistic read
         long stamp = stampedLock.tryOptimisticRead();
         if (stamp != 0) {
-            Snapshot snapshotLocal = this.snapshot;
+            T valueLocal = this.value;
             long expirationTimestampLocal = this.expirationTimestamp;
-            if (snapshotLocal != null && currentTimeMillis <= expirationTimestampLocal && stampedLock.validate(stamp)) {
-                return snapshotLocal;
+            if (valueLocal != null && currentTimeMillis <= expirationTimestampLocal && stampedLock.validate(stamp)) {
+                return valueLocal;
             }
         }
 
+        // conditionally write
         stamp = stampedLock.readLock();
         try {
-            while (this.snapshot == null || currentTimeMillis > this.expirationTimestamp) {
+            while (this.value == null || currentTimeMillis > this.expirationTimestamp) {
                 long writeStamp = stampedLock.tryConvertToWriteLock(stamp);
                 if (writeStamp != 0) {
                     stamp = writeStamp;
-                    this.snapshot = sampling.getSnapshot();
+                    this.value = supplier.get();
                     this.expirationTimestamp = currentTimeMillis + maxAgeMillis;
-                    return this.snapshot;
+                    return this.value;
                 } else {
                     stampedLock.unlockRead(stamp);
                     stamp = stampedLock.writeLock();
                 }
             }
-            return snapshot;
+            return value;
         } finally {
             stampedLock.unlock(stamp);
         }

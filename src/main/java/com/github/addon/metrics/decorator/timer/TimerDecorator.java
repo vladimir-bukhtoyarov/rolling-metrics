@@ -2,7 +2,6 @@ package com.github.addon.metrics.decorator.timer;
 
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
-import com.github.addon.metrics.SnapshotExtractor;
 
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -12,12 +11,10 @@ public class TimerDecorator extends Timer {
 
     private final Timer timer;
     private final List<TimerListener> listeners;
-    private final SnapshotExtractor snapshotExtractor;
 
-    public TimerDecorator(Timer timer, List<TimerListener> listeners, SnapshotExtractor snapshotExtractor) {
+    public TimerDecorator(Timer timer, List<TimerListener> listeners) {
         this.timer = timer;
         this.listeners = listeners;
-        this.snapshotExtractor = snapshotExtractor;
     }
 
     @Override
@@ -63,7 +60,7 @@ public class TimerDecorator extends Timer {
 
     @Override
     public Snapshot getSnapshot() {
-        return snapshotExtractor.extract(timer);
+        return timer.getSnapshot();
     }
 
 }
