@@ -1,31 +1,27 @@
-package com.github.addon.metrics.reservoir.hdr;
+package com.github.metricscore.hdrhistogram;
 
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
+import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * A {@link com.codahale.metrics.Reservoir} implementation backed by a window that stores all date since the reservoir was created
+ * A {@link com.codahale.metrics.Reservoir} implementation backed by a window that stores only the measurements made
+ * since the last lastSnapshot was taken.
  */
-public class UniformHdrReservoir implements Reservoir {
+public class ResetOnSnapshotReservoir implements Reservoir {
 
     private final Lock lock = new ReentrantLock();
     private final Recorder recorder;
-
-    // holds accumulated state since the reservoir was created
-    private final Histogram uniformHistogram;
-
-    // holds the data since the last snapshot was taken
     private Histogram intervalHistogram;
 
-    public UniformHdrReservoir(Recorder recorder) {
-        this.recorder = recorder;
-        intervalHistogram = recorder.getIntervalHistogram();
-        uniformHistogram = intervalHistogram.copy();
+    public ResetOnSnapshotReservoir(Recorder recorder) {
+        this.recorder = Objects.requireNonNull(recorder);
+        this.intervalHistogram = recorder.getIntervalHistogram();
     }
 
     // unnecessary method https://github.com/dropwizard/metrics/issues/874
@@ -45,8 +41,8 @@ public class UniformHdrReservoir implements Reservoir {
         lock.lock();
         try {
             intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
-            uniformHistogram.add(intervalHistogram);
-            return new HdrSnapshot(uniformHistogram.copy());
+            HdrSnapshot snapshot = new HdrSnapshot(intervalHistogram.copy());
+            return snapshot;
         } finally {
             lock.unlock();
         }

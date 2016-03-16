@@ -1,4 +1,4 @@
-package com.github.addon.metrics.reservoir.hdr;
+package com.github.metricscore.hdrhistogram;
 
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
@@ -9,20 +9,23 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * A {@link com.codahale.metrics.Reservoir} implementation backed by a window that stores only the measurements made
- * since the last snapshot was taken.
+ * A {@link com.codahale.metrics.Reservoir} implementation backed by a window that stores all date since the reservoir was created
  */
-public class ResetOnSnapshotWindowHdrReservoir implements Reservoir {
+public class UniformHdrReservoir implements Reservoir {
 
     private final Lock lock = new ReentrantLock();
     private final Recorder recorder;
 
+    // holds accumulated state since the reservoir was created
+    private final Histogram uniformHistogram;
+
     // holds the data since the last snapshot was taken
     private Histogram intervalHistogram;
 
-    public ResetOnSnapshotWindowHdrReservoir(Recorder recorder) {
+    public UniformHdrReservoir(Recorder recorder) {
         this.recorder = recorder;
         intervalHistogram = recorder.getIntervalHistogram();
+        uniformHistogram = intervalHistogram.copy();
     }
 
     // unnecessary method https://github.com/dropwizard/metrics/issues/874
@@ -42,7 +45,8 @@ public class ResetOnSnapshotWindowHdrReservoir implements Reservoir {
         lock.lock();
         try {
             intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
-            return new HdrSnapshot(intervalHistogram.copy());
+            uniformHistogram.add(intervalHistogram);
+            return new HdrSnapshot(uniformHistogram.copy());
         } finally {
             lock.unlock();
         }

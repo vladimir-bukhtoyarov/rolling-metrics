@@ -1,4 +1,4 @@
-package com.github.addon.metrics.reservoir.hdr;
+package com.github.metricscore.hdrhistogram;
 
 import com.codahale.metrics.Snapshot;
 import org.HdrHistogram.Histogram;
