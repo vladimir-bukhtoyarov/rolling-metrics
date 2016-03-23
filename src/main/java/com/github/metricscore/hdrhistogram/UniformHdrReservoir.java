@@ -28,11 +28,9 @@ public class UniformHdrReservoir implements Reservoir {
         uniformHistogram = intervalHistogram.copy();
     }
 
-    // unnecessary method https://github.com/dropwizard/metrics/issues/874
     @Override
     public int size() {
-        // I hope "size" is called infrequently
-        return getSnapshot().size();
+       throw new UnsupportedOperationException("You should not use this method https://github.com/dropwizard/metrics/issues/874");
     }
 
     @Override
