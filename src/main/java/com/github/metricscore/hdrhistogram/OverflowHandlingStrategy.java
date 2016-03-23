@@ -14,6 +14,7 @@ public enum OverflowHandlingStrategy {
     PASS_THRU {
         @Override
         public void write(long highestTrackableValue, long value, Recorder histogram) {
+            // let it crash with ArrayIndexOutOfBoundsException
             histogram.recordValue(highestTrackableValue);
         }
     },
