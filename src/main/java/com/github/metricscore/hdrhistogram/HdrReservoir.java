@@ -83,29 +83,48 @@ public class HdrReservoir implements Reservoir {
     public Snapshot getSnapshot() {
         lock.lock();
         try {
-            state.intervalHistogram = recorder.getIntervalHistogram(state.intervalHistogram);
-            Histogram histogramForSnapshot = accumulator.rememberIntervalAndGetHistogramToTakeSnapshot(state.intervalHistogram);
-            if (predefinedPercentiles.isPresent()) {
-                return takeSmartSnapshot(predefinedPercentiles.get(), histogramForSnapshot);
+            if (cachingDurationMillis == 0) {
+                return takeSnapshot();
             } else {
-                return takeFullSnapshot(histogramForSnapshot.copy());
+                return takeAndStoreSnapshot();
             }
         } finally {
             lock.unlock();
         }
     }
 
+    private Snapshot takeAndStoreSnapshot() {
+        long nowMillis = wallClock.currentTimeMillis();
+        if (state.cachedSnapshot == null
+                || state.lastSnapshotTakeTimeMillis == Long.MIN_VALUE
+                || nowMillis - state.lastSnapshotTakeTimeMillis >= cachingDurationMillis) {
+            state.cachedSnapshot = takeSnapshot();
+            state.lastSnapshotTakeTimeMillis = nowMillis;
+        }
+        return state.cachedSnapshot;
+    }
+
+    private Snapshot takeSnapshot() {
+        state.intervalHistogram = recorder.getIntervalHistogram(state.intervalHistogram);
+        Histogram histogramForSnapshot = accumulator.rememberIntervalAndGetHistogramToTakeSnapshot(state.intervalHistogram);
+        if (predefinedPercentiles.isPresent()) {
+            return takeSmartSnapshot(predefinedPercentiles.get(), histogramForSnapshot);
+        } else {
+            return takeFullSnapshot(histogramForSnapshot.copy());
+        }
+    }
+
     private static final class State {
         Histogram intervalHistogram;
-        HdrSnapshot cachedSnapshot;
-        long lastSnapshotTakeTimeMillis;
+        Snapshot cachedSnapshot;
+        long lastSnapshotTakeTimeMillis = Long.MIN_VALUE;
 
         public State(Histogram intervalHistogram) {
             this.intervalHistogram = intervalHistogram;
         }
     }
 
-    static Snapshot takeSmartSnapshot(final double[] predefinedQuantiles, Histogram histogram) {
+    private static Snapshot takeSmartSnapshot(final double[] predefinedQuantiles, Histogram histogram) {
         final long max = histogram.getMaxValue();
         final long min = histogram.getMinValue();
         final double mean = histogram.getMean();
@@ -204,7 +223,7 @@ public class HdrReservoir implements Reservoir {
         };
     }
 
-    static Snapshot takeFullSnapshot(final Histogram histogram) {
+    private static Snapshot takeFullSnapshot(final Histogram histogram) {
         return new Snapshot() {
             @Override
             public double getValue(double quantile) {
