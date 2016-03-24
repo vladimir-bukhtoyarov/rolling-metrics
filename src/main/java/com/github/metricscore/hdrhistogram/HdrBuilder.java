@@ -14,7 +14,7 @@ public class HdrBuilder {
 
     public static int DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS = 2;
     public static AccumulationStrategy DEFAULT_ACCUMULATION_STRATEGY = AccumulationStrategy.resetOnSnapshot();
-    public static double[] DEFAULT_PERCENTILES = new double[]{0.5, 0.75, 0.95, 0.98, 0.99, 0.999};
+    public static double[] DEFAULT_PERCENTILES = new double[] {0.5, 0.75, 0.95, 0.98, 0.99, 0.999};
 
     private AccumulationStrategy accumulationStrategy;
     private int numberOfSignificantValueDigits;
@@ -29,7 +29,7 @@ public class HdrBuilder {
     }
 
     public HdrBuilder withAccumulationStrategy(AccumulationStrategy accumulationStrategy) {
-        accumulationStrategy = Objects.requireNonNull(accumulationStrategy);
+        this.accumulationStrategy = Objects.requireNonNull(accumulationStrategy, "accumulationStrategy should not be null");
         return this;
     }
 
@@ -71,7 +71,12 @@ public class HdrBuilder {
     }
 
     public HdrBuilder withPredefinedPercentiles(double[] predefinedPercentiles) {
-        predefinedPercentiles = Objects.requireNonNull(predefinedPercentiles);
+        predefinedPercentiles = Objects.requireNonNull(predefinedPercentiles, "predefinedPercentiles array should not be null");
+        if (predefinedPercentiles.length == 0) {
+            String msg = "predefinedPercentiles.length is zero. Use withoutSnapshotOptimization() instead of passing empty array.";
+            throw new IllegalArgumentException(msg);
+        }
+
         for (double percentile : predefinedPercentiles) {
             if (percentile < 0.0 || percentile > 1.0) {
                 String msg = "Illegal percentiles " + Arrays.toString(predefinedPercentiles) + " - all values must be between 0 and 1";
@@ -96,7 +101,10 @@ public class HdrBuilder {
 
     public Reservoir buildReservoir() {
         if (highestTrackableValue.isPresent() && lowestDiscernibleValue.isPresent() && highestTrackableValue.get() < 2L * lowestDiscernibleValue.get()) {
-            throw new IllegalArgumentException("highestTrackableValue must be >= 2 * lowestDiscernibleValue");
+            throw new IllegalStateException("highestTrackableValue must be >= 2 * lowestDiscernibleValue");
+        }
+        if (lowestDiscernibleValue.isPresent() && !highestTrackableValue.isPresent()) {
+            throw new IllegalStateException("lowestDiscernibleValue is specified but highestTrackableValue undefined");
         }
         HdrReservoir reservoir = new HdrReservoir(accumulationStrategy, numberOfSignificantValueDigits, lowestDiscernibleValue, highestTrackableValue, overflowHandling, predefinedPercentiles);
         if (!snapshotCachingDurationMillis.isPresent()) {
@@ -111,7 +119,7 @@ public class HdrBuilder {
 
     public Histogram buildAndRegisterHistogram(MetricRegistry registry, String name) {
         Histogram histogram = buildHistogram();
-        registry.register(name, registry);
+        registry.register(name, histogram);
         return histogram;
     }
 

@@ -10,8 +10,7 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -23,7 +22,7 @@ public class HdrReservoir implements Reservoir {
     private final long highestTrackableValue;
     private final OverflowHandlingStrategy overflowHandlingStrategy;
     private final Accumulator accumulator;
-    private final Optional<double[]> predefinedPercentiles;
+    private final Function<Histogram, Snapshot> snapshotTaker;
 
     HdrReservoir(
              AccumulationStrategy accumulationStrategy,
@@ -47,8 +46,14 @@ public class HdrReservoir implements Reservoir {
             this.highestTrackableValue = Long.MAX_VALUE;
             this.overflowHandlingStrategy = null;
         }
-        this.predefinedPercentiles = predefinedPercentiles;
         this.accumulator = accumulationStrategy.createAccumulator(recorder);
+
+        if (predefinedPercentiles.isPresent()) {
+            double[] percentiles = predefinedPercentiles.get();
+            snapshotTaker = histogram -> takeSmartSnapshot(percentiles, histogram);
+        } else {
+            snapshotTaker = HdrReservoir::takeFullSnapshot;
+        }
     }
 
     @Override
@@ -72,13 +77,7 @@ public class HdrReservoir implements Reservoir {
 
     @Override
     public Snapshot getSnapshot() {
-        return accumulator.getSnapshot(histogram -> {
-            if (predefinedPercentiles.isPresent()) {
-                return takeSmartSnapshot(predefinedPercentiles.get(), histogram);
-            } else {
-                return takeFullSnapshot(histogram.copy());
-            }
-        });
+        return accumulator.getSnapshot(snapshotTaker);
     }
 
     private static Snapshot takeSmartSnapshot(final double[] predefinedQuantiles, Histogram histogram) {

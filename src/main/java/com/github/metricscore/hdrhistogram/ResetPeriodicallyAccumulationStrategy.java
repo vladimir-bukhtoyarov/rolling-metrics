@@ -29,12 +29,15 @@ class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
     }
 
     private static class ResetPeriodicallyAccumulator implements Accumulator {
-        private final Lock lock = new ReentrantLock();
-        private final Recorder recorder;
-        private final Histogram uniformHistogram;
-        private final long resetIntervalMillis;
-        private final WallClock wallClock;
-        private final AtomicLong nextResetTimeMillisRef;
+
+        private static final long RESETTING_IN_PROGRESS_HAZARD = Long.MIN_VALUE;
+
+        final Lock lock = new ReentrantLock();
+        final Recorder recorder;
+        final Histogram uniformHistogram;
+        final long resetIntervalMillis;
+        final WallClock wallClock;
+        final AtomicLong nextResetTimeMillisRef;
 
         Histogram intervalHistogram;
 
@@ -42,7 +45,12 @@ class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
             this.resetIntervalMillis = resetIntervalMillis;
             this.wallClock = wallClock;
             this.recorder = recorder;
-            this.intervalHistogram = recorder.getIntervalHistogram();
+            lock.lock();
+            try {
+                this.intervalHistogram = recorder.getIntervalHistogram();
+            } finally {
+                lock.unlock();
+            }
             this.uniformHistogram = intervalHistogram.copy();
             nextResetTimeMillisRef = new AtomicLong(wallClock.currentTimeMillis() + resetIntervalMillis);
         }
@@ -55,10 +63,9 @@ class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
 
         @Override
         public Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
-            resetIfNeed();
-
             lock.lock();
             try {
+                resetIfNeed();
                 intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
                 uniformHistogram.add(intervalHistogram);
                 return snapshotTaker.apply(uniformHistogram);
@@ -68,22 +75,21 @@ class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
         }
 
         private void resetIfNeed() {
-            long nowMillis = wallClock.currentTimeMillis();
             long nextResetTimeMillis = nextResetTimeMillisRef.get();
-            if (nowMillis >= nextResetTimeMillis) {
+            if (nextResetTimeMillis != RESETTING_IN_PROGRESS_HAZARD && wallClock.currentTimeMillis() >= nextResetTimeMillis) {
+                if (!nextResetTimeMillisRef.compareAndSet(nextResetTimeMillis, RESETTING_IN_PROGRESS_HAZARD)) {
+                    // another concurrent thread achieved progress and became responsible for resetting histograms
+                    return;
+                }
+                // CAS was successful, so current thread became the responsible for resetting histograms
                 lock.lock();
                 try {
-                    nextResetTimeMillis = nextResetTimeMillisRef.get()
-                    if (nowMillis >= nextResetTimeMillis) {
-                        intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
-                        uniformHistogram.reset();
-                        long proposedNextResetTimeMillis
-                        nextResetTimeMillisRef.set(nextResetTimeMillis, nowMillis +)
-                    }
+                    intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
+                    uniformHistogram.reset();
+                    nextResetTimeMillisRef.set(wallClock.currentTimeMillis() + resetIntervalMillis);
                 } finally {
                     lock.unlock();
                 }
-                nextResetTimeMillis += resetIntervalMillis;
             }
         }
     }

@@ -1,14 +1,13 @@
 package com.github.metricscore.hdrhistogram;
 
-public class WallClock {
+/**
+ * Wrapper around time measuring useful in unit tests to avoid sleeping.
+ */
+class WallClock {
 
     public static final WallClock INSTANCE = new WallClock();
 
     private WallClock() {}
-
-    public static WallClock getInstance() {
-        return INSTANCE;
-    }
 
     public long currentTimeMillis() {
         return System.currentTimeMillis();

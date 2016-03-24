@@ -12,19 +12,15 @@ class SnapshotCachingReservoir implements Reservoir {
     private final Reservoir target;
     private final long cachingDurationMillis;
     private final WallClock wallClock;
-    private final MutableState state;
 
-    private static final class MutableState {
-        Snapshot cachedSnapshot = null;
-        long lastSnapshotTakeTimeMillis = Long.MIN_VALUE;
-    }
+    Snapshot cachedSnapshot;
+    long lastSnapshotTakeTimeMillis;
 
     public SnapshotCachingReservoir(Reservoir target, long cachingDurationMillis, WallClock wallClock) {
         this.target = target;
         this.cachingDurationMillis = cachingDurationMillis;
         this.wallClock = wallClock;
         this.lock = new ReentrantLock();
-        this.state = new MutableState();
     }
 
     @Override
@@ -42,13 +38,12 @@ class SnapshotCachingReservoir implements Reservoir {
         lock.lock();
         try {
             long nowMillis = wallClock.currentTimeMillis();
-            if (state.cachedSnapshot == null
-                    || state.lastSnapshotTakeTimeMillis == Long.MIN_VALUE
-                    || nowMillis - state.lastSnapshotTakeTimeMillis >= cachingDurationMillis) {
-                state.cachedSnapshot = target.getSnapshot();
-                state.lastSnapshotTakeTimeMillis = nowMillis;
+            if (cachedSnapshot == null
+                    || nowMillis - lastSnapshotTakeTimeMillis >= cachingDurationMillis) {
+                cachedSnapshot = target.getSnapshot();
+                lastSnapshotTakeTimeMillis = nowMillis;
             }
-            return state.cachedSnapshot;
+            return cachedSnapshot;
         } finally {
             lock.unlock();
         }

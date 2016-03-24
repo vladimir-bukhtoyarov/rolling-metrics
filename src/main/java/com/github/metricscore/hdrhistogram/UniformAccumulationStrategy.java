@@ -22,12 +22,18 @@ class UniformAccumulationStrategy implements AccumulationStrategy {
     private static class UniformAccumulator implements Accumulator {
         private final Lock lock = new ReentrantLock();
         private final Recorder recorder;
-        final Histogram uniformHistogram ;
+        private final Histogram uniformHistogram;
+
         private Histogram intervalHistogram;
 
         public UniformAccumulator(Recorder recorder) {
             this.recorder = recorder;
-            this.intervalHistogram = recorder.getIntervalHistogram();
+            lock.lock();
+            try {
+                this.intervalHistogram = recorder.getIntervalHistogram();
+            } finally {
+                lock.unlock();
+            }
             this.uniformHistogram = intervalHistogram.copy();
         }
 

@@ -20,13 +20,21 @@ class ResetOnSnapshotAccumulationStrategy implements AccumulationStrategy {
     }
 
     private static class ResetOnSnapshotAccumulator implements Accumulator {
-        private final Lock lock = new ReentrantLock();
+        private final Lock lock;
         private final Recorder recorder;
+
         private Histogram intervalHistogram;
 
         public ResetOnSnapshotAccumulator(Recorder recorder) {
+            this.lock = new ReentrantLock();
             this.recorder = recorder;
-            this.intervalHistogram = recorder.getIntervalHistogram();
+
+            lock.lock();
+            try {
+                this.intervalHistogram = recorder.getIntervalHistogram();
+            } finally {
+                lock.unlock();
+            }
         }
 
         @Override
