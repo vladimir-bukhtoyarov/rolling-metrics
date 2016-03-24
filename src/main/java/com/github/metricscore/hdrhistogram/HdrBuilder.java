@@ -1,5 +1,10 @@
 package com.github.metricscore.hdrhistogram;
 
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Reservoir;
+import com.codahale.metrics.Timer;
+
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Objects;
@@ -8,8 +13,8 @@ import java.util.Optional;
 public class HdrBuilder {
 
     public static int DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS = 2;
-    public static AccumulationStrategy DEFAULT_ACCUMULATION_STRATEGY = AccumulationStrategy.RESET_ON_SNAPSHOT;
-    public static double[] DEFAULT_PERCENTILES = new double[] {0.5, 0.75, 0.95, 0.98, 0.99, 0.999};
+    public static AccumulationStrategy DEFAULT_ACCUMULATION_STRATEGY = AccumulationStrategy.resetOnSnapshot();
+    public static double[] DEFAULT_PERCENTILES = new double[]{0.5, 0.75, 0.95, 0.98, 0.99, 0.999};
 
     private AccumulationStrategy accumulationStrategy;
     private int numberOfSignificantValueDigits;
@@ -67,7 +72,7 @@ public class HdrBuilder {
 
     public HdrBuilder withPredefinedPercentiles(double[] predefinedPercentiles) {
         predefinedPercentiles = Objects.requireNonNull(predefinedPercentiles);
-        for (double percentile: predefinedPercentiles) {
+        for (double percentile : predefinedPercentiles) {
             if (percentile < 0.0 || percentile > 1.0) {
                 String msg = "Illegal percentiles " + Arrays.toString(predefinedPercentiles) + " - all values must be between 0 and 1";
                 throw new IllegalArgumentException(msg);
@@ -78,18 +83,46 @@ public class HdrBuilder {
         return this;
     }
 
+    public HdrBuilder withoutSnapshotOptimization() {
+        this.predefinedPercentiles = Optional.empty();
+        return this;
+    }
+
     private double[] copyAndSort(double[] predefinedPercentiles) {
         double[] sortedPercentiles = Arrays.copyOf(predefinedPercentiles, predefinedPercentiles.length);
         Arrays.sort(sortedPercentiles);
         return sortedPercentiles;
     }
 
-    public HdrReservoir buildReservoir() {
+    public Reservoir buildReservoir() {
         if (highestTrackableValue.isPresent() && lowestDiscernibleValue.isPresent() && highestTrackableValue.get() < 2L * lowestDiscernibleValue.get()) {
             throw new IllegalArgumentException("highestTrackableValue must be >= 2 * lowestDiscernibleValue");
         }
-        return new HdrReservoir(accumulationStrategy, numberOfSignificantValueDigits, lowestDiscernibleValue,
-                highestTrackableValue, overflowHandling, snapshotCachingDurationMillis, predefinedPercentiles, WallClock.INSTANCE);
+        HdrReservoir reservoir = new HdrReservoir(accumulationStrategy, numberOfSignificantValueDigits, lowestDiscernibleValue, highestTrackableValue, overflowHandling, predefinedPercentiles);
+        if (!snapshotCachingDurationMillis.isPresent()) {
+            return reservoir;
+        }
+        return new SnapshotCachingReservoir(reservoir, snapshotCachingDurationMillis.get(), WallClock.INSTANCE);
+    }
+
+    public Histogram buildHistogram() {
+        return new Histogram(buildReservoir());
+    }
+
+    public Histogram buildAndRegisterHistogram(MetricRegistry registry, String name) {
+        Histogram histogram = buildHistogram();
+        registry.register(name, registry);
+        return histogram;
+    }
+
+    public Timer buildTimer() {
+        return new Timer(buildReservoir());
+    }
+
+    public Timer buildAndRegisterTimer(MetricRegistry registry, String name) {
+        Timer timer = buildTimer();
+        registry.register(name, timer);
+        return timer;
     }
 
     public HdrBuilder clone() {
@@ -111,6 +144,19 @@ public class HdrBuilder {
         this.overflowHandling = overflowHandling;
         this.snapshotCachingDurationMillis = snapshotCachingDurationMillis;
         this.predefinedPercentiles = predefinedPercentiles;
+    }
+
+    @Override
+    public String toString() {
+        return "HdrBuilder{" +
+                "accumulationStrategy=" + accumulationStrategy +
+                ", numberOfSignificantValueDigits=" + numberOfSignificantValueDigits +
+                ", lowestDiscernibleValue=" + lowestDiscernibleValue +
+                ", highestTrackableValue=" + highestTrackableValue +
+                ", overflowHandling=" + overflowHandling +
+                ", snapshotCachingDurationMillis=" + snapshotCachingDurationMillis +
+                ", predefinedPercentiles=" + Arrays.toString(predefinedPercentiles.orElse(new double[0])) +
+                '}';
     }
 
 }

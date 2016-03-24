@@ -20,16 +20,10 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 public class HdrReservoir implements Reservoir {
 
-    private final Lock lock;
-    private final Recorder recorder;
     private final long highestTrackableValue;
     private final OverflowHandlingStrategy overflowHandlingStrategy;
     private final Accumulator accumulator;
-    private final long cachingDurationMillis;
     private final Optional<double[]> predefinedPercentiles;
-    private final WallClock wallClock;
-
-    private final State state;
 
     HdrReservoir(
              AccumulationStrategy accumulationStrategy,
@@ -37,32 +31,24 @@ public class HdrReservoir implements Reservoir {
              Optional<Long> lowestDiscernibleValue,
              Optional<Long> highestTrackableValue,
              Optional<OverflowHandlingStrategy> overflowHandling,
-             Optional<Long> cachingDurationMillis,
-             Optional<double[]> predefinedPercentiles,
-             WallClock wallClock
+             Optional<double[]> predefinedPercentiles
     ) {
-        lock = new ReentrantLock();
+        Recorder recorder;
         if (highestTrackableValue.isPresent() && lowestDiscernibleValue.isPresent()) {
-            this.recorder = new Recorder(lowestDiscernibleValue.get(), highestTrackableValue.get(), numberOfSignificantValueDigits);
+            recorder = new Recorder(lowestDiscernibleValue.get(), highestTrackableValue.get(), numberOfSignificantValueDigits);
             this.highestTrackableValue = highestTrackableValue.get();
             this.overflowHandlingStrategy = overflowHandling.get();
         } else if (highestTrackableValue.isPresent()) {
-            this.recorder = new Recorder(highestTrackableValue.get(), numberOfSignificantValueDigits);
+            recorder = new Recorder(highestTrackableValue.get(), numberOfSignificantValueDigits);
             this.highestTrackableValue = highestTrackableValue.get();
             this.overflowHandlingStrategy = overflowHandling.get();
         } else {
-            this.recorder = new Recorder(numberOfSignificantValueDigits);
+            recorder = new Recorder(numberOfSignificantValueDigits);
             this.highestTrackableValue = Long.MAX_VALUE;
             this.overflowHandlingStrategy = null;
         }
         this.predefinedPercentiles = predefinedPercentiles;
-        this.cachingDurationMillis = cachingDurationMillis.orElse(0L);
-
-        Histogram initialHistogram = recorder.getIntervalHistogram();
-        this.accumulator = accumulationStrategy.createAccumulator(initialHistogram);
-
-        state = new State(initialHistogram);
-        this.wallClock = wallClock;
+        this.accumulator = accumulationStrategy.createAccumulator(recorder);
     }
 
     @Override
@@ -73,55 +59,26 @@ public class HdrReservoir implements Reservoir {
     @Override
     public void update(long value) {
         if (value > highestTrackableValue) {
-            overflowHandlingStrategy.write(highestTrackableValue, value, recorder);
-            return;
+            switch (overflowHandlingStrategy) {
+                case SKIP: break;
+                case PASS_THRU: accumulator.recordValue(value); break;
+                case REDUCE_TO_MAXIMUM: accumulator.recordValue(highestTrackableValue); break;
+                default: throw new IllegalStateException("42");
+            }
+        } else {
+            accumulator.recordValue(value);
         }
-        recorder.recordValue(value);
     }
 
     @Override
     public Snapshot getSnapshot() {
-        lock.lock();
-        try {
-            if (cachingDurationMillis == 0) {
-                return takeSnapshot();
+        return accumulator.getSnapshot(histogram -> {
+            if (predefinedPercentiles.isPresent()) {
+                return takeSmartSnapshot(predefinedPercentiles.get(), histogram);
             } else {
-                return takeAndStoreSnapshot();
+                return takeFullSnapshot(histogram.copy());
             }
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    private Snapshot takeAndStoreSnapshot() {
-        long nowMillis = wallClock.currentTimeMillis();
-        if (state.cachedSnapshot == null
-                || state.lastSnapshotTakeTimeMillis == Long.MIN_VALUE
-                || nowMillis - state.lastSnapshotTakeTimeMillis >= cachingDurationMillis) {
-            state.cachedSnapshot = takeSnapshot();
-            state.lastSnapshotTakeTimeMillis = nowMillis;
-        }
-        return state.cachedSnapshot;
-    }
-
-    private Snapshot takeSnapshot() {
-        state.intervalHistogram = recorder.getIntervalHistogram(state.intervalHistogram);
-        Histogram histogramForSnapshot = accumulator.rememberIntervalAndGetHistogramToTakeSnapshot(state.intervalHistogram);
-        if (predefinedPercentiles.isPresent()) {
-            return takeSmartSnapshot(predefinedPercentiles.get(), histogramForSnapshot);
-        } else {
-            return takeFullSnapshot(histogramForSnapshot.copy());
-        }
-    }
-
-    private static final class State {
-        Histogram intervalHistogram;
-        Snapshot cachedSnapshot;
-        long lastSnapshotTakeTimeMillis = Long.MIN_VALUE;
-
-        public State(Histogram intervalHistogram) {
-            this.intervalHistogram = intervalHistogram;
-        }
+        });
     }
 
     private static Snapshot takeSmartSnapshot(final double[] predefinedQuantiles, Histogram histogram) {

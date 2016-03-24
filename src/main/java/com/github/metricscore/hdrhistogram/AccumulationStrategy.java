@@ -1,43 +1,35 @@
 package com.github.metricscore.hdrhistogram;
 
-import org.HdrHistogram.Histogram;
+import org.HdrHistogram.Recorder;
+
+import java.time.Duration;
 
 public interface AccumulationStrategy {
 
-    Accumulator createAccumulator(Histogram initialHistogram);
+    Accumulator createAccumulator(Recorder initialHistogram);
 
     /**
      * Reservoir configured with this strategy will be cleared each time when snapshot taken.
      * This is default strategy for {@link HdrBuilder}
      */
-    AccumulationStrategy RESET_ON_SNAPSHOT = new AccumulationStrategy() {
-        private final Accumulator INSTANCE = new Accumulator() {
-            @Override
-            public Histogram rememberIntervalAndGetHistogramToTakeSnapshot(Histogram intervalHistogram) {
-                return intervalHistogram;
-            }
-        };
-        @Override
-        public Accumulator createAccumulator(Histogram initialHistogram) {
-            return INSTANCE;
-        }
-    };
+    static AccumulationStrategy resetOnSnapshot() {
+        return ResetOnSnapshotAccumulationStrategy.INSTANCE;
+    }
 
     /**
      * Reservoir configured with this strategy will store all measures since the reservoir was created.
      */
-    AccumulationStrategy UNIFORM = new AccumulationStrategy() {
-        @Override
-        public Accumulator createAccumulator(Histogram initialHistogram) {
-            final Histogram uniformHistogram = initialHistogram.copy();
-            return new Accumulator() {
-                @Override
-                public Histogram rememberIntervalAndGetHistogramToTakeSnapshot(Histogram intervalHistogram) {
-                    uniformHistogram.add(intervalHistogram);
-                    return uniformHistogram;
-                }
-            };
-        }
-    };
+    static AccumulationStrategy uniform() {
+       return UniformAccumulationStrategy.INSTANCE;
+    }
+
+    /**
+     * Reservoir configured with this strategy will be cleared each {@code resetPeriod} time.
+     *
+     * @param resetPeriod specifies how often need to reset reservoir
+     */
+    static AccumulationStrategy resetPeriodically(Duration resetPeriod) {
+        return new ResetPeriodicallyAccumulationStrategy(resetPeriod, WallClock.INSTANCE);
+    }
 
 }

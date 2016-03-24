@@ -4,28 +4,10 @@ import org.HdrHistogram.Recorder;
 
 public enum OverflowHandlingStrategy {
 
-    SKIP {
-        @Override
-        public void write(long highestTrackableValue, long value, Recorder histogram) {
-            // do nothing
-        }
-    },
+    SKIP,
 
-    PASS_THRU {
-        @Override
-        public void write(long highestTrackableValue, long value, Recorder histogram) {
-            // let it crash with ArrayIndexOutOfBoundsException
-            histogram.recordValue(highestTrackableValue);
-        }
-    },
+    PASS_THRU,
 
-    REDUCE_TO_MAXIMUM {
-        @Override
-        public void write(long highestTrackableValue, long value, Recorder histogram) {
-            histogram.recordValue(highestTrackableValue);
-        }
-    };
-    
-    public abstract void write(long highestTrackableValue, long value, Recorder histogram);
+    REDUCE_TO_MAXIMUM;
 
 }
