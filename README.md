@@ -3,3 +3,5 @@ This library is addressed for tightly integration between [Metrics Core](https:/
 
 ## Project state
 Library is under development.
+
+[![Build Status](https://travis-ci.org/vladimir-bukhtoyarov/metrics-core-hdr.svg?branch=master)](https://travis-ci.org/vladimir-bukhtoyarov/metrics-core-hdr)
