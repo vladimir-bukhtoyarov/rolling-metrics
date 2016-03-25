@@ -8,14 +8,14 @@
     <version>1.0.0-SNAPSHOT</version>
 
     <packaging>jar</packaging>
-    <name>Addons for the metrics core library</name>
+    <name>Metrics-Core-HDR</name>
 
-    <description>Addons for the metrics core library</description>
-    <url>https://github.com/vladimir-bukhtoyarov/metrics-core-addons</url>
+    <description>Integration metrics-core and HdrHistogram</description>
+    <url>https://github.com/vladimir-bukhtoyarov/metrics-core-hdr</url>
 
     <scm>
-        <url>https://github.com/vladimir-bukhtoyarov/metrics-core-addons</url>
-        <connection>scm:git:git://github.com/vladimir-bukhtoyarov/metrics-core-addons.git</connection>
+        <url>https://github.com/vladimir-bukhtoyarov/metrics-core-hdr</url>
+        <connection>scm:git:git://github.com/vladimir-bukhtoyarov/metrics-core-hdr.git</connection>
     </scm>
     <developers>
         <developer>
@@ -36,8 +36,11 @@
             <id>jcenter</id>
             <url>http://jcenter.bintray.com</url>
         </repository>
+        <repository>
+            <id>vladimir-bukhtoyarov</id>
+            <url>https://dl.bintray.com/vladimir-bukhtoyarov/maven</url>
+        </repository>
     </repositories>
-
 
     <dependencies>
         <dependency>
@@ -90,6 +93,35 @@
                         <configuration>
                             <repoToken>${env.coverallToken}</repoToken>
                         </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>bintray</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadocs</id>
+                                <goals>
+                                    <goal>jar</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
