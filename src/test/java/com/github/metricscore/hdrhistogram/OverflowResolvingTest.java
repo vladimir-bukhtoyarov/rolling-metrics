@@ -2,6 +2,7 @@ package com.github.metricscore.hdrhistogram;
 
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
+import junit.framework.Assert;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
@@ -46,6 +47,14 @@ public class OverflowResolvingTest {
     public void testPassThruBigValues() {
         Reservoir reservoir = new HdrBuilder().withHighestTrackableValue(100, OverflowResolving.PASS_THRU).buildReservoir();
         reservoir.update(100000);
+    }
+
+    @Test
+    public void testPassThruBigValues2() {
+        Reservoir reservoir = new HdrBuilder().withHighestTrackableValue(100, OverflowResolving.PASS_THRU).buildReservoir();
+        reservoir.update(101);
+        Snapshot snapshot = reservoir.getSnapshot();
+        assertEquals(101, snapshot.getMax());
     }
 
 }
