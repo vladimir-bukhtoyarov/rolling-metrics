@@ -25,6 +25,7 @@ public class HdrReservoir implements Reservoir {
     private final Function<Histogram, Snapshot> snapshotTaker;
 
     HdrReservoir(
+             WallClock wallClock,
              AccumulationStrategy accumulationStrategy,
              int numberOfSignificantValueDigits,
              Optional<Long> lowestDiscernibleValue,
@@ -46,7 +47,7 @@ public class HdrReservoir implements Reservoir {
             this.highestTrackableValue = Long.MAX_VALUE;
             this.overflowHandlingStrategy = null;
         }
-        this.accumulator = accumulationStrategy.createAccumulator(recorder);
+        this.accumulator = accumulationStrategy.createAccumulator(recorder, wallClock);
 
         if (predefinedPercentiles.isPresent()) {
             double[] percentiles = predefinedPercentiles.get();

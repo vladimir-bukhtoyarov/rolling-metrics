@@ -15,7 +15,7 @@ class ResetOnSnapshotAccumulationStrategy implements AccumulationStrategy {
     private ResetOnSnapshotAccumulationStrategy() {}
 
     @Override
-    public Accumulator createAccumulator(Recorder recorder) {
+    public Accumulator createAccumulator(Recorder recorder, WallClock wallClock) {
         return new ResetOnSnapshotAccumulator(recorder);
     }
 

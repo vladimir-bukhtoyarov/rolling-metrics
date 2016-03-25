@@ -15,7 +15,7 @@ class UniformAccumulationStrategy implements AccumulationStrategy {
     private UniformAccumulationStrategy() {}
 
     @Override
-    public Accumulator createAccumulator(Recorder recorder) {
+    public Accumulator createAccumulator(Recorder recorder, WallClock wallClock) {
         return new UniformAccumulator(recorder);
     }
 

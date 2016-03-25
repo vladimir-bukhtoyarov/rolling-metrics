@@ -12,19 +12,17 @@ import java.util.function.Function;
 
 class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
 
-    private final WallClock wallClock;
     private final long resetIntervalMillis;
 
-    ResetPeriodicallyAccumulationStrategy(Duration resetPeriod, WallClock wallClock) {
+    ResetPeriodicallyAccumulationStrategy(Duration resetPeriod) {
         if (resetPeriod.isNegative() || resetPeriod.isZero()) {
             throw new IllegalArgumentException("Wrong reset period " + resetPeriod);
         }
-        this.wallClock = wallClock;
         this.resetIntervalMillis = resetPeriod.toMillis();
     }
 
     @Override
-    public Accumulator createAccumulator(Recorder recorder) {
+    public Accumulator createAccumulator(Recorder recorder, WallClock wallClock) {
         return new ResetPeriodicallyAccumulator(recorder, resetIntervalMillis, wallClock);
     }
 

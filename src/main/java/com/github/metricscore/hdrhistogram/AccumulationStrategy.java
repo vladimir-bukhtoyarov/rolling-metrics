@@ -6,7 +6,7 @@ import java.time.Duration;
 
 public interface AccumulationStrategy {
 
-    Accumulator createAccumulator(Recorder recorder);
+    Accumulator createAccumulator(Recorder recorder, WallClock wallClock);
 
     /**
      * Reservoir configured with this strategy will be cleared each time when snapshot taken.
@@ -29,7 +29,7 @@ public interface AccumulationStrategy {
      * @param resettingPeriod specifies how often need to reset reservoir
      */
     static AccumulationStrategy resetPeriodically(Duration resettingPeriod) {
-        return new ResetPeriodicallyAccumulationStrategy(resettingPeriod, WallClock.INSTANCE);
+        return new ResetPeriodicallyAccumulationStrategy(resettingPeriod);
     }
 
 }

@@ -14,7 +14,7 @@ public class HdrBuilder {
 
     public static int DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS = 2;
     public static AccumulationStrategy DEFAULT_ACCUMULATION_STRATEGY = AccumulationStrategy.resetOnSnapshot();
-    public static double[] DEFAULT_PERCENTILES = new double[] {0.5, 0.75, 0.95, 0.98, 0.99, 0.999};
+    public static double[] DEFAULT_PERCENTILES = new double[]{0.5, 0.75, 0.95, 0.98, 0.99, 0.999};
 
     private AccumulationStrategy accumulationStrategy;
     private int numberOfSignificantValueDigits;
@@ -24,8 +24,14 @@ public class HdrBuilder {
     private Optional<Long> snapshotCachingDurationMillis;
     private Optional<double[]> predefinedPercentiles;
 
+    private WallClock wallClock;
+
     public HdrBuilder() {
-        this(DEFAULT_ACCUMULATION_STRATEGY, DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS, Optional.of(DEFAULT_PERCENTILES), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        this(WallClock.INSTANCE);
+    }
+
+    HdrBuilder(WallClock wallClock) {
+        this(wallClock, DEFAULT_ACCUMULATION_STRATEGY, DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS, Optional.of(DEFAULT_PERCENTILES), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     public HdrBuilder withAccumulationStrategy(AccumulationStrategy accumulationStrategy) {
@@ -106,11 +112,11 @@ public class HdrBuilder {
         if (lowestDiscernibleValue.isPresent() && !highestTrackableValue.isPresent()) {
             throw new IllegalStateException("lowestDiscernibleValue is specified but highestTrackableValue undefined");
         }
-        HdrReservoir reservoir = new HdrReservoir(accumulationStrategy, numberOfSignificantValueDigits, lowestDiscernibleValue, highestTrackableValue, overflowHandling, predefinedPercentiles);
+        HdrReservoir reservoir = new HdrReservoir(wallClock, accumulationStrategy, numberOfSignificantValueDigits, lowestDiscernibleValue, highestTrackableValue, overflowHandling, predefinedPercentiles);
         if (!snapshotCachingDurationMillis.isPresent()) {
             return reservoir;
         }
-        return new SnapshotCachingReservoir(reservoir, snapshotCachingDurationMillis.get(), WallClock.INSTANCE);
+        return new SnapshotCachingReservoir(reservoir, snapshotCachingDurationMillis.get(), wallClock);
     }
 
     public Histogram buildHistogram() {
@@ -134,17 +140,19 @@ public class HdrBuilder {
     }
 
     public HdrBuilder clone() {
-        return new HdrBuilder(accumulationStrategy, numberOfSignificantValueDigits, predefinedPercentiles, lowestDiscernibleValue,
+        return new HdrBuilder(wallClock, accumulationStrategy, numberOfSignificantValueDigits, predefinedPercentiles, lowestDiscernibleValue,
                 highestTrackableValue, overflowHandling, snapshotCachingDurationMillis);
     }
 
-    private HdrBuilder(AccumulationStrategy accumulationStrategy,
+    private HdrBuilder(WallClock wallClock,
+                       AccumulationStrategy accumulationStrategy,
                        int numberOfSignificantValueDigits,
                        Optional<double[]> predefinedPercentiles,
                        Optional<Long> lowestDiscernibleValue,
                        Optional<Long> highestTrackableValue,
                        Optional<OverflowHandlingStrategy> overflowHandling,
                        Optional<Long> snapshotCachingDurationMillis) {
+        this.wallClock = wallClock;
         this.accumulationStrategy = accumulationStrategy;
         this.numberOfSignificantValueDigits = numberOfSignificantValueDigits;
         this.lowestDiscernibleValue = lowestDiscernibleValue;
