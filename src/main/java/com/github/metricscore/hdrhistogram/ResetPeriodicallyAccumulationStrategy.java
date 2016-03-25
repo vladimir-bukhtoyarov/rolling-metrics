@@ -16,7 +16,7 @@ class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
 
     ResetPeriodicallyAccumulationStrategy(Duration resetPeriod) {
         if (resetPeriod.isNegative() || resetPeriod.isZero()) {
-            throw new IllegalArgumentException("Wrong reset period " + resetPeriod);
+            throw new IllegalArgumentException("resetPeriod must be a positive duration");
         }
         this.resetIntervalMillis = resetPeriod.toMillis();
     }

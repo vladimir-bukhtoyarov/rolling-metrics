@@ -20,7 +20,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 public class HdrReservoir implements Reservoir {
 
     private final long highestTrackableValue;
-    private final OverflowHandlingStrategy overflowHandlingStrategy;
+    private final OverflowResolving overflowResolving;
     private final Accumulator accumulator;
     private final Function<Histogram, Snapshot> snapshotTaker;
 
@@ -30,22 +30,22 @@ public class HdrReservoir implements Reservoir {
              int numberOfSignificantValueDigits,
              Optional<Long> lowestDiscernibleValue,
              Optional<Long> highestTrackableValue,
-             Optional<OverflowHandlingStrategy> overflowHandling,
+             Optional<OverflowResolving> overflowHandling,
              Optional<double[]> predefinedPercentiles
     ) {
         Recorder recorder;
         if (highestTrackableValue.isPresent() && lowestDiscernibleValue.isPresent()) {
             recorder = new Recorder(lowestDiscernibleValue.get(), highestTrackableValue.get(), numberOfSignificantValueDigits);
             this.highestTrackableValue = highestTrackableValue.get();
-            this.overflowHandlingStrategy = overflowHandling.get();
+            this.overflowResolving = overflowHandling.get();
         } else if (highestTrackableValue.isPresent()) {
             recorder = new Recorder(highestTrackableValue.get(), numberOfSignificantValueDigits);
             this.highestTrackableValue = highestTrackableValue.get();
-            this.overflowHandlingStrategy = overflowHandling.get();
+            this.overflowResolving = overflowHandling.get();
         } else {
             recorder = new Recorder(numberOfSignificantValueDigits);
             this.highestTrackableValue = Long.MAX_VALUE;
-            this.overflowHandlingStrategy = null;
+            this.overflowResolving = null;
         }
         this.accumulator = accumulationStrategy.createAccumulator(recorder, wallClock);
 
@@ -65,11 +65,10 @@ public class HdrReservoir implements Reservoir {
     @Override
     public void update(long value) {
         if (value > highestTrackableValue) {
-            switch (overflowHandlingStrategy) {
+            switch (overflowResolving) {
                 case SKIP: break;
                 case PASS_THRU: accumulator.recordValue(value); break;
                 case REDUCE_TO_MAXIMUM: accumulator.recordValue(highestTrackableValue); break;
-                default: throw new IllegalStateException("42");
             }
         } else {
             accumulator.recordValue(value);
@@ -102,18 +101,12 @@ public class HdrReservoir implements Reservoir {
         return new Snapshot() {
             @Override
             public double getValue(double quantile) {
-                if (quantile <= predefinedQuantiles[0]) {
-                    return values[0];
-                }
-                if (quantile > predefinedQuantiles[predefinedQuantiles.length - 1]) {
-                    return max;
-                }
-                for (int i = 1; i < predefinedQuantiles.length; i++) {
+                for (int i = 0; i < predefinedQuantiles.length; i++) {
                     if (quantile <= predefinedQuantiles[i]) {
                         return values[i];
                     }
                 }
-                throw new IllegalStateException("42");
+                return max;
             }
 
             @Override
@@ -158,7 +151,7 @@ public class HdrReservoir implements Reservoir {
             public void dump(OutputStream output) {
                 try (PrintWriter p = new PrintWriter(new OutputStreamWriter(output, UTF_8))) {
                     for (double value : values) {
-                        p.printf("%d%n", value);
+                        p.printf("%f%n", value);
                     }
                 }
             }
@@ -167,7 +160,7 @@ public class HdrReservoir implements Reservoir {
             public String toString() {
                 StringBuilder distribution = new StringBuilder();
                 for(int i = 0; i < predefinedQuantiles.length; i++) {
-                    distribution.append(predefinedQuantiles[i] * 100).append("% - ").append(values[i]).append(";");
+                    distribution.append(predefinedQuantiles[i] * 100).append("%:").append(values[i]).append("; ");
                 }
                 return "SmartSnapshot{" +
                         "max=" + max +
@@ -242,11 +235,7 @@ public class HdrReservoir implements Reservoir {
             public String toString() {
                 ByteArrayOutputStream stream = new ByteArrayOutputStream();
                 PrintStream printStream;
-                try {
-                    printStream = new PrintStream(stream, true, Charset.defaultCharset().name());
-                } catch (UnsupportedEncodingException e) {
-                    throw new RuntimeException(e);
-                }
+                printStream = new PrintStream(stream, true);
                 histogram.outputPercentileDistribution(printStream, 1.0);
                 String distributionAsString = new String(stream.toByteArray());
                 return "FullSnapshot{" + distributionAsString + "}";

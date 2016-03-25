@@ -14,13 +14,13 @@ public class HdrBuilder {
 
     public static int DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS = 2;
     public static AccumulationStrategy DEFAULT_ACCUMULATION_STRATEGY = AccumulationStrategy.resetOnSnapshot();
-    public static double[] DEFAULT_PERCENTILES = new double[]{0.5, 0.75, 0.95, 0.98, 0.99, 0.999};
+    public static double[] DEFAULT_PERCENTILES = new double[]{0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999};
 
     private AccumulationStrategy accumulationStrategy;
     private int numberOfSignificantValueDigits;
     private Optional<Long> lowestDiscernibleValue;
     private Optional<Long> highestTrackableValue;
-    private Optional<OverflowHandlingStrategy> overflowHandling;
+    private Optional<OverflowResolving> overflowHandling;
     private Optional<Long> snapshotCachingDurationMillis;
     private Optional<double[]> predefinedPercentiles;
 
@@ -55,7 +55,7 @@ public class HdrBuilder {
         return this;
     }
 
-    public HdrBuilder withHighestTrackableValue(long highestTrackableValue, OverflowHandlingStrategy overflowHandling) {
+    public HdrBuilder withHighestTrackableValue(long highestTrackableValue, OverflowResolving overflowHandling) {
         if (highestTrackableValue < 2) {
             throw new IllegalArgumentException("highestTrackableValue must be >= 2");
         }
@@ -150,7 +150,7 @@ public class HdrBuilder {
                        Optional<double[]> predefinedPercentiles,
                        Optional<Long> lowestDiscernibleValue,
                        Optional<Long> highestTrackableValue,
-                       Optional<OverflowHandlingStrategy> overflowHandling,
+                       Optional<OverflowResolving> overflowHandling,
                        Optional<Long> snapshotCachingDurationMillis) {
         this.wallClock = wallClock;
         this.accumulationStrategy = accumulationStrategy;

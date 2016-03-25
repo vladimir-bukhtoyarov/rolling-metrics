@@ -12,7 +12,7 @@ import static org.junit.Assert.assertSame;
 public class HdrBuilderMetricRegistrationTest {
 
     private HdrBuilder builder = new HdrBuilder().withLowestDiscernibleValue(3).withLowestDiscernibleValue(1000)
-            .withHighestTrackableValue(3600000L, OverflowHandlingStrategy.REDUCE_TO_MAXIMUM)
+            .withHighestTrackableValue(3600000L, OverflowResolving.REDUCE_TO_MAXIMUM)
             .withPredefinedPercentiles(new double[] {0.9, 0.95, 0.99})
             .withSnapshotCachingDuration(Duration.ofMinutes(1));
 

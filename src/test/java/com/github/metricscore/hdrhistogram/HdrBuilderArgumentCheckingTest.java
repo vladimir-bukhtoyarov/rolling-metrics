@@ -25,6 +25,13 @@ public class HdrBuilderArgumentCheckingTest {
     }
 
     @Test
+    public void shouldAllowSignificantDigitsBetweenZeroAndFive() {
+        for (int digits = 0; digits < 6; digits++) {
+            new HdrBuilder().withSignificantDigits(digits);
+        }
+    }
+
+    @Test
     public void shouldNotAllowTooSmallSignificantDigitsLowestDiscernibleValue() {
         for (int value : new int[] {0, -1}) {
             try {
@@ -40,7 +47,7 @@ public class HdrBuilderArgumentCheckingTest {
     public void shouldNotAllowTooSmallHighestTrackableValue() {
         for (int value : new int[] {0, -1, 1}) {
             try {
-                new HdrBuilder().withHighestTrackableValue(value, OverflowHandlingStrategy.PASS_THRU);
+                new HdrBuilder().withHighestTrackableValue(value, OverflowResolving.PASS_THRU);
                 fail();
             } catch (IllegalArgumentException e) {
                 // ok
@@ -50,7 +57,7 @@ public class HdrBuilderArgumentCheckingTest {
 
     @Test(expected = IllegalStateException.class)
     public void shouldCheckThatHighestValueShouldBeTwoTimesGeaterThenLowest() {
-        new HdrBuilder().withLowestDiscernibleValue(10).withHighestTrackableValue(11, OverflowHandlingStrategy.PASS_THRU).buildReservoir();
+        new HdrBuilder().withLowestDiscernibleValue(10).withHighestTrackableValue(11, OverflowResolving.PASS_THRU).buildReservoir();
     }
 
     @Test(expected = IllegalStateException.class)
@@ -96,7 +103,7 @@ public class HdrBuilderArgumentCheckingTest {
     @Test
     public void shouldSuccessfullyBuild() {
         new HdrBuilder().withLowestDiscernibleValue(3).withLowestDiscernibleValue(1000)
-                .withHighestTrackableValue(3600000l, OverflowHandlingStrategy.REDUCE_TO_MAXIMUM)
+                .withHighestTrackableValue(3600000l, OverflowResolving.REDUCE_TO_MAXIMUM)
                 .withPredefinedPercentiles(new double[] {0.9, 0.95, 0.99})
                 .withSnapshotCachingDuration(Duration.ofMinutes(1))
                 .buildReservoir();
