@@ -6,4 +6,4 @@ This library is addressed for tightly integration between [Metrics Core](https:/
 [![Coverage Status](https://coveralls.io/repos/github/vladimir-bukhtoyarov/metrics-core-hdr/badge.svg?branch=master)](https://coveralls.io/github/vladimir-bukhtoyarov/metrics-core-hdr?branch=master)
 
 ## Project state
-Library is under development.
+Development and testing are done. Will be realised to bintray in few days after finalization of javadocs and wiki page.

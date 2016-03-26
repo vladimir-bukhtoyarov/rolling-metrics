@@ -30,6 +30,35 @@ import java.util.Optional;
 
 /**
  * The entry point of metrics-core-hdr library which can be used for creation and registration histograms, timers and reservoirs.
+ *
+ * This builder provides ability to configure:
+ * <ul>
+ * <li><b>numberOfSignificantValueDigits</b> The number of significant decimal digits to which the histogram will maintain value resolution and separation, see {@link #withSignificantDigits(int)}.</li>
+ * <li><b>lowestDiscernibleValue</b> The lowest value that can be discerned (distinguished from 0) by the histogram, see {@link #withLowestDiscernibleValue(long)}</li>
+ * <li><b>highestTrackableValue</b> The highest value to be tracked by the histogram, see {@link #withHighestTrackableValue(long, OverflowResolver)}</li>
+ * <li><b>predefinedPercentiles</b> If you already know list of percentiles which need to be stored in monitoring database,
+ * then you can specify it to optimize snapshot size, as result unnecessary garbage will be avoided, see {@link #withPredefinedPercentiles(double[])}</li>
+ * <li><b>Different strategies of reservoir resetting</b></li>HdrHistogram loses nothing it is good and bad in same time.
+ * It is good because you do not lose min and max,
+ * and it is bad because in real world use-cases you need to show measurements which actual to current moment of time.
+ * So  you need the way to kick out obsolete values for reservoir. Metrics-Core-Hdr provides out of the box three different solutions: {@link #resetResevoirOnSnapshot()},{@link #resetResevoirPeriodically(Duration)}, {@link #neverResetResevoir()}.
+ * <li><b>Snapshot caching duration</b> If you use any legacy monitoring system like Zabbix which pull measures from application instead of let application to store measures in monitoring database,
+ * then you need to think about snapshot atomicity. For example if you collect 95 percentile, 99 percentile and mean then it would be better to store in database all three measures from same snapshot
+ * otherwise you can show something unbelievable on the monitoring screens when in same time 95 percentile is greater then 99 percentile.
+ * There is no solution which guaranties 100% atomicity, but caching of snapshot will be enough for many cases.
+ * According to Zabbix Java Proxy solution will work in following way: imagine that Zabbix collects measures from your application each 60seconds and you configured reservoir to snapshotCachingDuration 5 seconds,
+ * in this case solution will work in following way:
+ * <ol>
+ *     <li>Zabbix send command to Zabbix Java Proxy with batch of metrics<li/>
+ *     <li>Zabbix Java Proxy opens JMX/RMI connection to the application. And take first metric, for example 96 percentile. Snapshot is taken and cached at this moment<li/>
+ *     <li>When Zabbix Java Proxy asks application for 99 percentile and mean application will answer by data cached in the snapshot, because 5 seconds did not elapsed since snapshot was created<li/>
+ *     <li>Zabbix Java Proxy closes JMX/RMI connection to the application.<li/>
+ *     <li>On the next iteration after one minute application will invalidate snapshot and take new because of snapshot TTL is elapsed.<li/>
+ * </ol>
+ * <br>see {@link #withSnapshotCachingDuration(Duration)}
+ * </li>
+ * </ul>
+ *
  * <p/>
  * <p>An example of usage:
  * <pre>
@@ -53,18 +82,8 @@ import java.util.Optional;
  *     </code>
  * </pre>
  * <p/>
- * This builder provides ability to configure:
- * <ul>
- * <li>numberOfSignificantValueDigits </li>
- * <li></li>
- * <li></li>
- * <li></li>
- * </ul>
  *
  * @see com.codahale.metrics.Histogram
- * @see com.codahale.metrics.Reservoir
- * @see com.codahale.metrics.Timer
- * @see com.codahale.metrics.MetricRegistry
  */
 public class HdrBuilder {
 
@@ -134,6 +153,11 @@ public class HdrBuilder {
         return this;
     }
 
+    /**
+     * @param lowestDiscernibleValue
+     *
+     * @return @return this builder instance
+     */
     public HdrBuilder withLowestDiscernibleValue(long lowestDiscernibleValue) {
         if (lowestDiscernibleValue < 1) {
             throw new IllegalArgumentException("lowestDiscernibleValue must be >= 1");
@@ -142,6 +166,13 @@ public class HdrBuilder {
         return this;
     }
 
+    /**
+     *
+     * @param highestTrackableValue
+     * @param overflowHandling
+     *
+     * @return @return this builder instance
+     */
     public HdrBuilder withHighestTrackableValue(long highestTrackableValue, OverflowResolver overflowHandling) {
         if (highestTrackableValue < 2) {
             throw new IllegalArgumentException("highestTrackableValue must be >= 2");
@@ -151,6 +182,12 @@ public class HdrBuilder {
         return this;
     }
 
+    /**
+     *
+     * @param duration
+     *
+     * @return @return this builder instance
+     */
     public HdrBuilder withSnapshotCachingDuration(Duration duration) {
         if (duration.isNegative()) {
             throw new IllegalArgumentException(duration + " is negative");
@@ -163,6 +200,12 @@ public class HdrBuilder {
         return this;
     }
 
+    /**
+     *
+     * @param predefinedPercentiles
+     *
+     * @return this builder instance
+     */
     public HdrBuilder withPredefinedPercentiles(double[] predefinedPercentiles) {
         predefinedPercentiles = Objects.requireNonNull(predefinedPercentiles, "predefinedPercentiles array should not be null");
         if (predefinedPercentiles.length == 0) {
@@ -181,6 +224,10 @@ public class HdrBuilder {
         return this;
     }
 
+    /**
+     *
+     * @return this builder instance
+     */
     public HdrBuilder withoutSnapshotOptimization() {
         this.predefinedPercentiles = Optional.empty();
         return this;
@@ -209,12 +256,25 @@ public class HdrBuilder {
         return new Timer(buildReservoir());
     }
 
+    /**
+     * Builds and registers timer in registry.
+     *
+     * @param registry
+     * @param name
+     *
+     * @return created and registered timer
+     */
     public Timer buildAndRegisterTimer(MetricRegistry registry, String name) {
         Timer timer = buildTimer();
         registry.register(name, timer);
         return timer;
     }
 
+    /**
+     * Creates full copy of this builder.
+     *
+     * @return copy of this builder
+     */
     public HdrBuilder clone() {
         return new HdrBuilder(wallClock, accumulationStrategy, numberOfSignificantValueDigits, predefinedPercentiles, lowestDiscernibleValue,
                 highestTrackableValue, overflowResolver, snapshotCachingDurationMillis);
