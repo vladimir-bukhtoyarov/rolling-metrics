@@ -32,7 +32,7 @@ public class HdrBuilder {
 
     public static int DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS = 2;
     public static AccumulationStrategy DEFAULT_ACCUMULATION_STRATEGY = ResetOnSnapshotAccumulationStrategy.INSTANCE;
-    public static double[] DEFAULT_PERCENTILES = new double[]{0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999};
+    public static double[] DEFAULT_PERCENTILES = new double[] {0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999};
 
     public HdrBuilder() {
         this(WallClock.INSTANCE);
@@ -61,13 +61,8 @@ public class HdrBuilder {
      *
      * @param resettingPeriod specifies how often need to reset reservoir
      */
-    public HdrBuilder resetPeriodically(Duration resettingPeriod) {
+    public HdrBuilder resetResevoirPeriodically(Duration resettingPeriod) {
         accumulationStrategy = new ResetPeriodicallyAccumulationStrategy(resettingPeriod);
-        return this;
-    }
-
-    public HdrBuilder withAccumulationStrategy(AccumulationStrategy accumulationStrategy) {
-        this.accumulationStrategy = Objects.requireNonNull(accumulationStrategy, "accumulationStrategy should not be null");
         return this;
     }
 

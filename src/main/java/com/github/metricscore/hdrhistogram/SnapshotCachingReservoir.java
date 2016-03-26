@@ -42,7 +42,7 @@ class SnapshotCachingReservoir implements Reservoir {
 
     @Override
     public int size() {
-        return target.size();
+        throw new UnsupportedOperationException("You should not use this method https://github.com/dropwizard/metrics/issues/874");
     }
 
     @Override
