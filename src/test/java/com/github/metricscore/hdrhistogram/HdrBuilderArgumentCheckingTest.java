@@ -26,11 +26,6 @@ import static org.junit.Assert.fail;
 
 public class HdrBuilderArgumentCheckingTest {
 
-    @Test(expected = NullPointerException.class)
-    public void shouldPreventToSetNullAccumulationStrategy() {
-        new HdrBuilder().withAccumulationStrategy(null);
-    }
-
     @Test(expected = IllegalArgumentException.class)
     public void shouldNotAllowNegativeSignificantDigits() {
         new HdrBuilder().withSignificantDigits(-1);

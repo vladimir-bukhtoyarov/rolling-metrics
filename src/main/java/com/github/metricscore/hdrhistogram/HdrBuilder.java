@@ -28,6 +28,44 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 
+/**
+ * The entry point of metrics-core-hdr library which can be used for creation and registration histograms, timers and reservoirs.
+ * <p/>
+ * <p>An example of usage:
+ * <pre>
+ *     <code>
+ *
+ *         HdrBuilder builder = HdrBuilder();
+ *
+ *         // build and register timer
+ *         Timer timer1 = builder.buildAndRegisterTimer(registry, "my-timer-1");
+ *
+ *         // build and register timer in another way
+ *         Timer timer2 = builder.buildTimer();
+ *         registry.register(timer2, "my-timer-2");
+ *
+ *         // build and register histogram
+ *         Histogram histogram1 = builder.buildAndRegisterHistogram(registry, "my-histogram-1");
+ *
+ *         // build and register histogram in another way
+ *         Histogram histogram2 = builder.buildHistogram();
+ *         registry.register(histogram2, "my-histogram-2");
+ *     </code>
+ * </pre>
+ * <p/>
+ * This builder provides ability to configure:
+ * <ul>
+ * <li>numberOfSignificantValueDigits </li>
+ * <li></li>
+ * <li></li>
+ * <li></li>
+ * </ul>
+ *
+ * @see com.codahale.metrics.Histogram
+ * @see com.codahale.metrics.Reservoir
+ * @see com.codahale.metrics.Timer
+ * @see com.codahale.metrics.MetricRegistry
+ */
 public class HdrBuilder {
 
     public static int DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS = 2;
@@ -40,8 +78,13 @@ public class HdrBuilder {
 
     /**
      * Reservoir configured with this strategy will be cleared each time when snapshot taken.
-     *
+     * <p/>
      * <p>This is default strategy for {@link HdrBuilder}
+     *
+     * @see #resetResevoirPeriodically(Duration)
+     * @see #neverResetResevoir()
+     *
+     * @return this builder instance
      */
     public HdrBuilder resetResevoirOnSnapshot() {
         accumulationStrategy = ResetOnSnapshotAccumulationStrategy.INSTANCE;
@@ -50,6 +93,12 @@ public class HdrBuilder {
 
     /**
      * Reservoir configured with this strategy will store all measures since the reservoir was created.
+     *
+     * @see #resetResevoirPeriodically(Duration)
+     * @see #resetResevoirOnSnapshot()
+     * @see UniformAccumulationStrategy
+     *
+     * @return this builder instance
      */
     public HdrBuilder neverResetResevoir() {
         accumulationStrategy = UniformAccumulationStrategy.INSTANCE;
@@ -60,12 +109,23 @@ public class HdrBuilder {
      * Reservoir configured with this strategy will be cleared after each {@code resettingPeriod}.
      *
      * @param resettingPeriod specifies how often need to reset reservoir
+     * @see #neverResetResevoir()
+     * @see #resetResevoirOnSnapshot()
+     *
+     * @return this builder instance
      */
     public HdrBuilder resetResevoirPeriodically(Duration resettingPeriod) {
         accumulationStrategy = new ResetPeriodicallyAccumulationStrategy(resettingPeriod);
         return this;
     }
 
+    /**
+     * @param numberOfSignificantValueDigits The number of significant decimal digits to which the histogram will
+     *                                       maintain value resolution and separation. Must be a non-negative
+     *                                       integer between 0 and 5.
+     *
+     * @return this builder instance
+     */
     public HdrBuilder withSignificantDigits(int numberOfSignificantValueDigits) {
         if ((numberOfSignificantValueDigits < 0) || (numberOfSignificantValueDigits > 5)) {
             throw new IllegalArgumentException("numberOfSignificantValueDigits must be between 0 and 5");

@@ -19,6 +19,15 @@ package com.github.metricscore.hdrhistogram;
 
 import org.HdrHistogram.Recorder;
 
+/**
+ * A responsible to construct {@link Accumulator}
+ *
+ * This class is not the part of metrics-core-hdr public API and should not be used by user directly.
+ *
+ * @see ResetOnSnapshotAccumulationStrategy
+ * @see ResetPeriodicallyAccumulationStrategy
+ * @see UniformAccumulationStrategy
+ */
 interface AccumulationStrategy {
 
     Accumulator createAccumulator(Recorder recorder, WallClock wallClock);

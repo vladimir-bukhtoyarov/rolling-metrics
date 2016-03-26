@@ -33,6 +33,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 /**
  * A {@link com.codahale.metrics.Reservoir} implementation backed by {@link org.HdrHistogram.Recorder}
  *
+ * This class is not the part of metrics-core-hdr public API and should not be used by user directly.
+ *
  * @see HdrBuilder
  */
 class HdrReservoir implements Reservoir {

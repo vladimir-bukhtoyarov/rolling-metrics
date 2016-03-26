@@ -25,6 +25,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
+
 class ResetOnSnapshotAccumulationStrategy implements AccumulationStrategy {
 
     public static AccumulationStrategy INSTANCE = new ResetOnSnapshotAccumulationStrategy();
