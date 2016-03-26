@@ -28,7 +28,7 @@ public class ResetOnSnapshotAccumulationStrategyTest {
 
     @Test
     public void shouldCacheSnapshot() {
-        Reservoir reservoir = new HdrBuilder().withAccumulationStrategy(AccumulationStrategy.resetOnSnapshot()).buildReservoir();
+        Reservoir reservoir = new HdrBuilder().resetResevoirOnSnapshot().buildReservoir();
 
         reservoir.update(10);
         reservoir.update(20);

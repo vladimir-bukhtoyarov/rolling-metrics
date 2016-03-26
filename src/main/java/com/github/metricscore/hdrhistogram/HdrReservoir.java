@@ -22,7 +22,6 @@ import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.HistogramIterationValue;
-import org.HdrHistogram.Recorder;
 
 import java.io.*;
 import java.util.Arrays;
@@ -33,39 +32,16 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * A {@link com.codahale.metrics.Reservoir} implementation backed by {@link org.HdrHistogram.Recorder}
+ *
+ * @see HdrBuilder
  */
-public class HdrReservoir implements Reservoir {
+class HdrReservoir implements Reservoir {
 
-    private final long highestTrackableValue;
-    private final OverflowResolving overflowResolving;
     private final Accumulator accumulator;
     private final Function<Histogram, Snapshot> snapshotTaker;
 
-    HdrReservoir(
-             WallClock wallClock,
-             AccumulationStrategy accumulationStrategy,
-             int numberOfSignificantValueDigits,
-             Optional<Long> lowestDiscernibleValue,
-             Optional<Long> highestTrackableValue,
-             Optional<OverflowResolving> overflowHandling,
-             Optional<double[]> predefinedPercentiles
-    ) {
-        Recorder recorder;
-        if (highestTrackableValue.isPresent() && lowestDiscernibleValue.isPresent()) {
-            recorder = new Recorder(lowestDiscernibleValue.get(), highestTrackableValue.get(), numberOfSignificantValueDigits);
-            this.highestTrackableValue = highestTrackableValue.get();
-            this.overflowResolving = overflowHandling.get();
-        } else if (highestTrackableValue.isPresent()) {
-            recorder = new Recorder(highestTrackableValue.get(), numberOfSignificantValueDigits);
-            this.highestTrackableValue = highestTrackableValue.get();
-            this.overflowResolving = overflowHandling.get();
-        } else {
-            recorder = new Recorder(numberOfSignificantValueDigits);
-            this.highestTrackableValue = Long.MAX_VALUE;
-            this.overflowResolving = null;
-        }
-        this.accumulator = accumulationStrategy.createAccumulator(recorder, wallClock);
-
+    HdrReservoir(Accumulator accumulator, Optional<double[]> predefinedPercentiles) {
+        this.accumulator = accumulator;
         if (predefinedPercentiles.isPresent()) {
             double[] percentiles = predefinedPercentiles.get();
             snapshotTaker = histogram -> takeSmartSnapshot(percentiles, histogram);
@@ -81,15 +57,7 @@ public class HdrReservoir implements Reservoir {
 
     @Override
     public void update(long value) {
-        if (value > highestTrackableValue) {
-            switch (overflowResolving) {
-                case SKIP: break;
-                case PASS_THRU: accumulator.recordValue(value); break;
-                case REDUCE_TO_MAXIMUM: accumulator.recordValue(highestTrackableValue); break;
-            }
-        } else {
-            accumulator.recordValue(value);
-        }
+        accumulator.recordValue(value);
     }
 
     @Override

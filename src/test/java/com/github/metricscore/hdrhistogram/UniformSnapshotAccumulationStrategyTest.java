@@ -28,7 +28,7 @@ public class UniformSnapshotAccumulationStrategyTest {
 
     @Test
     public void shouldCacheSnapshot() {
-        Reservoir reservoir = new HdrBuilder().withAccumulationStrategy(AccumulationStrategy.uniform()).buildReservoir();
+        Reservoir reservoir = new HdrBuilder().neverResetResevoir().buildReservoir();
 
         reservoir.update(10);
         reservoir.update(20);

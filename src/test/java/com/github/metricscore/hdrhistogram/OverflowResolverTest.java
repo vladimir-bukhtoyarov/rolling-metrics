@@ -19,16 +19,15 @@ package com.github.metricscore.hdrhistogram;
 
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
-import junit.framework.Assert;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
 
-public class OverflowResolvingTest {
+public class OverflowResolverTest {
 
     @Test
     public void testSkipBigValues() {
-        Reservoir reservoir = new HdrBuilder().withHighestTrackableValue(100, OverflowResolving.SKIP).buildReservoir();
+        Reservoir reservoir = new HdrBuilder().withHighestTrackableValue(100, OverflowResolver.SKIP).buildReservoir();
 
         reservoir.update(101);
         Snapshot snapshot = reservoir.getSnapshot();
@@ -45,7 +44,7 @@ public class OverflowResolvingTest {
 
     @Test
     public void testReduceBigValuesToMax() {
-        Reservoir reservoir = new HdrBuilder().withHighestTrackableValue(100, OverflowResolving.REDUCE_TO_MAXIMUM).buildReservoir();
+        Reservoir reservoir = new HdrBuilder().withHighestTrackableValue(100, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE).buildReservoir();
 
         reservoir.update(101);
         Snapshot snapshot = reservoir.getSnapshot();
@@ -62,16 +61,26 @@ public class OverflowResolvingTest {
 
     @Test(expected = ArrayIndexOutOfBoundsException.class)
     public void testPassThruBigValues() {
-        Reservoir reservoir = new HdrBuilder().withHighestTrackableValue(100, OverflowResolving.PASS_THRU).buildReservoir();
+        Reservoir reservoir = new HdrBuilder().withHighestTrackableValue(100, OverflowResolver.PASS_THRU).buildReservoir();
         reservoir.update(100000);
     }
 
     @Test
     public void testPassThruBigValues2() {
-        Reservoir reservoir = new HdrBuilder().withHighestTrackableValue(100, OverflowResolving.PASS_THRU).buildReservoir();
+        Reservoir reservoir = new HdrBuilder()
+                .withHighestTrackableValue(100, OverflowResolver.PASS_THRU)
+                .buildReservoir();
         reservoir.update(101);
         Snapshot snapshot = reservoir.getSnapshot();
         assertEquals(101, snapshot.getMax());
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void sizeMethodShouldBeUndefined() {
+        Reservoir reservoir = new HdrBuilder()
+                .withHighestTrackableValue(100, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
+                .buildReservoir();
+        reservoir.size();
     }
 
 }

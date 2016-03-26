@@ -57,7 +57,7 @@ public class PrintingTest {
     @Test
     public void testBuilderPrinting() {
         HdrBuilder builder = new HdrBuilder()
-                .withHighestTrackableValue(2, OverflowResolving.REDUCE_TO_MAXIMUM)
+                .withHighestTrackableValue(2, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .withLowestDiscernibleValue(1);
         System.out.println(builder.toString());
         System.out.println(builder.withSnapshotCachingDuration(Duration.ofDays(1)).toString());

@@ -35,12 +35,12 @@ public class ResetPeriodicallyAccumulationStrategyTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void negativeResetPeriodShouldNotAllowed() {
-        AccumulationStrategy.resetPeriodically(Duration.ofMinutes(-5));
+        new HdrBuilder().resetPeriodically(Duration.ofMinutes(-5));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void zeroResetPeriodShouldNotAllowed() {
-        AccumulationStrategy.resetPeriodically(Duration.ZERO);
+        new HdrBuilder().resetPeriodically(Duration.ZERO);
     }
 
     @Test
@@ -48,7 +48,7 @@ public class ResetPeriodicallyAccumulationStrategyTest {
         AtomicLong time = new AtomicLong(System.currentTimeMillis());
         WallClock wallClock = WallClock.mock(time);
         Reservoir reservoir = new HdrBuilder(wallClock)
-                .withAccumulationStrategy(AccumulationStrategy.resetPeriodically(Duration.ofMillis(1000)))
+                .resetPeriodically(Duration.ofMillis(1000))
                 .buildReservoir();
 
         reservoir.update(10);
@@ -89,7 +89,7 @@ public class ResetPeriodicallyAccumulationStrategyTest {
     @Test(timeout = 5000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
         Reservoir reservoir = new HdrBuilder()
-                .withAccumulationStrategy(AccumulationStrategy.resetPeriodically(Duration.ofMillis(1)))
+                .resetPeriodically(Duration.ofMillis(1))
                 .buildReservoir();
 
         AtomicBoolean stopFlag = new AtomicBoolean(false);

@@ -21,7 +21,12 @@ import com.codahale.metrics.Snapshot;
 import org.HdrHistogram.Histogram;
 import java.util.function.Function;
 
-public interface Accumulator {
+/**
+ * A responsible to updating and resetting histograms {@link org.HdrHistogram.Recorder}
+ *
+ * This class is not the part of metrics-core-hdr public API and should not be used by user directly.
+ */
+interface Accumulator {
 
     void recordValue(long value);
 
