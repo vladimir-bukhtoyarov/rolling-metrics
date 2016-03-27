@@ -6,6 +6,7 @@ Do not waste your time to figure out who is better in the fight of metrics-core 
 ## Build status
 [![Build Status](https://travis-ci.org/vladimir-bukhtoyarov/metrics-core-hdr.svg?branch=master)](https://travis-ci.org/vladimir-bukhtoyarov/metrics-core-hdr)
 [![Coverage Status](https://coveralls.io/repos/github/vladimir-bukhtoyarov/metrics-core-hdr/badge.svg?branch=master)](https://coveralls.io/github/vladimir-bukhtoyarov/metrics-core-hdr?branch=master)
+[![Hex.pm](https://img.shields.io/hexpm/l/plug.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Download](https://api.bintray.com/packages/vladimir-bukhtoyarov/maven/metrics-core-hdr/images/download.svg) ](https://bintray.com/vladimir-bukhtoyarov/maven/metrics-core-hdr/_latestVersion)
 
 ### Get Metrics-Core-HDR library
@@ -44,25 +45,44 @@ Then include Metrics-Core-HDR as dependency to your `pom.xml`
 </dependency>
 ```
 
-### Basic usage
+### Usage
 
-#### Simple example
+#### Example of timer construction
 
 ```java
   HdrBuilder builder = HdrBuilder();
 
-  // build and register timer
+  // build and register timer in one line of code (prefer this style)
   Timer timer1 = builder.buildAndRegisterTimer(registry, "my-timer-1");
 
-  // build and register timer in another way
+  // build and register timer in two lines of code
   Timer timer2 = builder.buildTimer();
   registry.register(timer2, "my-timer-2");
+  
+  // build and register timer in three lines of code
+  Reservoir reservoir = builder.buildReservoir();
+  Timer timer3 = new Timer(reservoir);
+  registry.register(timer3, "my-timer-3");
+```
 
-  // build and register histogram
+#### Example of histogram construction
+```java
+  HdrBuilder builder = HdrBuilder();
+
+  // build and register histogram in one line of code (prefer this style)
   Histogram histogram1 = builder.buildAndRegisterHistogram(registry, "my-histogram-1");
 
-  // build and register histogram in another way
+  // build and register histogram in two lines of code
   Histogram histogram2 = builder.buildHistogram();
   registry.register(histogram2, "my-histogram-2");
-
+  
+  // build and register histogram in three lines of code
+  Reservoir reservoir = builder.buildReservoir();
+  Histogram histogram3 = new Histogram(reservoir);
+  registry.register(histogram3, "my-timer-3");
 ```
+
+License
+-------
+Copyright 2016 Vladimir Bukhtoyarov
+Licensed under the Apache Software License, Version 2.0: <http://www.apache.org/licenses/LICENSE-2.0>.
