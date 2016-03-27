@@ -33,28 +33,33 @@ import java.util.Optional;
  *
  * <p>The builder provides ability to configure:</p>
  * <ul>
- * <li><b>Different strategies of reservoir resetting</b></li>HdrHistogram loses nothing it is good and bad in same time.
+ * <li><b>Different strategies of reservoir resetting</b>HdrHistogram loses nothing it is good and bad in same time.
  * It is good because you do not lose min and max,
  * and it is bad because in real world use-cases you need to show measurements which actual to current moment of time.
  * So  you need the way to kick out obsolete values for reservoir.
  * Metrics-Core-Hdr provides out of the box three different solutions:
  * <ol>
- *     <li>{@link #resetResevoirOnSnapshot()}</li>
- *     <li>{@link #resetResevoirPeriodically(Duration)}</li>
- *     <li>{@link #neverResetResevoir()}</li>
+ * <li>{@link #resetResevoirOnSnapshot()}</li>
+ * <li>{@link #resetResevoirPeriodically(Duration)}</li>
+ * <li>{@link #neverResetResevoir()}</li>
  * </ol>
- * <li><b>Snapshot caching duration</b> see {@link #withSnapshotCachingDuration(Duration)}. If you use any legacy monitoring system like Zabbix which pull(via non-atomic transport like RMI/JMX) measures from application instead of let application to store measures in monitoring database,
- * then you need to think about snapshot atomicity. For example if you collect 95 percentile, 99 percentile and mean then it would be better to store in database all three measures from same snapshot
- * otherwise you can show something unbelievable on the monitoring screens when in same moment of time 95 percentile is greater then 99 percentile.
- * There is no solution which guaranties 100% atomicity, but caching of snapshot will be enough for many cases.
- * According to Zabbix Java Proxy solution will work in following way: imagine that Zabbix collects measures from your application each 60 seconds and you configured reservoir to snapshotCachingDuration 5 seconds,
+ * </li>
+ * <li><b>Snapshot caching duration</b> see {@link #withSnapshotCachingDuration(Duration)}:
+ * <p>
+ * Snapshot caching can be useful when you use any legacy monitoring system like Zabbix which pull(via non-atomic transport like RMI/JMX) measures from application instead of let application to push measures to monitoring database.
+ * Problem with this type of monitoring systems can be illustrated with following example: Imagine that you collect "95 percentile", "99 percentile" and "mean" from th histogram.
+ * If these three measures will be stored in database from different snapshots then you can show something unbelievable on the monitoring screens when in same moment of time "95 percentile" is greater then "99 percentile",
+ * because RMI/JMX can not support reading multiple in single query.
+ *
+ * <p>There is no solution which solves 100% problems of pulling model, but good news are the caching of snapshot will be enough for many cases.
+ * According to Zabbix Java Proxy snapshot caching will work in following way: imagine that Zabbix collects measures from your application each 60 seconds and you configured reservoir to snapshotCachingDuration 5 seconds,
  * in this case solution will work in following way:
  * <ol>
- *     <li>Zabbix send command to Zabbix Java Proxy with batch of metrics</li>
- *     <li>Zabbix Java Proxy opens JMX/RMI connection to the application. And take first metric, for example 96 percentile. Snapshot is taken and cached at this moment</li>
- *     <li>When Zabbix Java Proxy asks application for 99 percentile and mean application will answer by data cached in the snapshot, because 5 seconds did not elapsed since snapshot was created</li>
- *     <li>Zabbix Java Proxy closes JMX/RMI connection to the application.</li>
- *     <li>On the next iteration after one minute application will invalidate snapshot and take new because of snapshot TTL is elapsed.</li>
+ * <li>Zabbix send command to Zabbix Java Proxy with batch of metrics</li>
+ * <li>Zabbix Java Proxy opens JMX/RMI connection to the application. And take first metric, for example 96 percentile. Snapshot is taken and cached at this moment</li>
+ * <li>When Zabbix Java Proxy asks application for 99 percentile and mean application will answer by data cached in the snapshot, because 5 seconds did not elapsed since snapshot was created</li>
+ * <li>Zabbix Java Proxy closes JMX/RMI connection to the application.</li>
+ * <li>After one minute on the next iteration of Zabbix poll cycle the application will invalidate snapshot and take new because of snapshot TTL is elapsed.</li>
  * </ol>
  * </li>
  * <li><b>numberOfSignificantValueDigits</b> The number of significant decimal digits to which the histogram will maintain value resolution and separation, see {@link #withSignificantDigits(int)}.</li>
@@ -89,7 +94,7 @@ import java.util.Optional;
  *         HdrBuilder builder = new HdrBuilder().withSignificantDigits(3);
  *         System.out.println(builder.getEstimatedFootprintInBytes());
  * </code>
- * <pre/>
+ * </pre>
  *
  * @see org.HdrHistogram.Histogram
  */
@@ -105,13 +110,12 @@ public class HdrBuilder {
 
     /**
      * Reservoir configured with this strategy will be cleared each time when snapshot taken.
-     * <p/>
+     *
      * <p>This is default strategy for {@link HdrBuilder}
      *
+     * @return this builder instance
      * @see #resetResevoirPeriodically(Duration)
      * @see #neverResetResevoir()
-     *
-     * @return this builder instance
      */
     public HdrBuilder resetResevoirOnSnapshot() {
         accumulationStrategy = ResetOnSnapshotAccumulationStrategy.INSTANCE;
@@ -121,11 +125,10 @@ public class HdrBuilder {
     /**
      * Reservoir configured with this strategy will store all measures since the reservoir was created.
      *
+     * @return this builder instance
      * @see #resetResevoirPeriodically(Duration)
      * @see #resetResevoirOnSnapshot()
      * @see UniformAccumulationStrategy
-     *
-     * @return this builder instance
      */
     public HdrBuilder neverResetResevoir() {
         accumulationStrategy = UniformAccumulationStrategy.INSTANCE;
@@ -136,10 +139,9 @@ public class HdrBuilder {
      * Reservoir configured with this strategy will be cleared after each {@code resettingPeriod}.
      *
      * @param resettingPeriod specifies how often need to reset reservoir
+     * @return this builder instance
      * @see #neverResetResevoir()
      * @see #resetResevoirOnSnapshot()
-     *
-     * @return this builder instance
      */
     public HdrBuilder resetResevoirPeriodically(Duration resettingPeriod) {
         accumulationStrategy = new ResetPeriodicallyAccumulationStrategy(resettingPeriod);
@@ -147,11 +149,14 @@ public class HdrBuilder {
     }
 
     /**
-     * @param numberOfSignificantValueDigits The number of significant decimal digits to which the histogram will
-     *                                       maintain value resolution and separation. Must be a non-negative
-     *                                       integer between 0 and 5.
+     * Configures the number of significant decimal digits to which the histogram will maintain value resolution and separation.
+     * <p>
+     * Pay attention that numberOfSignificantValueDigits is major setting which affects the memory footprint, higher value will lead to higher memory consumption,
+     * use {@link #getEstimatedFootprintInBytes()} to be sure that Reservoir with provided settings does not consume too much memory.
      *
+     * @param numberOfSignificantValueDigits The number of significant decimal digits. Must be a non-negative integer between 0 and 5.
      * @return this builder instance
+     * @see org.HdrHistogram.AbstractHistogram#AbstractHistogram(int)
      */
     public HdrBuilder withSignificantDigits(int numberOfSignificantValueDigits) {
         if ((numberOfSignificantValueDigits < 0) || (numberOfSignificantValueDigits > 5)) {
@@ -162,9 +167,19 @@ public class HdrBuilder {
     }
 
     /**
-     * @param lowestDiscernibleValue
+     * Configures the lowest value that can be discerned. Providing a lowestDiscernibleValue is useful is situations where the units used
+     * for the histogram's values are much smaller that the minimal accuracy required. E.g. when tracking
+     * time values stated in nanosecond units, where the minimal accuracy required is a microsecond, the
+     * proper value for lowestDiscernibleValue would be 1000.
+     * <p>
+     * If you configured lowestDiscernibleValue then highestTrackableValue must be configured via {@link #withHighestTrackableValue(long, OverflowResolver)}
+     * otherwise IllegalStateException will be thrown during reservoir construction.
      *
-     * @return @return this builder instance
+     * @param lowestDiscernibleValue The lowest value that can be discerned (distinguished from 0) by the histogram.
+     *                               Must be a positive integer that is {@literal >=} 1. May be internally rounded
+     *                               down to nearest power of 2.
+     * @return this builder instance
+     * @see org.HdrHistogram.AbstractHistogram#AbstractHistogram(long, long, int)
      */
     public HdrBuilder withLowestDiscernibleValue(long lowestDiscernibleValue) {
         if (lowestDiscernibleValue < 1) {
@@ -175,26 +190,42 @@ public class HdrBuilder {
     }
 
     /**
+     * Configures the highest value to be tracked by the histogram.
      *
-     * @param highestTrackableValue
-     * @param overflowHandling
-     *
-     * @return @return this builder instance
+     * @param highestTrackableValue highest value to be tracked by the histogram. Must be a positive integer that is {@literal >=} (2 * lowestDiscernibleValue)
+     * @param overflowResolver specifies behavior which should be applied when writing to reservoir value which greater than highestTrackableValue
+     * @return this builder instance
      */
-    public HdrBuilder withHighestTrackableValue(long highestTrackableValue, OverflowResolver overflowHandling) {
+    public HdrBuilder withHighestTrackableValue(long highestTrackableValue, OverflowResolver overflowResolver) {
         if (highestTrackableValue < 2) {
             throw new IllegalArgumentException("highestTrackableValue must be >= 2");
         }
         this.highestTrackableValue = Optional.of(highestTrackableValue);
-        this.overflowResolver = Optional.of(overflowHandling);
+        this.overflowResolver = Optional.of(overflowResolver);
         return this;
     }
 
     /**
+     * Configures the period for which taken snapshot will be cached.
+     * <p>
+     * Snapshot caching can be useful when you use any legacy monitoring system like Zabbix which pull(via non-atomic transport like RMI/JMX) measures from application instead of let application to push measures to monitoring database.
+     * Problem with this type of monitoring systems can be illustrated with following example: Imagine that you collect "95 percentile", "99 percentile" and "mean" from th histogram.
+     * If these three measures will be stored in database from different snapshots then you can show something unbelievable on the monitoring screens when in same moment of time "95 percentile" is greater then "99 percentile",
+     * because RMI/JMX can not support reading multiple in single query.
      *
-     * @param duration
+     * <p>There is no solution which solves 100% problems of pulling model, but good news are the caching of snapshot will be enough for many cases.
+     * According to Zabbix Java Proxy snapshot caching will work in following way: imagine that Zabbix collects measures from your application each 60 seconds and you configured reservoir to snapshotCachingDuration 5 seconds,
+     * in this case solution will work in following way:
+     * <ol>
+     * <li>Zabbix send command to Zabbix Java Proxy with batch of metrics</li>
+     * <li>Zabbix Java Proxy opens JMX/RMI connection to the application. And take first metric, for example 96 percentile. Snapshot is taken and cached at this moment</li>
+     * <li>When Zabbix Java Proxy asks application for 99 percentile and mean application will answer by data cached in the snapshot, because 5 seconds did not elapsed since snapshot was created</li>
+     * <li>Zabbix Java Proxy closes JMX/RMI connection to the application.</li>
+     * <li>After one minute on the next iteration of Zabbix poll cycle the application will invalidate snapshot and take new because of snapshot TTL is elapsed.</li>
+     * </ol>
      *
-     * @return @return this builder instance
+     * @param duration the period for which taken snapshot will be cached, should be a positive duration.
+     * @return this builder instance
      */
     public HdrBuilder withSnapshotCachingDuration(Duration duration) {
         if (duration.isNegative()) {
@@ -209,10 +240,17 @@ public class HdrBuilder {
     }
 
     /**
+     * Configures list of percentiles which you plan to store in monitoring database.
+     * <p>
+     * This method is useful when you already know list of percentiles which need to be stored in monitoring database,
+     * then you can specify it to optimize snapshot size, as result unnecessary garbage will be avoided, memory in spashot will allocated only for percentiles which you configure.
      *
-     * @param predefinedPercentiles
+     * <p> Moreover by default builder already configured with default list of percentiles {@link #DEFAULT_PERCENTILES} which tightly compatible with {@link com.codahale.metrics.JmxReporter},
+     * the deault percentiles are <code>double[] {0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999}</code>
      *
+     * @param predefinedPercentiles list of percentiles which you plan to store in monitoring database, should be not empty array of doubles between {@literal 0..1}
      * @return this builder instance
+     * @see #withoutSnapshotOptimization()
      */
     public HdrBuilder withPredefinedPercentiles(double[] predefinedPercentiles) {
         predefinedPercentiles = Objects.requireNonNull(predefinedPercentiles, "predefinedPercentiles array should not be null");
@@ -233,6 +271,10 @@ public class HdrBuilder {
     }
 
     /**
+     * Discards snapshot memory footprint optimization. Use this method when you do not know concrete percentiles which you need.
+     * Pay attention that when you discard snapshot optimization then garbage required for take one snapshot will approximately equals to histogram size.
+     * <p>
+     * This method zeroes predefinedPercentiles configured by default {@link #DEFAULT_PERCENTILES} or configured via {@link #withPredefinedPercentiles(double[])}.
      *
      * @return this builder instance
      */
@@ -241,40 +283,58 @@ public class HdrBuilder {
         return this;
     }
 
+    /**
+     * Builds reservoir which can be useful for building monitoring primitives with higher level of abstraction.
+     *
+     * @return an instance of {@link com.codahale.metrics.Reservoir}
+     */
     public Reservoir buildReservoir() {
         Reservoir reservoir = buildHdrReservoir();
         reservoir = wrapAroundByDecorators(reservoir);
         return reservoir;
     }
 
-    private HdrReservoir buildHdrReservoir() {
-        validateParameters();
-        Recorder recorder = buildRecorder();
-        Accumulator accumulator = accumulationStrategy.createAccumulator(recorder, wallClock);
-        return new HdrReservoir(accumulator, predefinedPercentiles);
-    }
-
+    /**
+     * Builds histogram.
+     *
+     * @return an instance of {@link com.codahale.metrics.Histogram}
+     * @see #buildAndRegisterHistogram(MetricRegistry, String)
+     */
     public Histogram buildHistogram() {
         return new Histogram(buildReservoir());
     }
 
+    /**
+     * Builds and registers histogram.
+     *
+     * @param registry metric registry in which constructed histogram will be registered
+     * @param name the name under with constructed histogram will be registered in the {@code registry}
+     * @return an instance of {@link com.codahale.metrics.Histogram}
+     * @see #buildHistogram()
+     */
     public Histogram buildAndRegisterHistogram(MetricRegistry registry, String name) {
         Histogram histogram = buildHistogram();
         registry.register(name, histogram);
         return histogram;
     }
 
+    /**
+     * Builds timer.
+     *
+     * @return an instance of {@link com.codahale.metrics.Timer}
+     * @see #buildAndRegisterTimer(MetricRegistry, String)
+     */
     public Timer buildTimer() {
         return new Timer(buildReservoir());
     }
 
     /**
-     * Builds and registers timer in registry.
+     * Builds and registers timer.
      *
-     * @param registry
-     * @param name
-     *
-     * @return created and registered timer
+     * @param registry metric registry in which constructed histogram will be registered
+     * @param name the name under with constructed timer will be registered in the {@code registry}
+     * @return an instance of {@link com.codahale.metrics.Timer}
+     * @see #buildTimer()
      */
     public Timer buildAndRegisterTimer(MetricRegistry registry, String name) {
         Timer timer = buildTimer();
@@ -346,6 +406,13 @@ public class HdrBuilder {
         this.overflowResolver = overflowResolver;
         this.snapshotCachingDurationMillis = snapshotCachingDurationMillis;
         this.predefinedPercentiles = predefinedPercentiles;
+    }
+
+    private HdrReservoir buildHdrReservoir() {
+        validateParameters();
+        Recorder recorder = buildRecorder();
+        Accumulator accumulator = accumulationStrategy.createAccumulator(recorder, wallClock);
+        return new HdrReservoir(accumulator, predefinedPercentiles);
     }
 
     private void validateParameters() {
