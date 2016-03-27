@@ -89,6 +89,11 @@ class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
             }
         }
 
+        @Override
+        public int getEstimatedFootprintInBytes() {
+            return intervalHistogram.getEstimatedFootprintInBytes() * 3;
+        }
+
         private void resetIfNeed() {
             long nextResetTimeMillis = nextResetTimeMillisRef.get();
             if (nextResetTimeMillis != RESETTING_IN_PROGRESS_HAZARD && wallClock.currentTimeMillis() >= nextResetTimeMillis) {

@@ -70,6 +70,11 @@ class ResetOnSnapshotAccumulationStrategy implements AccumulationStrategy {
                 lock.unlock();
             }
         }
+
+        @Override
+        public int getEstimatedFootprintInBytes() {
+            return intervalHistogram.getEstimatedFootprintInBytes() * 2;
+        }
     }
 
 }

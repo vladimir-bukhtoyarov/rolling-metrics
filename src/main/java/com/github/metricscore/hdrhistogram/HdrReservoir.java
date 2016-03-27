@@ -67,6 +67,15 @@ class HdrReservoir implements Reservoir {
         return accumulator.getSnapshot(snapshotTaker);
     }
 
+    /**
+     * Provide a (conservatively high) estimate of the Reservoir's total footprint in bytes
+     *
+     * @return a (conservatively high) estimate of the Reservoir's total footprint in bytes
+     */
+    public int getEstimatedFootprintInBytes() {
+        return accumulator.getEstimatedFootprintInBytes();
+    }
+
     private static Snapshot takeSmartSnapshot(final double[] predefinedQuantiles, Histogram histogram) {
         final long max = histogram.getMaxValue();
         final long min = histogram.getMinValue();

@@ -32,4 +32,6 @@ interface Accumulator {
 
     Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker);
 
+    int getEstimatedFootprintInBytes();
+
 }

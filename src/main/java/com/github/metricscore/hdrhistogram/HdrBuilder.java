@@ -31,39 +31,41 @@ import java.util.Optional;
 /**
  * The entry point of metrics-core-hdr library which can be used for creation and registration histograms, timers and reservoirs.
  *
- * This builder provides ability to configure:
+ * <p>The builder provides ability to configure:</p>
  * <ul>
+ * <li><b>Different strategies of reservoir resetting</b></li>HdrHistogram loses nothing it is good and bad in same time.
+ * It is good because you do not lose min and max,
+ * and it is bad because in real world use-cases you need to show measurements which actual to current moment of time.
+ * So  you need the way to kick out obsolete values for reservoir.
+ * Metrics-Core-Hdr provides out of the box three different solutions:
+ * <ol>
+ *     <li>{@link #resetResevoirOnSnapshot()}</li>
+ *     <li>{@link #resetResevoirPeriodically(Duration)}</li>
+ *     <li>{@link #neverResetResevoir()}</li>
+ * </ol>
+ * <li><b>Snapshot caching duration</b> see {@link #withSnapshotCachingDuration(Duration)}. If you use any legacy monitoring system like Zabbix which pull(via non-atomic transport like RMI/JMX) measures from application instead of let application to store measures in monitoring database,
+ * then you need to think about snapshot atomicity. For example if you collect 95 percentile, 99 percentile and mean then it would be better to store in database all three measures from same snapshot
+ * otherwise you can show something unbelievable on the monitoring screens when in same moment of time 95 percentile is greater then 99 percentile.
+ * There is no solution which guaranties 100% atomicity, but caching of snapshot will be enough for many cases.
+ * According to Zabbix Java Proxy solution will work in following way: imagine that Zabbix collects measures from your application each 60 seconds and you configured reservoir to snapshotCachingDuration 5 seconds,
+ * in this case solution will work in following way:
+ * <ol>
+ *     <li>Zabbix send command to Zabbix Java Proxy with batch of metrics</li>
+ *     <li>Zabbix Java Proxy opens JMX/RMI connection to the application. And take first metric, for example 96 percentile. Snapshot is taken and cached at this moment</li>
+ *     <li>When Zabbix Java Proxy asks application for 99 percentile and mean application will answer by data cached in the snapshot, because 5 seconds did not elapsed since snapshot was created</li>
+ *     <li>Zabbix Java Proxy closes JMX/RMI connection to the application.</li>
+ *     <li>On the next iteration after one minute application will invalidate snapshot and take new because of snapshot TTL is elapsed.</li>
+ * </ol>
+ * </li>
  * <li><b>numberOfSignificantValueDigits</b> The number of significant decimal digits to which the histogram will maintain value resolution and separation, see {@link #withSignificantDigits(int)}.</li>
  * <li><b>lowestDiscernibleValue</b> The lowest value that can be discerned (distinguished from 0) by the histogram, see {@link #withLowestDiscernibleValue(long)}</li>
  * <li><b>highestTrackableValue</b> The highest value to be tracked by the histogram, see {@link #withHighestTrackableValue(long, OverflowResolver)}</li>
  * <li><b>predefinedPercentiles</b> If you already know list of percentiles which need to be stored in monitoring database,
  * then you can specify it to optimize snapshot size, as result unnecessary garbage will be avoided, see {@link #withPredefinedPercentiles(double[])}</li>
- * <li><b>Different strategies of reservoir resetting</b></li>HdrHistogram loses nothing it is good and bad in same time.
- * It is good because you do not lose min and max,
- * and it is bad because in real world use-cases you need to show measurements which actual to current moment of time.
- * So  you need the way to kick out obsolete values for reservoir. Metrics-Core-Hdr provides out of the box three different solutions: {@link #resetResevoirOnSnapshot()},{@link #resetResevoirPeriodically(Duration)}, {@link #neverResetResevoir()}.
- * <li><b>Snapshot caching duration</b> If you use any legacy monitoring system like Zabbix which pull measures from application instead of let application to store measures in monitoring database,
- * then you need to think about snapshot atomicity. For example if you collect 95 percentile, 99 percentile and mean then it would be better to store in database all three measures from same snapshot
- * otherwise you can show something unbelievable on the monitoring screens when in same time 95 percentile is greater then 99 percentile.
- * There is no solution which guaranties 100% atomicity, but caching of snapshot will be enough for many cases.
- * According to Zabbix Java Proxy solution will work in following way: imagine that Zabbix collects measures from your application each 60seconds and you configured reservoir to snapshotCachingDuration 5 seconds,
- * in this case solution will work in following way:
- * <ol>
- *     <li>Zabbix send command to Zabbix Java Proxy with batch of metrics<li/>
- *     <li>Zabbix Java Proxy opens JMX/RMI connection to the application. And take first metric, for example 96 percentile. Snapshot is taken and cached at this moment<li/>
- *     <li>When Zabbix Java Proxy asks application for 99 percentile and mean application will answer by data cached in the snapshot, because 5 seconds did not elapsed since snapshot was created<li/>
- *     <li>Zabbix Java Proxy closes JMX/RMI connection to the application.<li/>
- *     <li>On the next iteration after one minute application will invalidate snapshot and take new because of snapshot TTL is elapsed.<li/>
- * </ol>
- * <br>see {@link #withSnapshotCachingDuration(Duration)}
- * </li>
  * </ul>
  *
- * <p/>
- * <p>An example of usage:
- * <pre>
- *     <code>
- *
+ * <p><br> An example of usage:
+ * <pre><code>
  *         HdrBuilder builder = HdrBuilder();
  *
  *         // build and register timer
@@ -81,9 +83,15 @@ import java.util.Optional;
  *         registry.register(histogram2, "my-histogram-2");
  *     </code>
  * </pre>
- * <p/>
  *
- * @see com.codahale.metrics.Histogram
+ * In order to be sure that Reservoir with provided settings does not consume too much memory you can use {@link #getEstimatedFootprintInBytes()} method which returns conservatively high estimation of the Reservoir's total footprint in bytes:
+ * <pre><code>
+ *         HdrBuilder builder = new HdrBuilder().withSignificantDigits(3);
+ *         System.out.println(builder.getEstimatedFootprintInBytes());
+ * </code>
+ * <pre/>
+ *
+ * @see org.HdrHistogram.Histogram
  */
 public class HdrBuilder {
 
@@ -234,12 +242,16 @@ public class HdrBuilder {
     }
 
     public Reservoir buildReservoir() {
+        Reservoir reservoir = buildHdrReservoir();
+        reservoir = wrapAroundByDecorators(reservoir);
+        return reservoir;
+    }
+
+    private HdrReservoir buildHdrReservoir() {
         validateParameters();
         Recorder recorder = buildRecorder();
         Accumulator accumulator = accumulationStrategy.createAccumulator(recorder, wallClock);
-        Reservoir reservoir = new HdrReservoir(accumulator, predefinedPercentiles);
-        reservoir = wrapAroundByDecorators(reservoir);
-        return reservoir;
+        return new HdrReservoir(accumulator, predefinedPercentiles);
     }
 
     public Histogram buildHistogram() {
@@ -271,10 +283,21 @@ public class HdrBuilder {
     }
 
     /**
+     * Provide a (conservatively high) estimate of the Reservoir's total footprint in bytes
+     *
+     * @return a (conservatively high) estimate of the Reservoir's total footprint in bytes
+     */
+    public int getEstimatedFootprintInBytes() {
+        HdrReservoir hdrReservoir = buildHdrReservoir();
+        return hdrReservoir.getEstimatedFootprintInBytes();
+    }
+
+    /**
      * Creates full copy of this builder.
      *
      * @return copy of this builder
      */
+    @Override
     public HdrBuilder clone() {
         return new HdrBuilder(wallClock, accumulationStrategy, numberOfSignificantValueDigits, predefinedPercentiles, lowestDiscernibleValue,
                 highestTrackableValue, overflowResolver, snapshotCachingDurationMillis);
