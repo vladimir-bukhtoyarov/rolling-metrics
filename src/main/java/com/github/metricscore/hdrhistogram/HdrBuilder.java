@@ -17,10 +17,7 @@
 
 package com.github.metricscore.hdrhistogram;
 
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Reservoir;
-import com.codahale.metrics.Timer;
+import com.codahale.metrics.*;
 import org.HdrHistogram.Recorder;
 
 import java.time.Duration;
@@ -105,7 +102,7 @@ public class HdrBuilder {
     public static double[] DEFAULT_PERCENTILES = new double[] {0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999};
 
     public HdrBuilder() {
-        this(WallClock.INSTANCE);
+        this(Clock.defaultClock());
     }
 
     /**
@@ -202,6 +199,11 @@ public class HdrBuilder {
         }
         this.highestTrackableValue = Optional.of(highestTrackableValue);
         this.overflowResolver = Optional.of(overflowResolver);
+        return this;
+    }
+
+    public HdrBuilder withExpectedIntervalBetweenValueSamples(long expectedIntervalBetweenValueSamples) {
+        this.expectedIntervalBetweenValueSamples = Optional.of(expectedIntervalBetweenValueSamples);
         return this;
     }
 
@@ -359,8 +361,8 @@ public class HdrBuilder {
      */
     @Override
     public HdrBuilder clone() {
-        return new HdrBuilder(wallClock, accumulationStrategy, numberOfSignificantValueDigits, predefinedPercentiles, lowestDiscernibleValue,
-                highestTrackableValue, overflowResolver, snapshotCachingDurationMillis);
+        return new HdrBuilder(clock, accumulationStrategy, numberOfSignificantValueDigits, predefinedPercentiles, lowestDiscernibleValue,
+                highestTrackableValue, overflowResolver, snapshotCachingDurationMillis, expectedIntervalBetweenValueSamples);
     }
 
     @Override
@@ -383,22 +385,24 @@ public class HdrBuilder {
     private Optional<OverflowResolver> overflowResolver;
     private Optional<Long> snapshotCachingDurationMillis;
     private Optional<double[]> predefinedPercentiles;
+    private Optional<Long> expectedIntervalBetweenValueSamples;
 
-    private WallClock wallClock;
+    private Clock clock;
 
-    HdrBuilder(WallClock wallClock) {
-        this(wallClock, DEFAULT_ACCUMULATION_STRATEGY, DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS, Optional.of(DEFAULT_PERCENTILES), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+    HdrBuilder(Clock clock) {
+        this(clock, DEFAULT_ACCUMULATION_STRATEGY, DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS, Optional.of(DEFAULT_PERCENTILES), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
-    private HdrBuilder(WallClock wallClock,
+    private HdrBuilder(Clock clock,
                        AccumulationStrategy accumulationStrategy,
                        int numberOfSignificantValueDigits,
                        Optional<double[]> predefinedPercentiles,
                        Optional<Long> lowestDiscernibleValue,
                        Optional<Long> highestTrackableValue,
                        Optional<OverflowResolver> overflowResolver,
-                       Optional<Long> snapshotCachingDurationMillis) {
-        this.wallClock = wallClock;
+                       Optional<Long> snapshotCachingDurationMillis,
+                       Optional<Long> expectedIntervalBetweenValueSamples) {
+        this.clock = clock;
         this.accumulationStrategy = accumulationStrategy;
         this.numberOfSignificantValueDigits = numberOfSignificantValueDigits;
         this.lowestDiscernibleValue = lowestDiscernibleValue;
@@ -406,13 +410,16 @@ public class HdrBuilder {
         this.overflowResolver = overflowResolver;
         this.snapshotCachingDurationMillis = snapshotCachingDurationMillis;
         this.predefinedPercentiles = predefinedPercentiles;
+        this.expectedIntervalBetweenValueSamples = expectedIntervalBetweenValueSamples;
     }
 
     private HdrReservoir buildHdrReservoir() {
         validateParameters();
         Recorder recorder = buildRecorder();
-        Accumulator accumulator = accumulationStrategy.createAccumulator(recorder, wallClock);
-        return new HdrReservoir(accumulator, predefinedPercentiles);
+        Accumulator accumulator = accumulationStrategy.createAccumulator(recorder, clock);
+        // wrap around by decorator if highestTrackableValue was specified
+
+        return new HdrReservoir(accumulator, predefinedPercentiles, highestTrackableValue, overflowResolver, expectedIntervalBetweenValueSamples);
     }
 
     private void validateParameters() {
@@ -436,14 +443,9 @@ public class HdrBuilder {
     }
 
     private Reservoir wrapAroundByDecorators(Reservoir reservoir) {
-        // wrap around by decorator if highestTrackableValue was specified
-        if (highestTrackableValue.isPresent()) {
-            reservoir = new HighestTrackableValueAwareReservoir(reservoir, highestTrackableValue.get(), overflowResolver.get());
-        }
-
         // wrap around by decorator if snapshotCachingDurationMillis was specified
         if (snapshotCachingDurationMillis.isPresent()) {
-            reservoir = new SnapshotCachingReservoir(reservoir, snapshotCachingDurationMillis.get(), wallClock);
+            reservoir = new SnapshotCachingReservoir(reservoir, snapshotCachingDurationMillis.get(), clock);
         }
         return reservoir;
     }

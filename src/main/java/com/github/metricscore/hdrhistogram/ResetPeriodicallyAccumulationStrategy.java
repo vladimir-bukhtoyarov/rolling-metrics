@@ -17,6 +17,7 @@
 
 package com.github.metricscore.hdrhistogram;
 
+import com.codahale.metrics.Clock;
 import com.codahale.metrics.Snapshot;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
@@ -39,7 +40,7 @@ class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
     }
 
     @Override
-    public Accumulator createAccumulator(Recorder recorder, WallClock wallClock) {
+    public Accumulator createAccumulator(Recorder recorder, Clock wallClock) {
         return new ResetPeriodicallyAccumulator(recorder, resetIntervalMillis, wallClock);
     }
 
@@ -51,12 +52,12 @@ class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
         final Recorder recorder;
         final Histogram uniformHistogram;
         final long resetIntervalMillis;
-        final WallClock wallClock;
+        final Clock wallClock;
         final AtomicLong nextResetTimeMillisRef;
 
         Histogram intervalHistogram;
 
-        public ResetPeriodicallyAccumulator(Recorder recorder, long resetIntervalMillis, WallClock wallClock) {
+        ResetPeriodicallyAccumulator(Recorder recorder, long resetIntervalMillis, Clock wallClock) {
             this.resetIntervalMillis = resetIntervalMillis;
             this.wallClock = wallClock;
             this.recorder = recorder;
@@ -67,13 +68,13 @@ class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
                 lock.unlock();
             }
             this.uniformHistogram = intervalHistogram.copy();
-            nextResetTimeMillisRef = new AtomicLong(wallClock.currentTimeMillis() + resetIntervalMillis);
+            nextResetTimeMillisRef = new AtomicLong(wallClock.getTime() + resetIntervalMillis);
         }
 
         @Override
-        public void recordValue(long value) {
+        public void recordSingleValueWithExpectedInterval(long value, long expectedIntervalBetweenValueSamples) {
             resetIfNeed();
-            recorder.recordValue(value);
+            recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
         }
 
         @Override
@@ -96,7 +97,7 @@ class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
 
         private void resetIfNeed() {
             long nextResetTimeMillis = nextResetTimeMillisRef.get();
-            if (nextResetTimeMillis != RESETTING_IN_PROGRESS_HAZARD && wallClock.currentTimeMillis() >= nextResetTimeMillis) {
+            if (nextResetTimeMillis != RESETTING_IN_PROGRESS_HAZARD && wallClock.getTime() >= nextResetTimeMillis) {
                 if (!nextResetTimeMillisRef.compareAndSet(nextResetTimeMillis, RESETTING_IN_PROGRESS_HAZARD)) {
                     // another concurrent thread achieved progress and became responsible for resetting histograms
                     return;
@@ -106,7 +107,7 @@ class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
                 try {
                     intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
                     uniformHistogram.reset();
-                    nextResetTimeMillisRef.set(wallClock.currentTimeMillis() + resetIntervalMillis);
+                    nextResetTimeMillisRef.set(wallClock.getTime() + resetIntervalMillis);
                 } finally {
                     lock.unlock();
                 }

@@ -28,7 +28,7 @@ import java.util.function.Function;
  */
 interface Accumulator {
 
-    void recordValue(long value);
+    void recordSingleValueWithExpectedInterval(long value, long expectedIntervalBetweenValueSamples);
 
     Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker);
 

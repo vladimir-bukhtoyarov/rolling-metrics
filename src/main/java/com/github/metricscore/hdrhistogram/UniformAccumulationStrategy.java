@@ -17,6 +17,7 @@
 
 package com.github.metricscore.hdrhistogram;
 
+import com.codahale.metrics.Clock;
 import com.codahale.metrics.Snapshot;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
@@ -27,12 +28,12 @@ import java.util.function.Function;
 
 class UniformAccumulationStrategy implements AccumulationStrategy {
 
-    public static UniformAccumulationStrategy INSTANCE = new UniformAccumulationStrategy();
+    static UniformAccumulationStrategy INSTANCE = new UniformAccumulationStrategy();
 
     private UniformAccumulationStrategy() {}
 
     @Override
-    public Accumulator createAccumulator(Recorder recorder, WallClock wallClock) {
+    public Accumulator createAccumulator(Recorder recorder, Clock wallClock) {
         return new UniformAccumulator(recorder);
     }
 
@@ -43,7 +44,7 @@ class UniformAccumulationStrategy implements AccumulationStrategy {
 
         private Histogram intervalHistogram;
 
-        public UniformAccumulator(Recorder recorder) {
+        UniformAccumulator(Recorder recorder) {
             this.recorder = recorder;
             lock.lock();
             try {
@@ -55,8 +56,8 @@ class UniformAccumulationStrategy implements AccumulationStrategy {
         }
 
         @Override
-        public void recordValue(long value) {
-            recorder.recordValue(value);
+        public void recordSingleValueWithExpectedInterval(long value, long expectedIntervalBetweenValueSamples) {
+            recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
         }
 
         @Override

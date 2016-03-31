@@ -17,6 +17,7 @@
 
 package com.github.metricscore.hdrhistogram;
 
+import com.codahale.metrics.Clock;
 import org.HdrHistogram.Recorder;
 
 /**
@@ -30,6 +31,6 @@ import org.HdrHistogram.Recorder;
  */
 interface AccumulationStrategy {
 
-    Accumulator createAccumulator(Recorder recorder, WallClock wallClock);
+    Accumulator createAccumulator(Recorder recorder, Clock clock);
 
 }

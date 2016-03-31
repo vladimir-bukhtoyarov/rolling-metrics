@@ -41,9 +41,16 @@ class HdrReservoir implements Reservoir {
 
     private final Accumulator accumulator;
     private final Function<Histogram, Snapshot> snapshotTaker;
+    private final long highestTrackableValue;
+    private final OverflowResolver overflowResolver;
+    private final long expectedIntervalBetweenValueSamples;
 
-    HdrReservoir(Accumulator accumulator, Optional<double[]> predefinedPercentiles) {
+    HdrReservoir(Accumulator accumulator, Optional<double[]> predefinedPercentiles, Optional<Long> highestTrackableValue, Optional<OverflowResolver> overflowResolver, Optional<Long> expectedIntervalBetweenValueSamples) {
         this.accumulator = accumulator;
+        this.highestTrackableValue = highestTrackableValue.orElse(Long.MAX_VALUE);
+        this.overflowResolver = overflowResolver.orElse(null);
+        this.expectedIntervalBetweenValueSamples = expectedIntervalBetweenValueSamples.orElse(0L);
+
         if (predefinedPercentiles.isPresent()) {
             double[] percentiles = predefinedPercentiles.get();
             snapshotTaker = histogram -> takeSmartSnapshot(percentiles, histogram);
@@ -59,11 +66,23 @@ class HdrReservoir implements Reservoir {
 
     @Override
     public void update(long value) {
-        accumulator.recordValue(value);
+        if (value > highestTrackableValue) {
+            switch (overflowResolver) {
+                case SKIP: return;
+                case PASS_THRU: break;
+                case REDUCE_TO_HIGHEST_TRACKABLE: value = highestTrackableValue;
+            }
+        }
+        accumulator.recordSingleValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
     }
 
     @Override
     public Snapshot getSnapshot() {
+        Snapshot snapshot = takeSnapshot();
+        return snapshot;
+    }
+
+    private Snapshot takeSnapshot() {
         return accumulator.getSnapshot(snapshotTaker);
     }
 

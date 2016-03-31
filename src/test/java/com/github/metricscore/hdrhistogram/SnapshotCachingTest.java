@@ -17,6 +17,7 @@
 
 package com.github.metricscore.hdrhistogram;
 
+import com.codahale.metrics.Clock;
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
 import org.junit.Test;
@@ -56,7 +57,7 @@ public class SnapshotCachingTest {
     @Test
     public void shouldCacheSnapshot() {
         AtomicLong time = new AtomicLong(System.currentTimeMillis());
-        WallClock wallClock = WallClock.mock(time);
+        Clock wallClock = MockClock.mock(time);
         Reservoir reservoir = new HdrBuilder(wallClock).withSnapshotCachingDuration(Duration.ofMillis(1000)).buildReservoir();
 
         reservoir.update(10);

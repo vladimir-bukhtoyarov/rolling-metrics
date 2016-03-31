@@ -17,26 +17,23 @@
 
 package com.github.metricscore.hdrhistogram;
 
+import com.codahale.metrics.Clock;
+
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * Wrapper around time measuring useful in unit tests to avoid sleeping.
- */
-class WallClock {
+class MockClock {
 
-    public static final WallClock INSTANCE = new WallClock();
-
-    private WallClock() {}
-
-    public long currentTimeMillis() {
-        return System.currentTimeMillis();
-    }
-
-    public static WallClock mock(AtomicLong currentTimeProvider) {
-        return new WallClock() {
+    static Clock mock(AtomicLong currentTimeProvider) {
+        return new Clock() {
             @Override
-            public long currentTimeMillis() {
+            public long getTime() {
                 return currentTimeProvider.get();
+            }
+
+            @Override
+            public long getTick() {
+                return TimeUnit.MILLISECONDS.toNanos(getTime());
             }
         };
     }
