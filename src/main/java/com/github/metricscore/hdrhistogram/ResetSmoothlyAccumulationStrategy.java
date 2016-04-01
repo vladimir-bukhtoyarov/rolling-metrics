@@ -31,31 +31,33 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
-class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
+class ResetSmoothlyAccumulationStrategy implements AccumulationStrategy {
 
-    private final long resetIntervalMillis;
+    private final long measureTimeToLiveMillis;
+    private final int numberChunks;
     private final Optional<ScheduledExecutorService> scheduler;
 
-    ResetPeriodicallyAccumulationStrategy(Duration resetPeriod, Optional<ScheduledExecutorService> scheduler) {
+    ResetSmoothlyAccumulationStrategy(Duration resetPeriod, int numberChunks, Optional<ScheduledExecutorService> scheduler) {
         if (resetPeriod.isNegative() || resetPeriod.isZero()) {
             throw new IllegalArgumentException("resetPeriod must be a positive duration");
         }
-        this.resetIntervalMillis = resetPeriod.toMillis();
+        this.measureTimeToLiveMillis = resetPeriod.toMillis();
+        this.numberChunks = numberChunks;
         this.scheduler = scheduler;
     }
 
     @Override
     public Accumulator createAccumulator(Recorder recorder, Clock clock) {
         if (scheduler.isPresent()) {
-            ResetPeriodicallyByTimerAccumulator accumulator = new ResetPeriodicallyByTimerAccumulator(recorder);
-            scheduler.get().scheduleAtFixedRate(accumulator::resetByTimer, resetIntervalMillis, resetIntervalMillis, TimeUnit.MILLISECONDS);
+            SmoothlyResetByTimerAccumulator accumulator = new SmoothlyResetByTimerAccumulator(recorder);
+            scheduler.get().scheduleAtFixedRate(accumulator::resetByTimer, measureTimeToLiveMillis, measureTimeToLiveMillis, TimeUnit.MILLISECONDS);
             return accumulator;
         } else {
-            return new ResetPeriodicallyAccumulator(recorder, resetIntervalMillis, clock);
+            return new ResetSmoothlyAccumulator(recorder, measureTimeToLiveMillis, clock);
         }
     }
 
-    private static class ResetPeriodicallyAccumulator implements Accumulator {
+    private static class ResetSmoothlyAccumulator implements Accumulator {
 
         private static final long RESETTING_IN_PROGRESS_HAZARD = Long.MIN_VALUE;
 
@@ -68,7 +70,7 @@ class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
 
         Histogram intervalHistogram;
 
-        ResetPeriodicallyAccumulator(Recorder recorder, long resetIntervalMillis, Clock clock) {
+        ResetSmoothlyAccumulator(Recorder recorder, long resetIntervalMillis, Clock clock) {
             this.resetIntervalMillis = resetIntervalMillis;
             this.clock = clock;
             this.recorder = recorder;
@@ -126,15 +128,15 @@ class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
         }
     }
 
-    private static class ResetPeriodicallyByTimerAccumulator implements Accumulator {
+    private static class SmoothlyResetByTimerAccumulator implements Accumulator {
 
         final Lock lock = new ReentrantLock();
         final Recorder recorder;
-        final Histogram uniformHistogram;
+        final Histogram[] chunks;
 
         Histogram intervalHistogram;
 
-        ResetPeriodicallyByTimerAccumulator(Recorder recorder) {
+        SmoothlyResetByTimerAccumulator(Recorder recorder, int numberChunks) {
             this.recorder = recorder;
             lock.lock();
             try {
@@ -142,7 +144,10 @@ class ResetPeriodicallyAccumulationStrategy implements AccumulationStrategy {
             } finally {
                 lock.unlock();
             }
-            this.uniformHistogram = intervalHistogram.copy();
+            this.chunks = new Histogram[numberChunks];
+            for (int i = 0; i < numberChunks; i++) {
+                this.chunks[i] = intervalHistogram.copy();
+            }
         }
 
         @Override

@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * The entry point of metrics-core-hdr library which can be used for creation and registration histograms, timers and reservoirs.
@@ -135,13 +136,18 @@ public class HdrBuilder {
     /**
      * Reservoir configured with this strategy will be cleared after each {@code resettingPeriod}.
      *
-     * @param resettingPeriod specifies how often need to reset reservoir
+     * @param resettingPeriod specifies how often need to resetByTimer reservoir
      * @return this builder instance
      * @see #neverResetResevoir()
      * @see #resetResevoirOnSnapshot()
      */
     public HdrBuilder resetResevoirPeriodically(Duration resettingPeriod) {
-        accumulationStrategy = new ResetPeriodicallyAccumulationStrategy(resettingPeriod);
+        accumulationStrategy = new ResetPeriodicallyAccumulationStrategy(resettingPeriod, Optional.empty());
+        return this;
+    }
+
+    public HdrBuilder resetResevoirPeriodically(Duration resettingPeriod, ScheduledExecutorService scheduler) {
+        accumulationStrategy = new ResetPeriodicallyAccumulationStrategy(resettingPeriod, Optional.of(scheduler));
         return this;
     }
 
