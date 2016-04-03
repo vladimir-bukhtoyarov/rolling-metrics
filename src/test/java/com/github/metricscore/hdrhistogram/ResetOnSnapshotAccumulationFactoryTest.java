@@ -24,11 +24,11 @@ import org.junit.Test;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotSame;
 
-public class UniformSnapshotAccumulationStrategyTest {
+public class ResetOnSnapshotAccumulationFactoryTest {
 
     @Test
     public void shouldCacheSnapshot() {
-        Reservoir reservoir = new HdrBuilder().neverResetResevoir().buildReservoir();
+        Reservoir reservoir = new HdrBuilder().resetResevoirOnSnapshot().buildReservoir();
 
         reservoir.update(10);
         reservoir.update(20);
@@ -38,14 +38,14 @@ public class UniformSnapshotAccumulationStrategyTest {
         reservoir.update(40);
         Snapshot secondSnapshot = reservoir.getSnapshot();
         assertNotSame(firstSnapshot, secondSnapshot);
-        assertEquals(10, secondSnapshot.getMin());
+        assertEquals(30, secondSnapshot.getMin());
         assertEquals(40, secondSnapshot.getMax());
 
-        reservoir.update(9);
+        reservoir.update(50);
         reservoir.update(60);
         Snapshot thirdSnapshot = reservoir.getSnapshot();
         assertNotSame(secondSnapshot, thirdSnapshot);
-        assertEquals(9, thirdSnapshot.getMin());
+        assertEquals(50, thirdSnapshot.getMin());
         assertEquals(60, thirdSnapshot.getMax());
     }
 

@@ -15,18 +15,21 @@
  *   limitations under the License.
  */
 
-package com.github.metricscore.hdrhistogram;
+package com.github.metricscore.hdrhistogram.accumulator;
 
+import com.codahale.metrics.Clock;
 import com.codahale.metrics.Snapshot;
 import org.HdrHistogram.Histogram;
+import org.HdrHistogram.Recorder;
+
 import java.util.function.Function;
 
 /**
- * A responsible to updating and resetting histograms {@link org.HdrHistogram.Recorder}
+ * A responsible to updating and resetting {@link org.HdrHistogram.Recorder}
  *
  * This class is not the part of metrics-core-hdr public API and should not be used by user directly.
  */
-interface Accumulator {
+public interface Accumulator {
 
     void recordSingleValueWithExpectedInterval(long value, long expectedIntervalBetweenValueSamples);
 

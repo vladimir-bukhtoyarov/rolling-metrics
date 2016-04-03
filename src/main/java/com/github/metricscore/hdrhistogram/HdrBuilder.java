@@ -18,6 +18,7 @@
 package com.github.metricscore.hdrhistogram;
 
 import com.codahale.metrics.*;
+import com.github.metricscore.hdrhistogram.accumulator.*;
 import org.HdrHistogram.Recorder;
 
 import java.time.Duration;
@@ -25,6 +26,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Supplier;
 
 /**
  * The entry point of metrics-core-hdr library which can be used for creation and registration histograms, timers and reservoirs.
@@ -96,11 +98,15 @@ import java.util.concurrent.ScheduledExecutorService;
  *
  * @see org.HdrHistogram.Histogram
  */
-public class HdrBuilder {
+public class HdrBuilder implements Supplier<Recorder> {
 
-    public static int DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS = 2;
-    public static AccumulationStrategy DEFAULT_ACCUMULATION_STRATEGY = ResetOnSnapshotAccumulationStrategy.INSTANCE;
-    public static double[] DEFAULT_PERCENTILES = new double[] {0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999};
+    // meaningful limits to disallow user to kill performance by inattention
+    static final int MAX_CHUNKS = 60;
+    static final long MIN_MEASURE_TIME_TO_LIVE_MILLIS = 1000;
+
+    static int DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS = 2;
+    static AccumulationFactory DEFAULT_ACCUMULATION_STRATEGY = AccumulationFactory.UNIFORM;
+    static double[] DEFAULT_PERCENTILES = new double[] {0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999};
 
     public HdrBuilder() {
         this(Clock.defaultClock());
@@ -116,7 +122,7 @@ public class HdrBuilder {
      * @see #neverResetResevoir()
      */
     public HdrBuilder resetResevoirOnSnapshot() {
-        accumulationStrategy = ResetOnSnapshotAccumulationStrategy.INSTANCE;
+        accumulationFactory = AccumulationFactory.RESET_ON_SNAPSHOT;
         return this;
     }
 
@@ -126,28 +132,48 @@ public class HdrBuilder {
      * @return this builder instance
      * @see #resetResevoirPeriodically(Duration)
      * @see #resetResevoirOnSnapshot()
-     * @see UniformAccumulationStrategy
+     * @see UniformAccumulationFactory
      */
     public HdrBuilder neverResetResevoir() {
-        accumulationStrategy = UniformAccumulationStrategy.INSTANCE;
+        accumulationFactory = AccumulationFactory.UNIFORM;
         return this;
     }
 
     /**
      * Reservoir configured with this strategy will be cleared after each {@code resettingPeriod}.
      *
-     * @param resettingPeriod specifies how often need to resetByTimer reservoir
+     * @param resettingPeriod specifies how often need to reset reservoir
      * @return this builder instance
      * @see #neverResetResevoir()
      * @see #resetResevoirOnSnapshot()
      */
     public HdrBuilder resetResevoirPeriodically(Duration resettingPeriod) {
-        accumulationStrategy = new ResetPeriodicallyAccumulationStrategy(resettingPeriod, Optional.empty());
+        if (resettingPeriod.isNegative() || resettingPeriod.isZero()) {
+            throw new IllegalArgumentException("resetPeriod must be a positive duration");
+        }
+        accumulationFactory = (recorder, clock) -> new ResetPeriodicallyAccumulator(recorder, resettingPeriod.toMillis(), clock);
         return this;
     }
 
     public HdrBuilder resetResevoirPeriodically(Duration resettingPeriod, ScheduledExecutorService scheduler) {
-        accumulationStrategy = new ResetPeriodicallyAccumulationStrategy(resettingPeriod, Optional.of(scheduler));
+        Objects.requireNonNull(scheduler, "scheduler can not be null");
+        if (resettingPeriod.isNegative() || resettingPeriod.isZero()) {
+            throw new IllegalArgumentException("resetPeriod must be a positive duration");
+        }
+        accumulationFactory = (recorder, clock) -> new ResetPeriodicallyByTimerAccumulator(recorder, resettingPeriod.toMillis(), scheduler);
+        return this;
+    }
+
+    public HdrBuilder resetResevoirSmoothly(Duration measureTimeToLive, int numberChunks, ScheduledExecutorService scheduler) {
+        validateSmoothlyResetParameters(measureTimeToLive, numberChunks);
+        Objects.requireNonNull(scheduler, "scheduler can not be null");
+        accumulationFactory = (recorder, clock) -> new ResetSmoothlyByTimerAccumulator(recorder, measureTimeToLive, numberChunks, scheduler);
+        return this;
+    }
+
+    public HdrBuilder resetResevoirSmoothly(Duration measureTimeToLive, int numberChunks) {
+        validateSmoothlyResetParameters(measureTimeToLive, numberChunks);
+        accumulationFactory = (recorder, clock) -> new ResetSmoothlyAccumulator(recorder, numberChunks, measureTimeToLive.toMillis(), clock);
         return this;
     }
 
@@ -367,14 +393,14 @@ public class HdrBuilder {
      */
     @Override
     public HdrBuilder clone() {
-        return new HdrBuilder(clock, accumulationStrategy, numberOfSignificantValueDigits, predefinedPercentiles, lowestDiscernibleValue,
+        return new HdrBuilder(clock, accumulationFactory, numberOfSignificantValueDigits, predefinedPercentiles, lowestDiscernibleValue,
                 highestTrackableValue, overflowResolver, snapshotCachingDurationMillis, expectedIntervalBetweenValueSamples);
     }
 
     @Override
     public String toString() {
         return "HdrBuilder{" +
-                "accumulationStrategy=" + accumulationStrategy +
+                "accumulationStrategy=" + accumulationFactory +
                 ", numberOfSignificantValueDigits=" + numberOfSignificantValueDigits +
                 ", lowestDiscernibleValue=" + lowestDiscernibleValue +
                 ", highestTrackableValue=" + highestTrackableValue +
@@ -384,7 +410,7 @@ public class HdrBuilder {
                 '}';
     }
 
-    private AccumulationStrategy accumulationStrategy;
+    private AccumulationFactory accumulationFactory;
     private int numberOfSignificantValueDigits;
     private Optional<Long> lowestDiscernibleValue;
     private Optional<Long> highestTrackableValue;
@@ -400,7 +426,7 @@ public class HdrBuilder {
     }
 
     private HdrBuilder(Clock clock,
-                       AccumulationStrategy accumulationStrategy,
+                       AccumulationFactory accumulationFactory,
                        int numberOfSignificantValueDigits,
                        Optional<double[]> predefinedPercentiles,
                        Optional<Long> lowestDiscernibleValue,
@@ -409,7 +435,7 @@ public class HdrBuilder {
                        Optional<Long> snapshotCachingDurationMillis,
                        Optional<Long> expectedIntervalBetweenValueSamples) {
         this.clock = clock;
-        this.accumulationStrategy = accumulationStrategy;
+        this.accumulationFactory = accumulationFactory;
         this.numberOfSignificantValueDigits = numberOfSignificantValueDigits;
         this.lowestDiscernibleValue = lowestDiscernibleValue;
         this.highestTrackableValue = highestTrackableValue;
@@ -422,7 +448,7 @@ public class HdrBuilder {
     private HdrReservoir buildHdrReservoir() {
         validateParameters();
         Recorder recorder = buildRecorder();
-        Accumulator accumulator = accumulationStrategy.createAccumulator(recorder, clock);
+        Accumulator accumulator = accumulationFactory.createAccumulator(recorder, clock);
         // wrap around by decorator if highestTrackableValue was specified
 
         return new HdrReservoir(accumulator, predefinedPercentiles, highestTrackableValue, overflowResolver, expectedIntervalBetweenValueSamples);
@@ -456,10 +482,40 @@ public class HdrBuilder {
         return reservoir;
     }
 
+    private void validateSmoothlyResetParameters(Duration measureTimeToLive, int numberChunks) {
+        if (measureTimeToLive.isNegative() || measureTimeToLive.isZero()) {
+            throw new IllegalArgumentException("measureTimeToLive must be a positive duration");
+        }
+        if (measureTimeToLive.toMillis() < MIN_MEASURE_TIME_TO_LIVE_MILLIS) {
+            throw new IllegalArgumentException("measureTimeToLive must be >= " + MIN_MEASURE_TIME_TO_LIVE_MILLIS + " millis");
+        }
+        if (numberChunks < 2) {
+            throw new IllegalArgumentException("numberChunks should be >= 2");
+        }
+        if (numberChunks > MAX_CHUNKS) {
+            throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
+        }
+    }
+
     private static double[] copyAndSort(double[] predefinedPercentiles) {
         double[] sortedPercentiles = Arrays.copyOf(predefinedPercentiles, predefinedPercentiles.length);
         Arrays.sort(sortedPercentiles);
         return sortedPercentiles;
+    }
+
+    @Override
+    public Recorder get() {
+        return buildRecorder();
+    }
+
+    private interface AccumulationFactory {
+
+        AccumulationFactory UNIFORM = (recorder, clock) -> new UniformAccumulator(recorder);
+
+        AccumulationFactory RESET_ON_SNAPSHOT = (recorder, clock) -> new ResetOnSnapshotAccumulator(recorder);
+
+        Accumulator createAccumulator(Recorder recorder, Clock clock);
+
     }
 
 }

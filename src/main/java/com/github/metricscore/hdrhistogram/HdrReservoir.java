@@ -20,6 +20,7 @@ package com.github.metricscore.hdrhistogram;
 
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
+import com.github.metricscore.hdrhistogram.accumulator.Accumulator;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.HistogramIterationValue;
 

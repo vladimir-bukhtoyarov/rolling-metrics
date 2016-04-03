@@ -32,7 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static junit.framework.TestCase.assertEquals;
 
-public class ResetPeriodicallyAccumulationStrategyTest {
+public class ResetPeriodicallyAccumulationFactoryTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void negativeResetPeriodShouldNotAllowed() {
