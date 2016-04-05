@@ -17,66 +17,16 @@
 
 package com.github.metricscore.hdrhistogram.accumulator;
 
-import com.codahale.metrics.Snapshot;
-import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Function;
 
-public class ResetPeriodicallyByTimerAccumulator implements Accumulator {
-
-    final Lock lock = new ReentrantLock();
-    final Recorder recorder;
-    final Histogram uniformHistogram;
-
-    Histogram intervalHistogram;
+public class ResetPeriodicallyByTimerAccumulator extends UniformAccumulator {
 
     public ResetPeriodicallyByTimerAccumulator(Recorder recorder, long resetIntervalMillis, ScheduledExecutorService scheduler) {
-        lock.lock();
-        try {
-            this.recorder = recorder;
-            this.intervalHistogram = recorder.getIntervalHistogram();
-            this.uniformHistogram = intervalHistogram.copy();
-        } finally {
-            lock.unlock();
-        }
+        super(recorder);
         scheduler.scheduleAtFixedRate(this::reset, resetIntervalMillis, resetIntervalMillis, TimeUnit.MILLISECONDS);
-    }
-
-    @Override
-    public void recordSingleValueWithExpectedInterval(long value, long expectedIntervalBetweenValueSamples) {
-        recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
-    }
-
-    @Override
-    public Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
-        lock.lock();
-        try {
-            intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
-            uniformHistogram.add(intervalHistogram);
-            return snapshotTaker.apply(uniformHistogram);
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    @Override
-    public int getEstimatedFootprintInBytes() {
-        return intervalHistogram.getEstimatedFootprintInBytes() * 3;
-    }
-
-    private void reset() {
-        lock.lock();
-        try {
-            intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
-            uniformHistogram.reset();
-        } finally {
-            lock.unlock();
-        }
     }
 
 }

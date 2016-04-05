@@ -18,7 +18,6 @@
 package com.github.metricscore.hdrhistogram.accumulator;
 
 import com.codahale.metrics.Snapshot;
-import com.github.metricscore.hdrhistogram.accumulator.Accumulator;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 

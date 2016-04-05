@@ -44,6 +44,6 @@ public enum OverflowResolver {
      *
      * <p>Use this way with double attention <b>iff</b> you clearly understanding what you do.
      */
-    PASS_THRU;
+    PASS_THRU
 
 }

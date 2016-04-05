@@ -36,7 +36,7 @@ public class HdrBuilderMetricRegistrationTest {
     private MetricRegistry registry = new MetricRegistry();
 
     @Test
-    public void testBuildAndRegistrerHistogram() {
+    public void testBuildAndRegisterHistogram() {
         Histogram historam = builder.buildAndRegisterHistogram(registry, "myhistogram");
         assertSame(historam, registry.histogram("myhistogram"));
     }

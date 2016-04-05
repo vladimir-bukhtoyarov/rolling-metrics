@@ -28,18 +28,18 @@ import java.util.function.Function;
 
 public class ResetSmoothlyAccumulator implements Accumulator {
 
-    final Lock lock = new ReentrantLock();
-    final Recorder recorder;
-    final Histogram[] chunks;
-    final long intervalBetweenResetingChunksMillis;
-    final Clock clock;
+    private final Lock lock = new ReentrantLock();
+    private final Recorder recorder;
+    private final Histogram[] chunks;
+    private final long intervalBetweenResettingChunksMillis;
+    private final Clock clock;
 
-    volatile long nextResetTimeMillis;
-    int snapshotIndex;
-    Histogram intervalHistogram;
+    private volatile long nextResetTimeMillis;
+    private int snapshotIndex;
+    private Histogram intervalHistogram;
 
     public ResetSmoothlyAccumulator(Recorder recorder, int numberChunks, long measureTimeToLiveMillis, Clock clock) {
-        this.intervalBetweenResetingChunksMillis = measureTimeToLiveMillis / numberChunks;
+        this.intervalBetweenResettingChunksMillis = measureTimeToLiveMillis / numberChunks;
         this.clock = clock;
         this.recorder = recorder;
         lock.lock();
@@ -52,10 +52,10 @@ public class ResetSmoothlyAccumulator implements Accumulator {
 
             long nowMillis = clock.getTime();
             for (int i = 1; i <= chunks.length; i++) {
-                this.chunks[i].setEndTimeStamp(nowMillis + i * intervalBetweenResetingChunksMillis);
+                this.chunks[i].setEndTimeStamp(nowMillis + i * intervalBetweenResettingChunksMillis);
             }
             snapshotIndex = 0;
-            nextResetTimeMillis = nowMillis + intervalBetweenResetingChunksMillis;
+            nextResetTimeMillis = nowMillis + intervalBetweenResettingChunksMillis;
         } finally {
             lock.unlock();
         }
@@ -73,8 +73,8 @@ public class ResetSmoothlyAccumulator implements Accumulator {
         try {
             resetIfNeed();
             intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
-            for (int i = 0; i < chunks.length; i++) {
-                chunks[i].add(intervalHistogram);
+            for (Histogram chunk : chunks) {
+                chunk.add(intervalHistogram);
             }
             return snapshotTaker.apply(chunks[snapshotIndex]);
         } finally {
@@ -87,10 +87,10 @@ public class ResetSmoothlyAccumulator implements Accumulator {
         return intervalHistogram.getEstimatedFootprintInBytes() * 3;
     }
 
-    private void resetIfNeed() {
+    private boolean resetIfNeed() {
         long nowMillis = clock.getTime();
         if (nowMillis < nextResetTimeMillis) {
-            return;
+            return false;
         }
 
         lock.lock();
@@ -98,21 +98,21 @@ public class ResetSmoothlyAccumulator implements Accumulator {
             nowMillis = clock.getTime();
             if (nowMillis < nextResetTimeMillis) {
                 // histograms already cleared by another concurrent thread
-                return;
+                return false;
             }
 
             intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
 
-            long numberOfChuncksToReset = (nowMillis - nextResetTimeMillis) / intervalBetweenResetingChunksMillis + 1;
+            long numberOfChuncksToReset = (nowMillis - nextResetTimeMillis) / intervalBetweenResettingChunksMillis + 1;
             if (numberOfChuncksToReset >= chunks.length) {
                 // was unused for a long time, need to reset all chunks
                 for (int i = 1; i <= chunks.length; i++) {
                     this.chunks[i -1].reset();
-                    this.chunks[i].setEndTimeStamp(nowMillis + i * intervalBetweenResetingChunksMillis);
+                    this.chunks[i].setEndTimeStamp(nowMillis + i * intervalBetweenResettingChunksMillis);
                 }
                 snapshotIndex = 0;
-                nextResetTimeMillis = nowMillis + intervalBetweenResetingChunksMillis;
-                return;
+                nextResetTimeMillis = nowMillis + intervalBetweenResettingChunksMillis;
+                return true;
             }
 
             long proposedNextResetTimeMillis = Long.MAX_VALUE;
@@ -120,15 +120,17 @@ public class ResetSmoothlyAccumulator implements Accumulator {
                 long chunkEndTimestamp = chunks[i].getEndTimeStamp();
                 if (chunkEndTimestamp <= nowMillis) {
                     this.chunks[i].reset();
-                    this.chunks[i].setEndTimeStamp(chunkEndTimestamp + chunks.length * intervalBetweenResetingChunksMillis);
+                    this.chunks[i].setEndTimeStamp(chunkEndTimestamp + chunks.length * intervalBetweenResettingChunksMillis);
                 } else {
                     if (chunkEndTimestamp < proposedNextResetTimeMillis) {
                         proposedNextResetTimeMillis = chunkEndTimestamp;
                         snapshotIndex = i;
+                        this.chunks[i].add(intervalHistogram);
                     }
                 }
             }
             nextResetTimeMillis = proposedNextResetTimeMillis;
+            return true;
         } finally {
             lock.unlock();
         }

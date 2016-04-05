@@ -21,9 +21,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.*;
 
-public class MockShceduler implements ScheduledExecutorService {
+@SuppressWarnings("ALL")
+class MockShceduler implements ScheduledExecutorService {
 
     private Runnable command;
+
+    public Runnable getCommand() {
+        return command;
+    }
 
     @Override
     public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {

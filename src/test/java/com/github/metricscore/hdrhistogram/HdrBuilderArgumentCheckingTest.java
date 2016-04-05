@@ -68,7 +68,7 @@ public class HdrBuilderArgumentCheckingTest {
     }
 
     @Test(expected = IllegalStateException.class)
-    public void shouldCheckThatHighestValueShouldBeTwoTimesGeaterThenLowest() {
+    public void shouldCheckThatHighestValueShouldBeTwoTimesGreaterThenLowest() {
         new HdrBuilder().withLowestDiscernibleValue(10).withHighestTrackableValue(11, OverflowResolver.PASS_THRU).buildReservoir();
     }
 
@@ -115,7 +115,7 @@ public class HdrBuilderArgumentCheckingTest {
     @Test
     public void shouldSuccessfullyBuild() {
         new HdrBuilder().withLowestDiscernibleValue(3).withLowestDiscernibleValue(1000)
-                .withHighestTrackableValue(3600000l, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
+                .withHighestTrackableValue(3600000L, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .withPredefinedPercentiles(new double[] {0.9, 0.95, 0.99})
                 .withSnapshotCachingDuration(Duration.ofMinutes(1))
                 .buildReservoir();

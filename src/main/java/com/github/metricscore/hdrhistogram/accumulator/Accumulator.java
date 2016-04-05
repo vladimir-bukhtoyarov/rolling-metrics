@@ -17,10 +17,8 @@
 
 package com.github.metricscore.hdrhistogram.accumulator;
 
-import com.codahale.metrics.Clock;
 import com.codahale.metrics.Snapshot;
 import org.HdrHistogram.Histogram;
-import org.HdrHistogram.Recorder;
 
 import java.util.function.Function;
 

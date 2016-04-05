@@ -391,8 +391,7 @@ public class HdrBuilder implements Supplier<Recorder> {
      *
      * @return copy of this builder
      */
-    @Override
-    public HdrBuilder clone() {
+    public HdrBuilder deepCopy() {
         return new HdrBuilder(clock, accumulationFactory, numberOfSignificantValueDigits, predefinedPercentiles, lowestDiscernibleValue,
                 highestTrackableValue, overflowResolver, snapshotCachingDurationMillis, expectedIntervalBetweenValueSamples);
     }

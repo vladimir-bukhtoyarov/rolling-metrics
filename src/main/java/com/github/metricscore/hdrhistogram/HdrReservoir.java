@@ -79,11 +79,6 @@ class HdrReservoir implements Reservoir {
 
     @Override
     public Snapshot getSnapshot() {
-        Snapshot snapshot = takeSnapshot();
-        return snapshot;
-    }
-
-    private Snapshot takeSnapshot() {
         return accumulator.getSnapshot(snapshotTaker);
     }
 

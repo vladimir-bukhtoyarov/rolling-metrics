@@ -19,7 +19,6 @@ package com.github.metricscore.hdrhistogram.accumulator;
 
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.Snapshot;
-import com.github.metricscore.hdrhistogram.accumulator.Accumulator;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
@@ -32,14 +31,14 @@ public class ResetPeriodicallyAccumulator implements Accumulator {
 
     private static final long RESETTING_IN_PROGRESS_HAZARD = Long.MIN_VALUE;
 
-    final Lock lock = new ReentrantLock();
-    final Recorder recorder;
-    final Histogram uniformHistogram;
-    final long resetIntervalMillis;
-    final Clock clock;
-    final AtomicLong nextResetTimeMillisRef;
+    private final Lock lock = new ReentrantLock();
+    private final Recorder recorder;
+    private final Histogram uniformHistogram;
+    private final long resetIntervalMillis;
+    private final Clock clock;
+    private final AtomicLong nextResetTimeMillisRef;
 
-    Histogram intervalHistogram;
+    private Histogram intervalHistogram;
 
     public ResetPeriodicallyAccumulator(Recorder recorder, long resetIntervalMillis, Clock clock) {
         this.resetIntervalMillis = resetIntervalMillis;

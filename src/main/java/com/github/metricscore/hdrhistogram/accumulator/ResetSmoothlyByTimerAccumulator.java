@@ -30,12 +30,12 @@ import java.util.function.Function;
 
 public class ResetSmoothlyByTimerAccumulator implements Accumulator {
 
-    final Lock lock = new ReentrantLock();
-    final Recorder recorder;
-    final Histogram[] chunks;
+    private final Lock lock = new ReentrantLock();
+    private final Recorder recorder;
+    private final Histogram[] chunks;
 
-    Histogram intervalHistogram;
-    int snapshotIndex;
+    private Histogram intervalHistogram;
+    private int snapshotIndex;
 
     public ResetSmoothlyByTimerAccumulator(Recorder recorder, Duration measureTimeToLive, int numberChunks, ScheduledExecutorService scheduler) {
         lock.lock();
@@ -51,7 +51,7 @@ public class ResetSmoothlyByTimerAccumulator implements Accumulator {
             lock.unlock();
         }
         long chunkTimeToLiveMillis = measureTimeToLive.toMillis() / numberChunks;
-        scheduler.scheduleAtFixedRate(this::resetByTimer, chunkTimeToLiveMillis, chunkTimeToLiveMillis, TimeUnit.MILLISECONDS);
+        scheduler.scheduleAtFixedRate(this::resetOneChunk, chunkTimeToLiveMillis, chunkTimeToLiveMillis, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -64,8 +64,8 @@ public class ResetSmoothlyByTimerAccumulator implements Accumulator {
         lock.lock();
         try {
             intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
-            for (int i = 0; i < chunks.length; i++) {
-                chunks[i].add(intervalHistogram);
+            for (Histogram chunk : chunks) {
+                chunk.add(intervalHistogram);
             }
             return snapshotTaker.apply(chunks[snapshotIndex]);
         } finally {
@@ -78,7 +78,7 @@ public class ResetSmoothlyByTimerAccumulator implements Accumulator {
         return intervalHistogram.getEstimatedFootprintInBytes() * 3;
     }
 
-    public void resetByTimer() {
+    private void resetOneChunk() {
         lock.lock();
         try {
             intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
@@ -96,4 +96,5 @@ public class ResetSmoothlyByTimerAccumulator implements Accumulator {
             lock.unlock();
         }
     }
+
 }

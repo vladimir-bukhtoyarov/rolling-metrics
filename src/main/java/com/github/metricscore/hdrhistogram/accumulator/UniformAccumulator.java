@@ -18,7 +18,6 @@
 package com.github.metricscore.hdrhistogram.accumulator;
 
 import com.codahale.metrics.Snapshot;
-import com.github.metricscore.hdrhistogram.accumulator.Accumulator;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
@@ -57,6 +56,16 @@ public class UniformAccumulator implements Accumulator {
             intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
             uniformHistogram.add(intervalHistogram);
             return snapshotTaker.apply(uniformHistogram);
+        } finally {
+            lock.unlock();
+        }
+    }
+
+    public final void reset() {
+        lock.lock();
+        try {
+            intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
+            uniformHistogram.reset();
         } finally {
             lock.unlock();
         }

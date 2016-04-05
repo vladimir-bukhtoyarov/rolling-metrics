@@ -65,7 +65,7 @@ public class PrintingTest {
         System.out.println(builder.withoutSnapshotOptimization().toString());
         System.out.println(builder.withPredefinedPercentiles(new double[] {0.5, 0.99}).toString());
 
-        assertEquals(builder.toString(), builder.clone().toString());
+        assertEquals(builder.toString(), builder.deepCopy().toString());
     }
 
 }
