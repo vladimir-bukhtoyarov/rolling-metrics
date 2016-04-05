@@ -156,10 +156,10 @@ public class HdrBuilder {
     }
 
     public HdrBuilder resetResevoirPeriodically(Duration resettingPeriod, ScheduledExecutorService scheduler) {
-        Objects.requireNonNull(scheduler, "scheduler can not be null");
         if (resettingPeriod.isNegative() || resettingPeriod.isZero()) {
             throw new IllegalArgumentException("resetPeriod must be a positive duration");
         }
+        Objects.requireNonNull(scheduler, "scheduler can not be null");
         accumulationFactory = (recorder, clock) -> new ResetPeriodicallyByTimerAccumulator(recorder, resettingPeriod.toMillis(), scheduler);
         return this;
     }

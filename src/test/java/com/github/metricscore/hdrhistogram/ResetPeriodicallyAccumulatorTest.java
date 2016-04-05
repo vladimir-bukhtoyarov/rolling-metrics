@@ -32,17 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static junit.framework.TestCase.assertEquals;
 
-public class ResetPeriodicallyAccumulationFactoryTest {
-
-    @Test(expected = IllegalArgumentException.class)
-    public void negativeResetPeriodShouldNotAllowed() {
-        new HdrBuilder().resetResevoirPeriodically(Duration.ofMinutes(-5));
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void zeroResetPeriodShouldNotAllowed() {
-        new HdrBuilder().resetResevoirPeriodically(Duration.ZERO);
-    }
+public class ResetPeriodicallyAccumulatorTest {
 
     @Test
     public void shouldCacheSnapshot() {
