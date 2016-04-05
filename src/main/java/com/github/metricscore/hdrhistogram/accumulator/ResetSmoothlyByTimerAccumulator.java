@@ -18,6 +18,7 @@
 package com.github.metricscore.hdrhistogram.accumulator;
 
 import com.codahale.metrics.Snapshot;
+import com.github.metricscore.hdrhistogram.util.SchedulerLeakProtector;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
@@ -51,7 +52,7 @@ public class ResetSmoothlyByTimerAccumulator implements Accumulator {
             lock.unlock();
         }
         long chunkTimeToLiveMillis = measureTimeToLive.toMillis() / numberChunks;
-        scheduler.scheduleAtFixedRate(this::resetOneChunk, chunkTimeToLiveMillis, chunkTimeToLiveMillis, TimeUnit.MILLISECONDS);
+        SchedulerLeakProtector.scheduleAtFixedRate(scheduler, this, ResetSmoothlyByTimerAccumulator::resetOneChunk, chunkTimeToLiveMillis, chunkTimeToLiveMillis, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -96,5 +97,7 @@ public class ResetSmoothlyByTimerAccumulator implements Accumulator {
             lock.unlock();
         }
     }
+
+
 
 }

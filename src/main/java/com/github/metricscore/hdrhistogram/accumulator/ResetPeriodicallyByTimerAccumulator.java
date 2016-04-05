@@ -17,6 +17,7 @@
 
 package com.github.metricscore.hdrhistogram.accumulator;
 
+import com.github.metricscore.hdrhistogram.util.SchedulerLeakProtector;
 import org.HdrHistogram.Recorder;
 
 import java.util.concurrent.ScheduledExecutorService;
@@ -26,7 +27,7 @@ public class ResetPeriodicallyByTimerAccumulator extends UniformAccumulator {
 
     public ResetPeriodicallyByTimerAccumulator(Recorder recorder, long resetIntervalMillis, ScheduledExecutorService scheduler) {
         super(recorder);
-        scheduler.scheduleAtFixedRate(this::reset, resetIntervalMillis, resetIntervalMillis, TimeUnit.MILLISECONDS);
+        SchedulerLeakProtector.scheduleAtFixedRate(scheduler, this, UniformAccumulator::reset, resetIntervalMillis, resetIntervalMillis, TimeUnit.MILLISECONDS);
     }
 
 }
