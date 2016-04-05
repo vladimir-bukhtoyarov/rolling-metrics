@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-package com.github.metricscore.hdrhistogram;
+package com.github.metricscore.hdrhistogram.util;
 
 import java.util.Collection;
 import java.util.List;
@@ -24,11 +24,7 @@ import java.util.concurrent.*;
 @SuppressWarnings("ALL")
 class MockShceduler implements ScheduledExecutorService {
 
-    private Runnable command;
-
-    public Runnable getCommand() {
-        return command;
-    }
+    public Runnable command;
 
     @Override
     public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {

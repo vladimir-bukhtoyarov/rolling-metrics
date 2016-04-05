@@ -58,7 +58,10 @@ public class SnapshotCachingTest {
     public void shouldCacheSnapshot() {
         AtomicLong time = new AtomicLong(System.currentTimeMillis());
         Clock wallClock = MockClock.mock(time);
-        Reservoir reservoir = new HdrBuilder(wallClock).withSnapshotCachingDuration(Duration.ofMillis(1000)).buildReservoir();
+        Reservoir reservoir = new HdrBuilder(wallClock)
+                .resetResevoirOnSnapshot()
+                .withSnapshotCachingDuration(Duration.ofMillis(1000))
+                .buildReservoir();
 
         reservoir.update(10);
         reservoir.update(20);

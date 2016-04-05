@@ -98,7 +98,7 @@ import java.util.function.Supplier;
  *
  * @see org.HdrHistogram.Histogram
  */
-public class HdrBuilder implements Supplier<Recorder> {
+public class HdrBuilder {
 
     // meaningful limits to disallow user to kill performance by inattention
     static final int MAX_CHUNKS = 60;
@@ -151,7 +151,7 @@ public class HdrBuilder implements Supplier<Recorder> {
         if (resettingPeriod.isNegative() || resettingPeriod.isZero()) {
             throw new IllegalArgumentException("resetPeriod must be a positive duration");
         }
-        accumulationFactory = (recorder, clock) -> new ResetPeriodicallyAccumulator(recorder, resettingPeriod.toMillis(), clock);
+        accumulationFactory = ((recorder, clock) -> new ResetPeriodicallyAccumulator(recorder, resettingPeriod.toMillis(), clock));
         return this;
     }
 
@@ -502,12 +502,7 @@ public class HdrBuilder implements Supplier<Recorder> {
         return sortedPercentiles;
     }
 
-    @Override
-    public Recorder get() {
-        return buildRecorder();
-    }
-
-    private interface AccumulationFactory {
+    interface AccumulationFactory {
 
         AccumulationFactory UNIFORM = (recorder, clock) -> new UniformAccumulator(recorder);
 

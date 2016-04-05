@@ -3,15 +3,20 @@ package com.github.metricscore.hdrhistogram.util;
 
 import java.lang.ref.WeakReference;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 public class SchedulerLeakProtector {
 
     public static <T> ScheduledFuture<?> scheduleAtFixedRate(ScheduledExecutorService scheduler, T target, Consumer<T> consumer, long initialDelay, long period, TimeUnit timeUnit) {
-        CompletableFuture<ScheduledFuture<?>> scheduledFutureFuture = new CompletableFuture<>();
-        LeakProtectedRunnable<T> runnable = new LeakProtectedRunnable<>(target, consumer, scheduledFutureFuture);
+        return scheduleAtFixedRate(scheduler, new WeakReference<>(target), consumer, initialDelay, period, timeUnit);
+    }
+
+    public static <T> ScheduledFuture<?> scheduleAtFixedRate(ScheduledExecutorService scheduler, WeakReference<T> target, Consumer<T> consumer, long initialDelay, long period, TimeUnit timeUnit) {
+        AtomicReference<ScheduledFuture<?>> scheduledFutureRef = new AtomicReference<>();
+        LeakProtectedRunnable<T> runnable = new LeakProtectedRunnable<>(target, consumer, scheduledFutureRef);
         ScheduledFuture<?> scheduledFuture = scheduler.scheduleAtFixedRate(runnable, initialDelay, period, timeUnit);
-        scheduledFutureFuture.complete(scheduledFuture);
+        scheduledFutureRef.set(scheduledFuture);
         return scheduledFuture;
     }
 
@@ -19,12 +24,12 @@ public class SchedulerLeakProtector {
 
         private final WeakReference<T> targetReference;
         private final Consumer<T> consumer;
-        private final CompletableFuture<ScheduledFuture<?>> scheduledFutureFuture;
+        private final AtomicReference<ScheduledFuture<?>> scheduledFutureRef;
 
-        LeakProtectedRunnable(T target, Consumer<T> consumer, CompletableFuture<ScheduledFuture<?>> scheduledFutureFuture) {
-            this.targetReference = new WeakReference<>(target);
+        LeakProtectedRunnable(WeakReference<T> targetReference, Consumer<T> consumer, AtomicReference<ScheduledFuture<?>> scheduledFutureRef) {
+            this.targetReference = targetReference;
             this.consumer = consumer;
-            this.scheduledFutureFuture = scheduledFutureFuture;
+            this.scheduledFutureRef = scheduledFutureRef;
         }
 
         @Override
@@ -37,11 +42,7 @@ public class SchedulerLeakProtector {
             }
 
             // target object became unreachable lets cancel scheduled task
-            try {
-                scheduledFutureFuture.get().cancel(false);
-            } catch (Exception e) {
-                throw new IllegalStateException(e);
-            }
+            scheduledFutureRef.get().cancel(false);
         }
 
     }

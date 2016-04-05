@@ -75,12 +75,4 @@ public class OverflowResolverTest {
         assertEquals(101, snapshot.getMax());
     }
 
-    @Test(expected = UnsupportedOperationException.class)
-    public void sizeMethodShouldBeUndefined() {
-        Reservoir reservoir = new HdrBuilder()
-                .withHighestTrackableValue(100, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
-                .buildReservoir();
-        reservoir.size();
-    }
-
 }
