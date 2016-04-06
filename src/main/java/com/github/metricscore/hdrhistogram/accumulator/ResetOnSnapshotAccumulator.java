@@ -27,20 +27,13 @@ import java.util.function.Function;
 
 public class ResetOnSnapshotAccumulator implements Accumulator {
 
-    private final Lock lock;
     private final Recorder recorder;
-
     private Histogram intervalHistogram;
 
     public ResetOnSnapshotAccumulator(Recorder recorder) {
-        this.lock = new ReentrantLock();
         this.recorder = recorder;
-
-        lock.lock();
-        try {
+        synchronized (this) {
             this.intervalHistogram = recorder.getIntervalHistogram();
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -51,12 +44,9 @@ public class ResetOnSnapshotAccumulator implements Accumulator {
 
     @Override
     public Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
-        lock.lock();
-        try {
+        synchronized (this) {
             intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
             return snapshotTaker.apply(intervalHistogram);
-        } finally {
-            lock.unlock();
         }
     }
 

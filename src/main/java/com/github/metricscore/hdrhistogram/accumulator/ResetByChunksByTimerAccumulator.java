@@ -25,13 +25,10 @@ import org.HdrHistogram.Recorder;
 import java.time.Duration;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 public class ResetByChunksByTimerAccumulator implements Accumulator {
 
-    private final Lock lock = new ReentrantLock();
     private final Recorder recorder;
     private final Histogram[] chunks;
 
@@ -39,8 +36,7 @@ public class ResetByChunksByTimerAccumulator implements Accumulator {
     private int snapshotIndex;
 
     public ResetByChunksByTimerAccumulator(Recorder recorder, Duration chunkTimeToLive, int numberChunks, ScheduledExecutorService scheduler) {
-        lock.lock();
-        try {
+        synchronized (this) {
             this.recorder = recorder;
             this.intervalHistogram = recorder.getIntervalHistogram();
             snapshotIndex = 0;
@@ -48,8 +44,6 @@ public class ResetByChunksByTimerAccumulator implements Accumulator {
             for (int i = 0; i < chunks.length; i++) {
                 this.chunks[i] = intervalHistogram.copy();
             }
-        } finally {
-            lock.unlock();
         }
         long chunkTimeToLiveMillis = chunkTimeToLive.toMillis();
         SchedulerLeakProtector.scheduleAtFixedRate(scheduler, this, ResetByChunksByTimerAccumulator::resetOneChunk, chunkTimeToLiveMillis, chunkTimeToLiveMillis, TimeUnit.MILLISECONDS);
@@ -62,15 +56,12 @@ public class ResetByChunksByTimerAccumulator implements Accumulator {
 
     @Override
     public Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
-        lock.lock();
-        try {
+        synchronized (this) {
             intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
             for (Histogram chunk : chunks) {
                 chunk.add(intervalHistogram);
             }
             return snapshotTaker.apply(chunks[snapshotIndex]);
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -80,8 +71,7 @@ public class ResetByChunksByTimerAccumulator implements Accumulator {
     }
 
     private void resetOneChunk() {
-        lock.lock();
-        try {
+        synchronized (this) {
             intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
             for (int i = 0; i < chunks.length; i++) {
                 if (i != snapshotIndex) {
@@ -93,8 +83,6 @@ public class ResetByChunksByTimerAccumulator implements Accumulator {
             if (snapshotIndex == chunks.length) {
                 snapshotIndex = 0;
             }
-        } finally {
-            lock.unlock();
         }
     }
 

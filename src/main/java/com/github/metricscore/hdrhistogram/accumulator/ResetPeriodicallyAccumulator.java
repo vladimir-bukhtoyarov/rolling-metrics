@@ -31,7 +31,6 @@ public class ResetPeriodicallyAccumulator implements Accumulator {
 
     private static final long RESETTING_IN_PROGRESS_HAZARD = Long.MIN_VALUE;
 
-    private final Lock lock = new ReentrantLock();
     private final Recorder recorder;
     private final Histogram uniformHistogram;
     private final long resetIntervalMillis;
@@ -44,11 +43,8 @@ public class ResetPeriodicallyAccumulator implements Accumulator {
         this.resetIntervalMillis = resetIntervalMillis;
         this.clock = clock;
         this.recorder = recorder;
-        lock.lock();
-        try {
+        synchronized (this) {
             this.intervalHistogram = recorder.getIntervalHistogram();
-        } finally {
-            lock.unlock();
         }
         this.uniformHistogram = intervalHistogram.copy();
         nextResetTimeMillisRef = new AtomicLong(clock.getTime() + resetIntervalMillis);
@@ -62,14 +58,11 @@ public class ResetPeriodicallyAccumulator implements Accumulator {
 
     @Override
     public Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
-        lock.lock();
-        try {
+        synchronized (this) {
             resetIfNeed();
             intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
             uniformHistogram.add(intervalHistogram);
             return snapshotTaker.apply(uniformHistogram);
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -86,13 +79,10 @@ public class ResetPeriodicallyAccumulator implements Accumulator {
                 return;
             }
             // CAS was successful, so current thread became the responsible for resetting histograms
-            lock.lock();
-            try {
+            synchronized (this) {
                 intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
                 uniformHistogram.reset();
                 nextResetTimeMillisRef.set(clock.getTime() + resetIntervalMillis);
-            } finally {
-                lock.unlock();
             }
         }
     }

@@ -21,13 +21,10 @@ import com.codahale.metrics.Snapshot;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 public class UniformAccumulator implements Accumulator {
 
-    private final Lock lock = new ReentrantLock();
     private final Recorder recorder;
     private final Histogram uniformHistogram;
 
@@ -35,11 +32,8 @@ public class UniformAccumulator implements Accumulator {
 
     public UniformAccumulator(Recorder recorder) {
         this.recorder = recorder;
-        lock.lock();
-        try {
+        synchronized (this) {
             this.intervalHistogram = recorder.getIntervalHistogram();
-        } finally {
-            lock.unlock();
         }
         this.uniformHistogram = intervalHistogram.copy();
     }
@@ -51,23 +45,17 @@ public class UniformAccumulator implements Accumulator {
 
     @Override
     public Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
-        lock.lock();
-        try {
+        synchronized (this) {
             intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
             uniformHistogram.add(intervalHistogram);
             return snapshotTaker.apply(uniformHistogram);
-        } finally {
-            lock.unlock();
         }
     }
 
     public final void reset() {
-        lock.lock();
-        try {
+        synchronized (this) {
             intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
             uniformHistogram.reset();
-        } finally {
-            lock.unlock();
         }
     }
 

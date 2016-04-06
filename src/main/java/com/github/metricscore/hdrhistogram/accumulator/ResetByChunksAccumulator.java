@@ -28,36 +28,28 @@ import java.util.function.Function;
 
 public class ResetByChunksAccumulator implements Accumulator {
 
-    private final Lock lock = new ReentrantLock();
     private final Recorder recorder;
-    private final Histogram[] chunks;
-    private final long intervalBetweenResettingChunksMillis;
+    private final Chunk[] chunks;
+    private final long chunkTimeToLiveMillis;
     private final Clock clock;
 
     private volatile long nextResetTimeMillis;
     private int snapshotIndex;
     private Histogram intervalHistogram;
 
-    public ResetByChunksAccumulator(Recorder recorder, int numberChunks, long measureTimeToLiveMillis, Clock clock) {
-        this.intervalBetweenResettingChunksMillis = measureTimeToLiveMillis / numberChunks;
+    public ResetByChunksAccumulator(Recorder recorder, int numberChunks, long chunkTimeToLiveMillis, Clock clock) {
+        this.chunkTimeToLiveMillis = chunkTimeToLiveMillis;
         this.clock = clock;
         this.recorder = recorder;
-        lock.lock();
-        try {
-            this.intervalHistogram = recorder.getIntervalHistogram();
-            this.chunks = new Histogram[numberChunks + 1];
-            for (int i = 0; i < chunks.length; i++) {
-                this.chunks[i] = intervalHistogram.copy();
-            }
-
+        synchronized (this) {
             long nowMillis = clock.getTime();
-            for (int i = 1; i <= chunks.length; i++) {
-                this.chunks[i].setEndTimeStamp(nowMillis + i * intervalBetweenResettingChunksMillis);
+            this.intervalHistogram = recorder.getIntervalHistogram();
+            this.chunks = new Chunk[numberChunks];
+            for (int i = 0; i < chunks.length; i++) {
+                this.chunks[i] = new Chunk(intervalHistogram.copy(), nowMillis + (i + 1) * this.chunkTimeToLiveMillis);
             }
             snapshotIndex = 0;
-            nextResetTimeMillis = nowMillis + intervalBetweenResettingChunksMillis;
-        } finally {
-            lock.unlock();
+            nextResetTimeMillis = nowMillis + this.chunkTimeToLiveMillis;
         }
     }
 
@@ -69,16 +61,14 @@ public class ResetByChunksAccumulator implements Accumulator {
 
     @Override
     public Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
-        lock.lock();
-        try {
-            resetIfNeed();
-            intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
-            for (Histogram chunk : chunks) {
-                chunk.add(intervalHistogram);
+        synchronized (this) {
+            if (!resetIfNeed()) {
+                intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
+                for (Chunk chunk : chunks) {
+                    chunk.histogram.add(intervalHistogram);
+                }
             }
-            return snapshotTaker.apply(chunks[snapshotIndex]);
-        } finally {
-            lock.unlock();
+            return snapshotTaker.apply(chunks[snapshotIndex].histogram);
         }
     }
 
@@ -93,8 +83,7 @@ public class ResetByChunksAccumulator implements Accumulator {
             return false;
         }
 
-        lock.lock();
-        try {
+        synchronized (this) {
             nowMillis = clock.getTime();
             if (nowMillis < nextResetTimeMillis) {
                 // histograms already cleared by another concurrent thread
@@ -103,36 +92,48 @@ public class ResetByChunksAccumulator implements Accumulator {
 
             intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
 
-            long numberOfChuncksToReset = (nowMillis - nextResetTimeMillis) / intervalBetweenResettingChunksMillis + 1;
+            long numberOfChuncksToReset = (nowMillis - nextResetTimeMillis) / chunkTimeToLiveMillis + 1;
             if (numberOfChuncksToReset >= chunks.length) {
                 // was unused for a long time, need to reset all chunks
                 for (int i = 1; i <= chunks.length; i++) {
-                    this.chunks[i -1].reset();
-                    this.chunks[i].setEndTimeStamp(nowMillis + i * intervalBetweenResettingChunksMillis);
+                    this.chunks[i -1].histogram.reset();
+                    this.chunks[i].proposedEndTimestamp = nowMillis + i * chunkTimeToLiveMillis;
                 }
                 snapshotIndex = 0;
-                nextResetTimeMillis = nowMillis + intervalBetweenResettingChunksMillis;
+                nextResetTimeMillis = nowMillis + chunkTimeToLiveMillis;
                 return true;
             }
 
             long proposedNextResetTimeMillis = Long.MAX_VALUE;
             for (int i = 1; i <= chunks.length; i++) {
-                long chunkEndTimestamp = chunks[i].getEndTimeStamp();
-                if (chunkEndTimestamp <= nowMillis) {
-                    this.chunks[i].reset();
-                    this.chunks[i].setEndTimeStamp(chunkEndTimestamp + chunks.length * intervalBetweenResettingChunksMillis);
+                if (chunks[i].proposedEndTimestamp <= nowMillis) {
+                    this.chunks[i].histogram.reset();
+                    this.chunks[i].proposedEndTimestamp = chunks[i].proposedEndTimestamp + chunks.length * chunkTimeToLiveMillis;
                 } else {
-                    if (chunkEndTimestamp < proposedNextResetTimeMillis) {
-                        proposedNextResetTimeMillis = chunkEndTimestamp;
+                    if (chunks[i].proposedEndTimestamp < proposedNextResetTimeMillis) {
+                        proposedNextResetTimeMillis = chunks[i].proposedEndTimestamp;
                         snapshotIndex = i;
-                        this.chunks[i].add(intervalHistogram);
+                        this.chunks[i].histogram.add(intervalHistogram);
                     }
                 }
             }
             nextResetTimeMillis = proposedNextResetTimeMillis;
             return true;
-        } finally {
-            lock.unlock();
         }
     }
+
+    private static final class Chunk {
+
+        final Histogram histogram;
+
+        long proposedEndTimestamp;
+
+        public Chunk(Histogram histogram, long proposedEndTimestamp) {
+            this.proposedEndTimestamp = proposedEndTimestamp;
+            this.histogram = histogram;
+        }
+
+    }
+
+
 }
