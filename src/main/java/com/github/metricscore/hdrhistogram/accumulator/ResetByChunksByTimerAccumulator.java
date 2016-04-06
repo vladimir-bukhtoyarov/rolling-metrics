@@ -29,7 +29,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
-public class ResetSmoothlyByTimerAccumulator implements Accumulator {
+public class ResetByChunksByTimerAccumulator implements Accumulator {
 
     private final Lock lock = new ReentrantLock();
     private final Recorder recorder;
@@ -38,21 +38,21 @@ public class ResetSmoothlyByTimerAccumulator implements Accumulator {
     private Histogram intervalHistogram;
     private int snapshotIndex;
 
-    public ResetSmoothlyByTimerAccumulator(Recorder recorder, Duration measureTimeToLive, int numberChunks, ScheduledExecutorService scheduler) {
+    public ResetByChunksByTimerAccumulator(Recorder recorder, Duration chunkTimeToLive, int numberChunks, ScheduledExecutorService scheduler) {
         lock.lock();
         try {
             this.recorder = recorder;
             this.intervalHistogram = recorder.getIntervalHistogram();
             snapshotIndex = 0;
-            this.chunks = new Histogram[numberChunks + 1];
+            this.chunks = new Histogram[numberChunks];
             for (int i = 0; i < chunks.length; i++) {
                 this.chunks[i] = intervalHistogram.copy();
             }
         } finally {
             lock.unlock();
         }
-        long chunkTimeToLiveMillis = measureTimeToLive.toMillis() / numberChunks;
-        SchedulerLeakProtector.scheduleAtFixedRate(scheduler, this, ResetSmoothlyByTimerAccumulator::resetOneChunk, chunkTimeToLiveMillis, chunkTimeToLiveMillis, TimeUnit.MILLISECONDS);
+        long chunkTimeToLiveMillis = chunkTimeToLive.toMillis();
+        SchedulerLeakProtector.scheduleAtFixedRate(scheduler, this, ResetByChunksByTimerAccumulator::resetOneChunk, chunkTimeToLiveMillis, chunkTimeToLiveMillis, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -97,7 +97,5 @@ public class ResetSmoothlyByTimerAccumulator implements Accumulator {
             lock.unlock();
         }
     }
-
-
 
 }

@@ -26,7 +26,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
-public class ResetSmoothlyAccumulator implements Accumulator {
+public class ResetByChunksAccumulator implements Accumulator {
 
     private final Lock lock = new ReentrantLock();
     private final Recorder recorder;
@@ -38,7 +38,7 @@ public class ResetSmoothlyAccumulator implements Accumulator {
     private int snapshotIndex;
     private Histogram intervalHistogram;
 
-    public ResetSmoothlyAccumulator(Recorder recorder, int numberChunks, long measureTimeToLiveMillis, Clock clock) {
+    public ResetByChunksAccumulator(Recorder recorder, int numberChunks, long measureTimeToLiveMillis, Clock clock) {
         this.intervalBetweenResettingChunksMillis = measureTimeToLiveMillis / numberChunks;
         this.clock = clock;
         this.recorder = recorder;

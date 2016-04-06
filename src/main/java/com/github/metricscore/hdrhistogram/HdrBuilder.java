@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.function.Supplier;
 
 /**
  * The entry point of metrics-core-hdr library which can be used for creation and registration histograms, timers and reservoirs.
@@ -102,7 +101,7 @@ public class HdrBuilder {
 
     // meaningful limits to disallow user to kill performance by inattention
     static final int MAX_CHUNKS = 60;
-    static final long MIN_MEASURE_TIME_TO_LIVE_MILLIS = 1000;
+    static final long MIN_CHUNK_TIME_TO_LIVE_MILLIS = 1000;
 
     static int DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS = 2;
     static AccumulationFactory DEFAULT_ACCUMULATION_STRATEGY = AccumulationFactory.UNIFORM;
@@ -164,16 +163,16 @@ public class HdrBuilder {
         return this;
     }
 
-    public HdrBuilder resetResevoirSmoothly(Duration measureTimeToLive, int numberChunks, ScheduledExecutorService scheduler) {
-        validateSmoothlyResetParameters(measureTimeToLive, numberChunks);
+    public HdrBuilder resetResevoirByChunks(Duration chunkTimeToLive, int numberChunks, ScheduledExecutorService scheduler) {
+        validateSmoothlyResetParameters(chunkTimeToLive, numberChunks);
         Objects.requireNonNull(scheduler, "scheduler can not be null");
-        accumulationFactory = (recorder, clock) -> new ResetSmoothlyByTimerAccumulator(recorder, measureTimeToLive, numberChunks, scheduler);
+        accumulationFactory = (recorder, clock) -> new ResetByChunksByTimerAccumulator(recorder, chunkTimeToLive, numberChunks, scheduler);
         return this;
     }
 
-    public HdrBuilder resetResevoirSmoothly(Duration measureTimeToLive, int numberChunks) {
-        validateSmoothlyResetParameters(measureTimeToLive, numberChunks);
-        accumulationFactory = (recorder, clock) -> new ResetSmoothlyAccumulator(recorder, numberChunks, measureTimeToLive.toMillis(), clock);
+    public HdrBuilder resetResevoirByChunks(Duration chunkTimeToLive, int numberChunks) {
+        validateSmoothlyResetParameters(chunkTimeToLive, numberChunks);
+        accumulationFactory = (recorder, clock) -> new ResetByChunksAccumulator(recorder, numberChunks, chunkTimeToLive.toMillis(), clock);
         return this;
     }
 
@@ -481,12 +480,12 @@ public class HdrBuilder {
         return reservoir;
     }
 
-    private void validateSmoothlyResetParameters(Duration measureTimeToLive, int numberChunks) {
-        if (measureTimeToLive.isNegative() || measureTimeToLive.isZero()) {
-            throw new IllegalArgumentException("measureTimeToLive must be a positive duration");
+    private void validateSmoothlyResetParameters(Duration chunkTimeToLive, int numberChunks) {
+        if (chunkTimeToLive.isNegative() || chunkTimeToLive.isZero()) {
+            throw new IllegalArgumentException("chunkTimeToLive must be a positive duration");
         }
-        if (measureTimeToLive.toMillis() < MIN_MEASURE_TIME_TO_LIVE_MILLIS) {
-            throw new IllegalArgumentException("measureTimeToLive must be >= " + MIN_MEASURE_TIME_TO_LIVE_MILLIS + " millis");
+        if (chunkTimeToLive.toMillis() < MIN_CHUNK_TIME_TO_LIVE_MILLIS) {
+            throw new IllegalArgumentException("chunkTimeToLive must be >= " + MIN_CHUNK_TIME_TO_LIVE_MILLIS + " millis");
         }
         if (numberChunks < 2) {
             throw new IllegalArgumentException("numberChunks should be >= 2");

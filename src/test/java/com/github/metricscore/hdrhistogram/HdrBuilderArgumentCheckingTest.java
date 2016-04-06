@@ -24,7 +24,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static com.github.metricscore.hdrhistogram.HdrBuilder.MAX_CHUNKS;
-import static com.github.metricscore.hdrhistogram.HdrBuilder.MIN_MEASURE_TIME_TO_LIVE_MILLIS;
+import static com.github.metricscore.hdrhistogram.HdrBuilder.MIN_CHUNK_TIME_TO_LIVE_MILLIS;
 import static org.junit.Assert.fail;
 
 
@@ -151,32 +151,32 @@ public class HdrBuilderArgumentCheckingTest {
     }
 
     @Test
-    public void validateResetSmoothlyParametersTest() {
+    public void validateResetByChunksParametersTest() {
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
         try {
-            new HdrBuilder().resetResevoirSmoothly(Duration.ofSeconds(60), 2, null);
+            new HdrBuilder().resetResevoirByChunks(Duration.ofSeconds(60), 2, null);
             fail("should detect null scheduler in fail fast manner");
         } catch (NullPointerException e) {}
 
-        new HdrBuilder().resetResevoirSmoothly(Duration.ofMillis(MIN_MEASURE_TIME_TO_LIVE_MILLIS), MAX_CHUNKS, scheduler);
+        new HdrBuilder().resetResevoirByChunks(Duration.ofMillis(MIN_CHUNK_TIME_TO_LIVE_MILLIS), MAX_CHUNKS, scheduler);
         try {
-            new HdrBuilder().resetResevoirSmoothly(Duration.ofMillis(-1), 2, scheduler);
+            new HdrBuilder().resetResevoirByChunks(Duration.ofMillis(-1), 2, scheduler);
             fail("should disallow negative duration");
         } catch (IllegalArgumentException e) {}
 
         try {
-            new HdrBuilder().resetResevoirSmoothly(Duration.ofMillis(MIN_MEASURE_TIME_TO_LIVE_MILLIS - 1), MAX_CHUNKS);
+            new HdrBuilder().resetResevoirByChunks(Duration.ofMillis(MIN_CHUNK_TIME_TO_LIVE_MILLIS - 1), MAX_CHUNKS);
             fail("should disallow too short duration");
         } catch (IllegalArgumentException e) {}
 
         try {
-            new HdrBuilder().resetResevoirSmoothly(Duration.ofMillis(MIN_MEASURE_TIME_TO_LIVE_MILLIS), MAX_CHUNKS + 1, scheduler);
+            new HdrBuilder().resetResevoirByChunks(Duration.ofMillis(MIN_CHUNK_TIME_TO_LIVE_MILLIS), MAX_CHUNKS + 1, scheduler);
             fail("should too many chunks");
         } catch (IllegalArgumentException e) {}
 
         try {
-            new HdrBuilder().resetResevoirSmoothly(Duration.ofMillis(MIN_MEASURE_TIME_TO_LIVE_MILLIS), 1, scheduler);
+            new HdrBuilder().resetResevoirByChunks(Duration.ofMillis(MIN_CHUNK_TIME_TO_LIVE_MILLIS), 1, scheduler);
             fail("should check that chunks >= 2");
         } catch (IllegalArgumentException e) {}
     }
