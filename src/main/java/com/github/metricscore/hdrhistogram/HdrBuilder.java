@@ -18,18 +18,21 @@
 package com.github.metricscore.hdrhistogram;
 
 import com.codahale.metrics.*;
-import com.github.metricscore.hdrhistogram.accumulator.*;
+import com.github.metricscore.hdrhistogram.accumulator.Accumulator;
+import com.github.metricscore.hdrhistogram.accumulator.ResetByChunksAccumulator;
+import com.github.metricscore.hdrhistogram.accumulator.ResetOnSnapshotAccumulator;
+import com.github.metricscore.hdrhistogram.accumulator.UniformAccumulator;
 import org.HdrHistogram.Recorder;
 
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Supplier;
 
 /**
  * The entry point of metrics-core-hdr library which can be used for creation and registration histograms, timers and reservoirs.
- *
+ * <p>
  * <p>The builder provides ability to configure:</p>
  * <ul>
  * <li><b>Different strategies of reservoir resetting</b>HdrHistogram loses nothing it is good and bad in same time.
@@ -39,7 +42,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * Metrics-Core-Hdr provides out of the box three different solutions:
  * <ol>
  * <li>{@link #resetResevoirOnSnapshot()}</li>
- * <li>{@link #resetResevoirPeriodically(Duration)}</li>
+ * <li>{@link #resetReservoirPeriodically(Duration)}</li>
  * <li>{@link #neverResetResevoir()}</li>
  * </ol>
  * </li>
@@ -49,7 +52,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * Problem with this type of monitoring systems can be illustrated with following example: Imagine that you collect "95 percentile", "99 percentile" and "mean" from th histogram.
  * If these three measures will be stored in database from different snapshots then you can show something unbelievable on the monitoring screens when in same moment of time "95 percentile" is greater then "99 percentile",
  * because RMI/JMX can not support reading multiple in single query.
- *
+ * <p>
  * <p>There is no solution which solves 100% problems of pulling model, but good news are the caching of snapshot will be enough for many cases.
  * According to Zabbix Java Proxy snapshot caching will work in following way: imagine that Zabbix collects measures from your application each 60 seconds and you configured reservoir to snapshotCachingDuration 5 seconds,
  * in this case solution will work in following way:
@@ -67,7 +70,7 @@ import java.util.concurrent.ScheduledExecutorService;
  * <li><b>predefinedPercentiles</b> If you already know list of percentiles which need to be stored in monitoring database,
  * then you can specify it to optimize snapshot size, as result unnecessary garbage will be avoided, see {@link #withPredefinedPercentiles(double[])}</li>
  * </ul>
- *
+ * <p>
  * <p><br> An example of usage:
  * <pre><code>
  *         HdrBuilder builder = HdrBuilder();
@@ -87,7 +90,7 @@ import java.util.concurrent.ScheduledExecutorService;
  *         registry.register(histogram2, "my-histogram-2");
  *     </code>
  * </pre>
- *
+ * <p>
  * In order to be sure that Reservoir with provided settings does not consume too much memory you can use {@link #getEstimatedFootprintInBytes()} method which returns conservatively high estimation of the Reservoir's total footprint in bytes:
  * <pre><code>
  *         HdrBuilder builder = new HdrBuilder().withSignificantDigits(3);
@@ -99,13 +102,13 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class HdrBuilder {
 
-    // meaningful limits to disallow user to kill performance by inattention
+    // meaningful limits to disallow user to kill performance(or memory footprint) by mistake
     static final int MAX_CHUNKS = 60;
-    static final long MIN_CHUNK_TIME_TO_LIVE_MILLIS = 1000;
+    static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
 
     static int DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS = 2;
     static AccumulationFactory DEFAULT_ACCUMULATION_STRATEGY = AccumulationFactory.UNIFORM;
-    static double[] DEFAULT_PERCENTILES = new double[] {0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999};
+    static double[] DEFAULT_PERCENTILES = new double[]{0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999};
 
     public HdrBuilder() {
         this(Clock.defaultClock());
@@ -113,11 +116,11 @@ public class HdrBuilder {
 
     /**
      * Reservoir configured with this strategy will be cleared each time when snapshot taken.
-     *
+     * <p>
      * <p>This is default strategy for {@link HdrBuilder}
      *
      * @return this builder instance
-     * @see #resetResevoirPeriodically(Duration)
+     * @see #resetReservoirPeriodically(Duration)
      * @see #neverResetResevoir()
      */
     public HdrBuilder resetResevoirOnSnapshot() {
@@ -129,9 +132,9 @@ public class HdrBuilder {
      * Reservoir configured with this strategy will store all measures since the reservoir was created.
      *
      * @return this builder instance
-     * @see #resetResevoirPeriodically(Duration)
+     * @see #resetReservoirPeriodically(Duration)
      * @see #resetResevoirOnSnapshot()
-     * @see UniformAccumulationFactory
+     * @see #resetReservoirByChunks(Duration, int)
      */
     public HdrBuilder neverResetResevoir() {
         accumulationFactory = AccumulationFactory.UNIFORM;
@@ -139,40 +142,57 @@ public class HdrBuilder {
     }
 
     /**
-     * Reservoir configured with this strategy will be cleared after each {@code resettingPeriod}.
+     * Reservoir configured with this strategy will be cleared fully after each <tt>resettingPeriod</tt>.
+     * <p>
+     * <p>
+     * The measure written to reservoir will take affect at most <tt>resettingPeriod</tt> time.
+     * </p>
+     * <p>
+     * <p>
+     * This is equivalent for {@code resetReservoirByChunks(resettingPeriod, 1)}
+     * </p>
      *
      * @param resettingPeriod specifies how often need to reset reservoir
      * @return this builder instance
      * @see #neverResetResevoir()
      * @see #resetResevoirOnSnapshot()
+     * @see #resetReservoirByChunks(Duration, int)
      */
-    public HdrBuilder resetResevoirPeriodically(Duration resettingPeriod) {
+    public HdrBuilder resetReservoirPeriodically(Duration resettingPeriod) {
+        return resetReservoirByChunks(resettingPeriod, 1);
+    }
+
+    /**
+     * Reservoir configured with this strategy will be divided to <tt>numberChunks</tt> parts,
+     * and one chunk will be cleared after each <tt>resettingPeriod</tt>.
+     * This strategy is more smoothly then <tt>resetReservoirPeriodically</tt> because reservoir never zeroyed at whole,
+     * so user experience provided by <tt>resetReservoirByChunks</tt> should look more pretty.
+     * <p>
+     * The measure written to reservoir will take affect at least <tt>resettingPeriod * (numberChunks - 1) and at most <tt>resettingPeriod * numberChunks</tt> time,
+     * for example when you configure <tt>resettingPeriod=10 seconds and numberChunks=6</tt> then each measure written to reservoir will be stored at 50-60 seconds
+     * </p>
+     *
+     * @param resettingPeriod specifies interval between chunk resetting
+     * @param numberChunks specifies number of chunks by which reservoir will be slitted
+     * @return this builder instance
+     * @see #neverResetResevoir()
+     * @see #resetResevoirOnSnapshot()
+     * @see #resetReservoirPeriodically(Duration)
+     */
+    public HdrBuilder resetReservoirByChunks(Duration resettingPeriod, int numberChunks) {
         if (resettingPeriod.isNegative() || resettingPeriod.isZero()) {
-            throw new IllegalArgumentException("resetPeriod must be a positive duration");
+            throw new IllegalArgumentException("resettingPeriod must be a positive duration");
         }
-        accumulationFactory = ((recorder, clock) -> new ResetPeriodicallyAccumulator(recorder, resettingPeriod.toMillis(), clock));
-        return this;
-    }
-
-    public HdrBuilder resetResevoirPeriodically(Duration resettingPeriod, ScheduledExecutorService scheduler) {
-        if (resettingPeriod.isNegative() || resettingPeriod.isZero()) {
-            throw new IllegalArgumentException("resetPeriod must be a positive duration");
+        if (resettingPeriod.toMillis() < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
+            throw new IllegalArgumentException("resettingPeriod must be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis");
         }
-        Objects.requireNonNull(scheduler, "scheduler can not be null");
-        accumulationFactory = (recorder, clock) -> new ResetPeriodicallyByTimerAccumulator(recorder, resettingPeriod.toMillis(), scheduler);
-        return this;
-    }
-
-    public HdrBuilder resetResevoirByChunks(Duration chunkTimeToLive, int numberChunks, ScheduledExecutorService scheduler) {
-        validateSmoothlyResetParameters(chunkTimeToLive, numberChunks);
-        Objects.requireNonNull(scheduler, "scheduler can not be null");
-        accumulationFactory = (recorder, clock) -> new ResetByChunksByTimerAccumulator(recorder, chunkTimeToLive, numberChunks, scheduler);
-        return this;
-    }
-
-    public HdrBuilder resetResevoirByChunks(Duration chunkTimeToLive, int numberChunks) {
-        validateSmoothlyResetParameters(chunkTimeToLive, numberChunks);
-        accumulationFactory = (recorder, clock) -> new ResetByChunksAccumulator(recorder, numberChunks, chunkTimeToLive.toMillis(), clock);
+        if (numberChunks < 1) {
+            throw new IllegalArgumentException("numberChunks should be >= 1");
+        }
+        if (numberChunks > MAX_CHUNKS) {
+            throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
+        }
+        accumulationFactory = (recorder, clock) -> new ResetByChunksAccumulator(recorder, numberChunks, resettingPeriod.toMillis(), clock);
         return this;
     }
 
@@ -221,7 +241,7 @@ public class HdrBuilder {
      * Configures the highest value to be tracked by the histogram.
      *
      * @param highestTrackableValue highest value to be tracked by the histogram. Must be a positive integer that is {@literal >=} (2 * lowestDiscernibleValue)
-     * @param overflowResolver specifies behavior which should be applied when writing to reservoir value which greater than highestTrackableValue
+     * @param overflowResolver      specifies behavior which should be applied when writing to reservoir value which greater than highestTrackableValue
      * @return this builder instance
      */
     public HdrBuilder withHighestTrackableValue(long highestTrackableValue, OverflowResolver overflowResolver) {
@@ -233,6 +253,20 @@ public class HdrBuilder {
         return this;
     }
 
+    /**
+     * When this setting is configured then it will be used to compensate for the loss of sampled values when a recorded value is larger than the expected interval between value samples,
+     * Histogram will auto-generate an additional series of decreasingly-smaller (down to the expectedIntervalBetweenValueSamples) value records.
+     *
+     * <p>
+     *     <font color="red">WARNING:</font> You should not use this method for monitoring your application in the production,
+     *     its designed to be used inside benchmarks and load testing. See related notes {@link org.HdrHistogram.AbstractHistogram#recordValueWithExpectedInterval(long, long)}
+     * for more explanations about coordinated omission and expected interval correction.
+     * </p>
+     *
+     * @param expectedIntervalBetweenValueSamples
+     * @return this builder instance
+     * @see org.HdrHistogram.AbstractHistogram#recordValueWithExpectedInterval(long, long)
+     */
     public HdrBuilder withExpectedIntervalBetweenValueSamples(long expectedIntervalBetweenValueSamples) {
         this.expectedIntervalBetweenValueSamples = Optional.of(expectedIntervalBetweenValueSamples);
         return this;
@@ -245,7 +279,7 @@ public class HdrBuilder {
      * Problem with this type of monitoring systems can be illustrated with following example: Imagine that you collect "95 percentile", "99 percentile" and "mean" from th histogram.
      * If these three measures will be stored in database from different snapshots then you can show something unbelievable on the monitoring screens when in same moment of time "95 percentile" is greater then "99 percentile",
      * because RMI/JMX can not support reading multiple in single query.
-     *
+     * <p>
      * <p>There is no solution which solves 100% problems of pulling model, but good news are the caching of snapshot will be enough for many cases.
      * According to Zabbix Java Proxy snapshot caching will work in following way: imagine that Zabbix collects measures from your application each 60 seconds and you configured reservoir to snapshotCachingDuration 5 seconds,
      * in this case solution will work in following way:
@@ -277,7 +311,7 @@ public class HdrBuilder {
      * <p>
      * This method is useful when you already know list of percentiles which need to be stored in monitoring database,
      * then you can specify it to optimize snapshot size, as result unnecessary garbage will be avoided, memory in spashot will allocated only for percentiles which you configure.
-     *
+     * <p>
      * <p> Moreover by default builder already configured with default list of percentiles {@link #DEFAULT_PERCENTILES} which tightly compatible with {@link com.codahale.metrics.JmxReporter},
      * the deault percentiles are <code>double[] {0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999}</code>
      *
@@ -341,7 +375,7 @@ public class HdrBuilder {
      * Builds and registers histogram.
      *
      * @param registry metric registry in which constructed histogram will be registered
-     * @param name the name under with constructed histogram will be registered in the {@code registry}
+     * @param name     the name under with constructed histogram will be registered in the {@code registry}
      * @return an instance of {@link com.codahale.metrics.Histogram}
      * @see #buildHistogram()
      */
@@ -365,7 +399,7 @@ public class HdrBuilder {
      * Builds and registers timer.
      *
      * @param registry metric registry in which constructed histogram will be registered
-     * @param name the name under with constructed timer will be registered in the {@code registry}
+     * @param name     the name under with constructed timer will be registered in the {@code registry}
      * @return an instance of {@link com.codahale.metrics.Timer}
      * @see #buildTimer()
      */
@@ -445,10 +479,7 @@ public class HdrBuilder {
 
     private HdrReservoir buildHdrReservoir() {
         validateParameters();
-        Recorder recorder = buildRecorder();
-        Accumulator accumulator = accumulationFactory.createAccumulator(recorder, clock);
-        // wrap around by decorator if highestTrackableValue was specified
-
+        Accumulator accumulator = accumulationFactory.createAccumulator(this::buildRecorder, clock);
         return new HdrReservoir(accumulator, predefinedPercentiles, highestTrackableValue, overflowResolver, expectedIntervalBetweenValueSamples);
     }
 
@@ -480,21 +511,6 @@ public class HdrBuilder {
         return reservoir;
     }
 
-    private void validateSmoothlyResetParameters(Duration chunkTimeToLive, int numberChunks) {
-        if (chunkTimeToLive.isNegative() || chunkTimeToLive.isZero()) {
-            throw new IllegalArgumentException("chunkTimeToLive must be a positive duration");
-        }
-        if (chunkTimeToLive.toMillis() < MIN_CHUNK_TIME_TO_LIVE_MILLIS) {
-            throw new IllegalArgumentException("chunkTimeToLive must be >= " + MIN_CHUNK_TIME_TO_LIVE_MILLIS + " millis");
-        }
-        if (numberChunks < 2) {
-            throw new IllegalArgumentException("numberChunks should be >= 2");
-        }
-        if (numberChunks > MAX_CHUNKS) {
-            throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
-        }
-    }
-
     private static double[] copyAndSort(double[] predefinedPercentiles) {
         double[] sortedPercentiles = Arrays.copyOf(predefinedPercentiles, predefinedPercentiles.length);
         Arrays.sort(sortedPercentiles);
@@ -503,11 +519,11 @@ public class HdrBuilder {
 
     interface AccumulationFactory {
 
-        AccumulationFactory UNIFORM = (recorder, clock) -> new UniformAccumulator(recorder);
+        AccumulationFactory UNIFORM = (recorderSupplier, clock) -> new UniformAccumulator(recorderSupplier.get());
 
-        AccumulationFactory RESET_ON_SNAPSHOT = (recorder, clock) -> new ResetOnSnapshotAccumulator(recorder);
+        AccumulationFactory RESET_ON_SNAPSHOT = (recorderSupplier, clock) -> new ResetOnSnapshotAccumulator(recorderSupplier.get());
 
-        Accumulator createAccumulator(Recorder recorder, Clock clock);
+        Accumulator createAccumulator(Supplier<Recorder> recorderSupplier, Clock clock);
 
     }
 

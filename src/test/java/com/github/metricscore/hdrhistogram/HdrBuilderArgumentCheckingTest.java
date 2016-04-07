@@ -24,7 +24,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import static com.github.metricscore.hdrhistogram.HdrBuilder.MAX_CHUNKS;
-import static com.github.metricscore.hdrhistogram.HdrBuilder.MIN_CHUNK_TIME_TO_LIVE_MILLIS;
+import static com.github.metricscore.hdrhistogram.HdrBuilder.MIN_CHUNK_RESETTING_INTERVAL_MILLIS;
 import static org.junit.Assert.fail;
 
 
@@ -127,56 +127,34 @@ public class HdrBuilderArgumentCheckingTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void negativeResetPeriodShouldNotAllowedForResetResevoirPeriodically() {
-        new HdrBuilder().resetResevoirPeriodically(Duration.ofMinutes(-5));
+        new HdrBuilder().resetReservoirPeriodically(Duration.ofMinutes(-5));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void zeroResetPeriodShouldNotAllowedForResetResevoirPeriodically() {
-        new HdrBuilder().resetResevoirPeriodically(Duration.ZERO);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void negativeResetPeriodShouldNotAllowedForResetResevoirPeriodicallyViaScheduler() {
-        new HdrBuilder().resetResevoirPeriodically(Duration.ofMinutes(-5), Executors.newScheduledThreadPool(1));
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void zeroResetPeriodShouldNotAllowedForResetResevoirPeriodicallyViaScheduler() {
-        new HdrBuilder().resetResevoirPeriodically(Duration.ZERO, Executors.newScheduledThreadPool(1));
-    }
-
-    @Test(expected = NullPointerException.class)
-    public void nullSchedulerShouldBeDetectedInFailFastStyle() {
-        new HdrBuilder().resetResevoirPeriodically(Duration.ofSeconds(60), null);
+        new HdrBuilder().resetReservoirPeriodically(Duration.ZERO);
     }
 
     @Test
     public void validateResetByChunksParametersTest() {
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
+        new HdrBuilder().resetReservoirByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS), MAX_CHUNKS);
         try {
-            new HdrBuilder().resetResevoirByChunks(Duration.ofSeconds(60), 2, null);
-            fail("should detect null scheduler in fail fast manner");
-        } catch (NullPointerException e) {}
-
-        new HdrBuilder().resetResevoirByChunks(Duration.ofMillis(MIN_CHUNK_TIME_TO_LIVE_MILLIS), MAX_CHUNKS, scheduler);
-        try {
-            new HdrBuilder().resetResevoirByChunks(Duration.ofMillis(-1), 2, scheduler);
+            new HdrBuilder().resetReservoirByChunks(Duration.ofMillis(-1), 2);
             fail("should disallow negative duration");
         } catch (IllegalArgumentException e) {}
 
         try {
-            new HdrBuilder().resetResevoirByChunks(Duration.ofMillis(MIN_CHUNK_TIME_TO_LIVE_MILLIS - 1), MAX_CHUNKS);
+            new HdrBuilder().resetReservoirByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS - 1), MAX_CHUNKS);
             fail("should disallow too short duration");
         } catch (IllegalArgumentException e) {}
 
         try {
-            new HdrBuilder().resetResevoirByChunks(Duration.ofMillis(MIN_CHUNK_TIME_TO_LIVE_MILLIS), MAX_CHUNKS + 1, scheduler);
+            new HdrBuilder().resetReservoirByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS), MAX_CHUNKS + 1);
             fail("should too many chunks");
         } catch (IllegalArgumentException e) {}
 
         try {
-            new HdrBuilder().resetResevoirByChunks(Duration.ofMillis(MIN_CHUNK_TIME_TO_LIVE_MILLIS), 1, scheduler);
+            new HdrBuilder().resetReservoirByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS), 1);
             fail("should check that chunks >= 2");
         } catch (IllegalArgumentException e) {}
     }

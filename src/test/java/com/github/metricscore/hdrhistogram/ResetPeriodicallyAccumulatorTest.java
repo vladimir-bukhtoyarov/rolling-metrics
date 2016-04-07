@@ -39,7 +39,7 @@ public class ResetPeriodicallyAccumulatorTest {
         AtomicLong time = new AtomicLong(System.currentTimeMillis());
         Clock wallClock = MockClock.mock(time);
         Reservoir reservoir = new HdrBuilder(wallClock)
-                .resetResevoirPeriodically(Duration.ofMillis(1000))
+                .resetReservoirPeriodically(Duration.ofMillis(1000))
                 .buildReservoir();
 
         reservoir.update(10);
@@ -80,7 +80,7 @@ public class ResetPeriodicallyAccumulatorTest {
     @Test(timeout = 5000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
         Reservoir reservoir = new HdrBuilder()
-                .resetResevoirPeriodically(Duration.ofMillis(1))
+                .resetReservoirPeriodically(Duration.ofMillis(1))
                 .buildReservoir();
 
         AtomicBoolean stopFlag = new AtomicBoolean(false);

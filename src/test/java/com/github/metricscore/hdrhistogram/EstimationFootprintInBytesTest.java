@@ -35,7 +35,7 @@ public class EstimationFootprintInBytesTest {
     public void testEstimationFootprintInBytes() {
         assertEquals(histogramEquvalentEstimate * 3, builder.neverResetResevoir().getEstimatedFootprintInBytes());
         assertEquals(histogramEquvalentEstimate * 2, builder.resetResevoirOnSnapshot().getEstimatedFootprintInBytes());
-        assertEquals(histogramEquvalentEstimate * 3, builder.resetResevoirPeriodically(Duration.ofMinutes(1)).getEstimatedFootprintInBytes());
+        assertEquals(histogramEquvalentEstimate * 3, builder.resetReservoirPeriodically(Duration.ofMinutes(1)).getEstimatedFootprintInBytes());
     }
 
 }
