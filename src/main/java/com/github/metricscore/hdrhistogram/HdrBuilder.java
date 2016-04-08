@@ -103,7 +103,7 @@ import java.util.function.Supplier;
 public class HdrBuilder {
 
     // meaningful limits to disallow user to kill performance(or memory footprint) by mistake
-    static final int MAX_CHUNKS = 60;
+    static final int MAX_CHUNKS = 25;
     static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
 
     static int DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS = 2;

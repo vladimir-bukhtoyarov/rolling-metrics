@@ -84,39 +84,31 @@ public class ResetByChunksAccumulator implements Accumulator {
         volatile Runnable postponedPhaseRotation = null;
 
         LeftRightChunk(Supplier<Recorder> recorderSupplier, int chunkIndex) {
-            left = new Phase(recorderSupplier, creationTimestamp + (chunkIndex + 1) * intervalBetweenResettingMillis);
+            left = new Phase(recorderSupplier, creationTimestamp + (chunks.length + chunkIndex) * intervalBetweenResettingMillis);
             right = new Phase(recorderSupplier, Long.MAX_VALUE);
             this.currentPhaseRef = new AtomicReference<>(left);
         }
 
         void addActivePhaseToSnapshot(Histogram snapshotHistogram, long currentTimeMillis) {
-            Phase currentPhase = currentPhaseRef.get();
-            if (currentTimeMillis >= currentPhase.proposedInvalidationTimestamp) {
-                // chunk was unused for a long time it is nothing to add to snapshot
-                return;
-            }
-
             while (!activeMutators.compareAndSet(0, 1)) {
                 // if phase rotation process is in progress by writer thread then wait inside spin loop until rotation will done
                 LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(500));
             }
             try {
-                currentPhase.intervalHistogram = currentPhase.recorder.getIntervalHistogram(currentPhase.intervalHistogram);
-                currentPhase.runningTotals.add(currentPhase.intervalHistogram);
-                snapshotHistogram.add(currentPhase.runningTotals);
+                Phase currentPhase = currentPhaseRef.get();
+                if (currentTimeMillis < currentPhase.proposedInvalidationTimestamp) {
+                    currentPhase.intervalHistogram = currentPhase.recorder.getIntervalHistogram(currentPhase.intervalHistogram);
+                    currentPhase.runningTotals.add(currentPhase.intervalHistogram);
+                    snapshotHistogram.add(currentPhase.runningTotals);
+                }
             } finally {
-                if (activeMutators.decrementAndGet() == 0) {
-                    // there are no writers thread in the middle of phase rotation
-                    return;
+                if (activeMutators.decrementAndGet() > 0) {
+                    while (this.postponedPhaseRotation == null) {
+                        // if phase rotation process is in progress by writer thread then wait in spin loop until rotation will done
+                        LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(500));
+                    }
+                    postponedPhaseRotation.run();
                 }
-
-                Runnable postponedPhaseRotation = this.postponedPhaseRotation;
-                while (postponedPhaseRotation == null) {
-                    // if phase rotation process is in progress by writer thread then wait in spin loop until rotation will done
-                    LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(500));
-                    postponedPhaseRotation = this.postponedPhaseRotation;
-                }
-                postponedPhaseRotation.run();
             }
         }
 
@@ -144,7 +136,7 @@ public class ResetByChunksAccumulator implements Accumulator {
                 currentPhase.proposedInvalidationTimestamp = Long.MAX_VALUE;
                 nextPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
                 activeMutators.decrementAndGet();
-                nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + 1) * intervalBetweenResettingMillis;
+                nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingMillis;
             };
 
             // Need to be aware about snapshot takers in the middle of progress state
