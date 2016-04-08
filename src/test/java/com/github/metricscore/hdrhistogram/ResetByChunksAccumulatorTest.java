@@ -32,10 +32,10 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static junit.framework.TestCase.assertEquals;
 
-public class ResetPeriodicallyAccumulatorTest {
+public class ResetByChunksAccumulatorTest {
 
     @Test
-    public void shouldCacheSnapshot() {
+    public void testOneChunk() {
         AtomicLong time = new AtomicLong(System.currentTimeMillis());
         Clock wallClock = MockClock.mock(time);
         Reservoir reservoir = new HdrBuilder(wallClock)
@@ -77,12 +77,25 @@ public class ResetPeriodicallyAccumulatorTest {
         assertEquals(100, secondNewSnapshot.getMax());
     }
 
-    @Test(timeout = 5000)
-    public void testThatConcurrentThreadsNotHung() throws InterruptedException {
+    @Test(timeout = 12000)
+    public void testThatConcurrentThreadsNotHungWithOneChunk() throws InterruptedException {
         Reservoir reservoir = new HdrBuilder()
-                .resetReservoirPeriodically(Duration.ofMillis(1))
+                .resetReservoirPeriodically(Duration.ofSeconds(1))
                 .buildReservoir();
 
+        runInParallel(reservoir, Duration.ofSeconds(10));
+    }
+
+    @Test(timeout = 12000)
+    public void testThatConcurrentThreadsNotHungWithFourChunk() throws InterruptedException {
+        Reservoir reservoir = new HdrBuilder()
+                .resetReservoirByChunks(Duration.ofSeconds(1), 4)
+                .buildReservoir();
+
+        runInParallel(reservoir, Duration.ofSeconds(10));
+    }
+
+    private void runInParallel(Reservoir reservoir, Duration duration) throws InterruptedException {
         AtomicBoolean stopFlag = new AtomicBoolean(false);
 
         // let concurrent threads to work fo 3 seconds
@@ -91,18 +104,21 @@ public class ResetPeriodicallyAccumulatorTest {
             public void run() {
                 stopFlag.set(true);
             }
-        }, 3000L);
+        }, duration.toMillis());
 
         Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors() * 2];
         for (int i = 0; i < threads.length; i++) {
             threads[i] = new Thread(() -> {
-                Random random = new Random();
-                // update reservoir 100 times and take snapshot on each cycle
-                while (!stopFlag.get()) {
-                    for (int j = 1; j <= 100; j++) {
-                        reservoir.update(ThreadLocalRandom.current().nextInt(j));
+                try {
+                    // update reservoir 100 times and take snapshot on each cycle
+                    while (!stopFlag.get()) {
+                        for (int j = 1; j <= 100; j++) {
+                            reservoir.update(ThreadLocalRandom.current().nextInt(j));
+                        }
+                        reservoir.getSnapshot();
                     }
-                    reservoir.getSnapshot();
+                } catch (Exception e){
+                    e.printStackTrace();
                 }
             });
             threads[i].start();

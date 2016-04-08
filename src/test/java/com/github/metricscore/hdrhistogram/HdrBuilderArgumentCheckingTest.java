@@ -154,8 +154,8 @@ public class HdrBuilderArgumentCheckingTest {
         } catch (IllegalArgumentException e) {}
 
         try {
-            new HdrBuilder().resetReservoirByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS), 1);
-            fail("should check that chunks >= 2");
+            new HdrBuilder().resetReservoirByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS), 0);
+            fail("should check that chunks >= 1");
         } catch (IllegalArgumentException e) {}
     }
 

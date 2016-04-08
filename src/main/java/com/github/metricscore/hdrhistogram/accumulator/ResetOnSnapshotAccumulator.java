@@ -21,8 +21,6 @@ import com.codahale.metrics.Snapshot;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
 public class ResetOnSnapshotAccumulator implements Accumulator {
@@ -43,11 +41,9 @@ public class ResetOnSnapshotAccumulator implements Accumulator {
     }
 
     @Override
-    public Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
-        synchronized (this) {
-            intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
-            return snapshotTaker.apply(intervalHistogram);
-        }
+    synchronized public final Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
+        intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
+        return snapshotTaker.apply(intervalHistogram);
     }
 
     @Override

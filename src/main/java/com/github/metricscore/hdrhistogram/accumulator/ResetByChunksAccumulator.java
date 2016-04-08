@@ -22,13 +22,16 @@ import com.codahale.metrics.Snapshot;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ResetByChunksAccumulator implements Accumulator {
 
-    private final Chunk[] chunks;
+    private final LeftRightChunk[] chunks;
     private final Clock clock;
     private final Histogram temporarySnapshotHistogram;
     private final long intervalBetweenResettingMillis;
@@ -38,11 +41,11 @@ public class ResetByChunksAccumulator implements Accumulator {
         this.intervalBetweenResettingMillis = intervalBetweenResettingMillis;
         this.clock = clock;
         this.creationTimestamp = clock.getTime();
-        this.chunks = new Chunk[numberChunks];
+        this.chunks = new LeftRightChunk[numberChunks];
         for (int i = 0; i < chunks.length; i++) {
-            this.chunks[i] = new Chunk(recorderSupplier, i);
+            this.chunks[i] = new LeftRightChunk(recorderSupplier, i);
         }
-        this.temporarySnapshotHistogram = chunks[0].phases[0].runningTotals.copy();
+        this.temporarySnapshotHistogram = chunks[0].left.runningTotals.copy();
     }
 
     @Override
@@ -54,105 +57,121 @@ public class ResetByChunksAccumulator implements Accumulator {
             long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
             chunkIndex = (int) intervalsSinceCreation % chunks.length;
         }
-        chunks[chunkIndex].recordValueAndReturnActivePhase(value, expectedIntervalBetweenValueSamples, nowMillis);
+        chunks[chunkIndex].recordValue(value, expectedIntervalBetweenValueSamples, nowMillis);
     }
 
     @Override
-    public Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
-        synchronized (this) {
-            temporarySnapshotHistogram.reset();
-            long nowMillis = clock.getTime();
-            for (Chunk chunk : chunks) {
-                chunk.addActivePhaseToSnapshot(temporarySnapshotHistogram, nowMillis);
-            }
-            return snapshotTaker.apply(temporarySnapshotHistogram);
+    public final synchronized Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
+        long currentTimeMillis = clock.getTime();
+        temporarySnapshotHistogram.reset();
+        for (LeftRightChunk chunk : chunks) {
+            chunk.addActivePhaseToSnapshot(temporarySnapshotHistogram, currentTimeMillis);
         }
+        return snapshotTaker.apply(temporarySnapshotHistogram);
     }
 
     @Override
     public int getEstimatedFootprintInBytes() {
-        return temporarySnapshotHistogram.getEstimatedFootprintInBytes() * (chunks.length * 3 + 1);
+        return temporarySnapshotHistogram.getEstimatedFootprintInBytes() * (chunks.length * 3 * 2 + 1);
     }
 
-    private final class Chunk {
+    private final class LeftRightChunk {
 
-        final Phase[] phases;
-        final AtomicInteger currentPhaseIndexRef;
+        final Phase left;
+        final Phase right;
+        final AtomicReference<Phase> currentPhaseRef;
+        final AtomicInteger activeMutators = new AtomicInteger(0);
+        volatile Runnable postponedPhaseRotation = null;
 
-        public Chunk(Supplier<Recorder> recorderSupplier, int chunkIndex) {
-            this.phases = new Phase[2];
-            phases[1] = new Phase(recorderSupplier, creationTimestamp + (chunkIndex + 1) * intervalBetweenResettingMillis);
-            phases[1] = new Phase(recorderSupplier, Long.MAX_VALUE);
-            this.currentPhaseIndexRef = new AtomicInteger(0);
+        LeftRightChunk(Supplier<Recorder> recorderSupplier, int chunkIndex) {
+            left = new Phase(recorderSupplier, creationTimestamp + (chunkIndex + 1) * intervalBetweenResettingMillis);
+            right = new Phase(recorderSupplier, Long.MAX_VALUE);
+            this.currentPhaseRef = new AtomicReference<>(left);
         }
 
-        public void addActivePhaseToSnapshot(Histogram snapshotHistogram, long nowMillis) {
-            Phase activePhase = recordValueAndReturnActivePhase(-1, -1, nowMillis);
-            /*
-            Synchronization is added to this place just to handle unlikely trouble when JVM stopped in the middle of snapshot creation for the pause longest than chunkCount * intervalBetweenResettingMillis.
-            It is unlikely to have real contention in this place,
-            but when all goes bad(like long GC pauses), the contention on in the currentPhase it is not the worst thing that happens to your application.
-              */
-            synchronized (activePhase) {
-                activePhase.intervalHistogram = activePhase.recorder.getIntervalHistogram(activePhase.intervalHistogram);
-                activePhase.runningTotals.add(activePhase.intervalHistogram);
-                snapshotHistogram.add(activePhase.runningTotals);
+        void addActivePhaseToSnapshot(Histogram snapshotHistogram, long currentTimeMillis) {
+            Phase currentPhase = currentPhaseRef.get();
+            if (currentTimeMillis >= currentPhase.proposedInvalidationTimestamp) {
+                // chunk was unused for a long time it is nothing to add to snapshot
+                return;
             }
-        }
 
-        public Phase recordValueAndReturnActivePhase(long value, long expectedIntervalBetweenValueSamples, long nowMillis) {
-            int currentPhaseIndex = currentPhaseIndexRef.get();
-            Phase currentPhase = phases[currentPhaseIndex];
-            if (nowMillis >= currentPhase.proposedInvalidationDateMillis) {
-                int nextPhaseIndex = currentPhaseIndex == 0 ? 1 : 0;
-                if (currentPhaseIndexRef.compareAndSet(currentPhaseIndex, nextPhaseIndex)) {
-                    // CAS was successful, so current thread became responsible for rotation
-
-                    /*
-                    Synchronization is added to this place just to handle unlikely trouble when JVM stopped in the middle of snapshot creation for the pause longest than chunkCount * intervalBetweenResettingMillis.
-                    It is unlikely to have real contention in this place,
-                    but when all goes bad(like long GC pauses), the contention on in the currentPhase it is not the worst thing that happens to your application.
-                      */
-                    synchronized (currentPhase) {
-                        currentPhase.recorder.reset();
-                        currentPhase.runningTotals.reset();
-                        currentPhase.proposedInvalidationDateMillis = Long.MAX_VALUE;
-                    }
-
-                    Phase nextPhase = phases[nextPhaseIndex];
-                    if (value >= 0) {
-                        nextPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
-                    }
-
-                    long millisSinceCreation = nowMillis - creationTimestamp;
-                    long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
-                    nextPhase.proposedInvalidationDateMillis = creationTimestamp + (intervalsSinceCreation + 1) * intervalBetweenResettingMillis;
-
-                    return nextPhase;
-                } else {
-                    // another parallel thread has achieved progress and became responsible for rotation
-                    currentPhase = phases[nextPhaseIndex];
+            while (!activeMutators.compareAndSet(0, 1)) {
+                // if phase rotation process is in progress by writer thread then wait inside spin loop until rotation will done
+                LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(500));
+            }
+            try {
+                currentPhase.intervalHistogram = currentPhase.recorder.getIntervalHistogram(currentPhase.intervalHistogram);
+                currentPhase.runningTotals.add(currentPhase.intervalHistogram);
+                snapshotHistogram.add(currentPhase.runningTotals);
+            } finally {
+                if (activeMutators.decrementAndGet() == 0) {
+                    // there are no writers thread in the middle of phase rotation
+                    return;
                 }
+
+                Runnable postponedPhaseRotation = this.postponedPhaseRotation;
+                while (postponedPhaseRotation == null) {
+                    // if phase rotation process is in progress by writer thread then wait in spin loop until rotation will done
+                    LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(500));
+                    postponedPhaseRotation = this.postponedPhaseRotation;
+                }
+                postponedPhaseRotation.run();
             }
-            if (value >= 0) {
+        }
+
+        void recordValue(long value, long expectedIntervalBetweenValueSamples, long currentTimeMillis) {
+            Phase currentPhase = currentPhaseRef.get();
+            if (currentTimeMillis < currentPhase.proposedInvalidationTimestamp) {
                 currentPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
+                return;
             }
-            return currentPhase;
+
+            Phase nextPhase = currentPhase == left ? right : left;
+            if (!currentPhaseRef.compareAndSet(currentPhase, nextPhase)) {
+                // another writer achieved progress and must clear current phase data, current writer tread just can write value to next phase and return
+                nextPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
+                return;
+            }
+
+            // Current thread is responsible to rotate phases.
+            Runnable phaseRotation = () -> {
+                postponedPhaseRotation = null;
+                long millisSinceCreation = currentTimeMillis - creationTimestamp;
+                long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
+                currentPhase.recorder.reset();
+                currentPhase.runningTotals.reset();
+                currentPhase.proposedInvalidationTimestamp = Long.MAX_VALUE;
+                nextPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
+                activeMutators.decrementAndGet();
+                nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + 1) * intervalBetweenResettingMillis;
+            };
+
+            // Need to be aware about snapshot takers in the middle of progress state
+            if (activeMutators.incrementAndGet() > 1) {
+                // give chance to snapshot taker to finalize snapshot extraction, rotation will be complete by snapshot taker thread
+                postponedPhaseRotation = phaseRotation;
+                return;
+            }
+
+            // There are no active snapshot takers in the progress state, lets exchange phases in this writer thread
+            phaseRotation.run();
         }
     }
 
     private static final class Phase {
+
         final Histogram runningTotals;
         final Recorder recorder;
 
         Histogram intervalHistogram;
-        volatile long proposedInvalidationDateMillis;
+        volatile long proposedInvalidationTimestamp;
 
-        public Phase(Supplier<Recorder> recorderSupplier, long proposedInvalidationDateMillis) {
+        Phase(Supplier<Recorder> recorderSupplier, long proposedInvalidationTimestamp) {
             this.recorder = recorderSupplier.get();
             this.intervalHistogram = recorder.getIntervalHistogram();
             this.runningTotals = intervalHistogram.copy();
-            this.proposedInvalidationDateMillis = proposedInvalidationDateMillis;
+            this.proposedInvalidationTimestamp = proposedInvalidationTimestamp;
         }
     }
 

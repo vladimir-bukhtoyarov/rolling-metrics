@@ -44,19 +44,10 @@ public class UniformAccumulator implements Accumulator {
     }
 
     @Override
-    public Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
-        synchronized (this) {
-            intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
-            uniformHistogram.add(intervalHistogram);
-            return snapshotTaker.apply(uniformHistogram);
-        }
-    }
-
-    public final void reset() {
-        synchronized (this) {
-            intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
-            uniformHistogram.reset();
-        }
+    public final synchronized Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
+        intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
+        uniformHistogram.add(intervalHistogram);
+        return snapshotTaker.apply(uniformHistogram);
     }
 
     @Override

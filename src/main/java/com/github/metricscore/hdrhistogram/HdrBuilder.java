@@ -129,19 +129,6 @@ public class HdrBuilder {
     }
 
     /**
-     * Reservoir configured with this strategy will store all measures since the reservoir was created.
-     *
-     * @return this builder instance
-     * @see #resetReservoirPeriodically(Duration)
-     * @see #resetResevoirOnSnapshot()
-     * @see #resetReservoirByChunks(Duration, int)
-     */
-    public HdrBuilder neverResetResevoir() {
-        accumulationFactory = AccumulationFactory.UNIFORM;
-        return this;
-    }
-
-    /**
      * Reservoir configured with this strategy will be cleared fully after each <tt>resettingPeriod</tt>.
      * <p>
      * <p>
@@ -193,6 +180,19 @@ public class HdrBuilder {
             throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
         }
         accumulationFactory = (recorder, clock) -> new ResetByChunksAccumulator(recorder, numberChunks, resettingPeriod.toMillis(), clock);
+        return this;
+    }
+
+    /**
+     * Reservoir configured with this strategy will store all measures since the reservoir was created.
+     *
+     * @return this builder instance
+     * @see #resetReservoirPeriodically(Duration)
+     * @see #resetResevoirOnSnapshot()
+     * @see #resetReservoirByChunks(Duration, int)
+     */
+    public HdrBuilder neverResetResevoir() {
+        accumulationFactory = AccumulationFactory.UNIFORM;
         return this;
     }
 
