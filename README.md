@@ -8,8 +8,9 @@ Do not waste your time to figure out who is better in the fight of metrics-core 
 [![Coverage Status](https://coveralls.io/repos/github/vladimir-bukhtoyarov/metrics-core-hdr/badge.svg?branch=master)](https://coveralls.io/github/vladimir-bukhtoyarov/metrics-core-hdr?branch=master)
 [![Hex.pm](https://img.shields.io/hexpm/l/plug.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Download](https://api.bintray.com/packages/vladimir-bukhtoyarov/maven/metrics-core-hdr/images/download.svg) ](https://bintray.com/vladimir-bukhtoyarov/maven/metrics-core-hdr/_latestVersion)
+[![Join the chat at https://gitter.im/vladimir-bukhtoyarov/metrics-core-hdr](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/vladimir-bukhtoyarov/metrics-core-hdr?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-### Get Metrics-Core-HDR library
+## Get Metrics-Core-HDR library
 
 #### By direct link
 [Download compiled jar, sources, javadocs](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/releases/tag/1.0.0)
@@ -45,21 +46,26 @@ Then include Metrics-Core-HDR as dependency to your `pom.xml`
 </dependency>
 ```
 
-### Usage
+## Usage
+### Metrics construction and registration
+In order to construct metrics you need to create [builder](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/master/src/main/java/com/github/metricscore/hdrhistogram/HdrBuilder.java) instance. 
+The one builder instance can be reused to construct metrics multiple times. 
 
 #### Example of timer construction
 
 ```java
   HdrBuilder builder = HdrBuilder();
 
-  // build and register timer in one line of code (prefer this style)
+  // Build and register timer in one line of code. 
+  // Prefer this style by default.
   Timer timer1 = builder.buildAndRegisterTimer(registry, "my-timer-1");
 
-  // build and register timer in two lines of code
+  // Build and register timer in two lines of code.
+  // Use this style if you plan to register timer in multiple registers
   Timer timer2 = builder.buildTimer();
-  registry.register(timer2, "my-timer-2");
+  registry1.register(timer2, "my-timer-2");
   
-  // build and register timer in three lines of code
+  // build and register timer in three lines of code(verbose way). Most likely you never need in this.
   Reservoir reservoir = builder.buildReservoir();
   Timer timer3 = new Timer(reservoir);
   registry.register(timer3, "my-timer-3");
@@ -72,15 +78,51 @@ Then include Metrics-Core-HDR as dependency to your `pom.xml`
   // build and register histogram in one line of code (prefer this style)
   Histogram histogram1 = builder.buildAndRegisterHistogram(registry, "my-histogram-1");
 
-  // build and register histogram in two lines of code
+  // Build and register timer in two lines of code.
+  // Use this style if you plan to register histogram in multiple registers
   Histogram histogram2 = builder.buildHistogram();
   registry.register(histogram2, "my-histogram-2");
   
-  // build and register histogram in three lines of code
+  // build and register histogram in three lines of code(verbose way). Most likely you never need in this.
   Reservoir reservoir = builder.buildReservoir();
   Histogram histogram3 = new Histogram(reservoir);
   registry.register(histogram3, "my-timer-3");
 ```
+
+## Basic configuration options
+TODO
+#### Number of significant value digits
+TODO 
+#### Lowest discernible value
+TODO
+#### Highest trackable value
+TODO
+#### Predefined percentiles
+TODO
+
+## Configuration settings for removing the old values of from reservoir.
+TODO
+#### Reset resevoir on snapshot
+TODO
+#### Reset reservoir periodically
+TODO
+#### Reset reservoir by chunks
+TODO
+#### Never reset
+TODO
+
+## Advanced features
+TODO
+#### Coordinated omission
+TODO
+#### Snapshot caching 
+TODO
+#### Get estimated footprint in bytes
+TODO
+
+Have a question?
+----------------
+Feel free to ask in the [gitter chat](https://gitter.im/vladimir-bukhtoyarov/metrics-core-hdr)
 
 License
 -------
