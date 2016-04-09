@@ -29,14 +29,14 @@ public class EstimationFootprintInBytesTest {
             .withLowestDiscernibleValue(10)
             .withSignificantDigits(3);
 
-    private int histogramEquvalentEstimate = new Recorder(10, 3600, 3).getIntervalHistogram().getEstimatedFootprintInBytes();
+    private int histogramEquivalentEstimate = new Recorder(10, 3600, 3).getIntervalHistogram().getEstimatedFootprintInBytes();
 
     @Test
     public void testEstimationFootprintInBytes() {
-        assertEquals(histogramEquvalentEstimate * 3, builder.neverResetResevoir().getEstimatedFootprintInBytes());
-        assertEquals(histogramEquvalentEstimate * 2, builder.resetReservoirOnSnapshot().getEstimatedFootprintInBytes());
-        assertEquals(histogramEquvalentEstimate * 7, builder.resetReservoirPeriodically(Duration.ofMinutes(1)).getEstimatedFootprintInBytes());
-        assertEquals(histogramEquvalentEstimate * 61, builder.resetReservoirByChunks(Duration.ofMinutes(1), 10).getEstimatedFootprintInBytes());
+        assertEquals(histogramEquivalentEstimate * 3, builder.neverResetReservoir().getEstimatedFootprintInBytes());
+        assertEquals(histogramEquivalentEstimate * 2, builder.resetReservoirOnSnapshot().getEstimatedFootprintInBytes());
+        assertEquals(histogramEquivalentEstimate * 7, builder.resetReservoirPeriodically(Duration.ofMinutes(1)).getEstimatedFootprintInBytes());
+        assertEquals(histogramEquivalentEstimate * 61, builder.resetReservoirByChunks(Duration.ofMinutes(1), 10).getEstimatedFootprintInBytes());
     }
 
 }

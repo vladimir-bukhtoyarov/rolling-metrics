@@ -22,9 +22,7 @@ import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
 
-/**
- * Created by vladimir.bukhtoyarov on 05.04.2016.
- */
+
 public class ExpectedIntervalBetweenValueSamplesTest {
 
     @Test

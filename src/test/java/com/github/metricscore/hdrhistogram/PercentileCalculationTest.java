@@ -39,7 +39,7 @@ public class PercentileCalculationTest {
         return reservoir.getSnapshot();
     };
 
-    private Histogram createEquvalentHistogram() {
+    private Histogram createEquivalentHistogram() {
         Histogram histogram = new Histogram(2);
         for (int i = 1; i <= 100000; i++) {
             histogram.recordValue(i);
@@ -53,7 +53,7 @@ public class PercentileCalculationTest {
         Reservoir reservoir = new HdrBuilder().withPredefinedPercentiles(predefinedPercentiles).buildReservoir();
         Snapshot snapshot = snapshotTaker.apply(reservoir);
 
-        Histogram hdrHistogram = createEquvalentHistogram();
+        Histogram hdrHistogram = createEquivalentHistogram();
         assertEquals(hdrHistogram.getStdDeviation(), snapshot.getStdDev());
         assertEquals(hdrHistogram.getMinValue(), snapshot.getMin());
         assertEquals(hdrHistogram.getMean(), snapshot.getMean());
@@ -93,7 +93,7 @@ public class PercentileCalculationTest {
         Reservoir reservoir = new HdrBuilder().withoutSnapshotOptimization().buildReservoir();
         Snapshot snapshot = snapshotTaker.apply(reservoir);
 
-        Histogram hdrHistogram = createEquvalentHistogram();
+        Histogram hdrHistogram = createEquivalentHistogram();
         assertEquals(hdrHistogram.getStdDeviation(), snapshot.getStdDev());
         assertEquals(hdrHistogram.getMinValue(), snapshot.getMin());
         assertEquals(hdrHistogram.getMean(), snapshot.getMean());

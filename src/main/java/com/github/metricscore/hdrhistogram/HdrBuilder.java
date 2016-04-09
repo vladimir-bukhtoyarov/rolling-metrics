@@ -81,7 +81,7 @@ public class HdrBuilder {
      *
      * @return this builder instance
      * @see #resetReservoirPeriodically(Duration)
-     * @see #neverResetResevoir()
+     * @see #neverResetReservoir()
      */
     public HdrBuilder resetReservoirOnSnapshot() {
         accumulationFactory = AccumulationFactory.RESET_ON_SNAPSHOT;
@@ -99,7 +99,7 @@ public class HdrBuilder {
      *
      * @param resettingPeriod specifies how often need to reset reservoir
      * @return this builder instance
-     * @see #neverResetResevoir()
+     * @see #neverResetReservoir()
      * @see #resetReservoirOnSnapshot()
      * @see #resetReservoirByChunks(Duration, int)
      */
@@ -120,7 +120,7 @@ public class HdrBuilder {
      * @param resettingPeriod specifies interval between chunk resetting
      * @param numberChunks    specifies number of chunks by which reservoir will be slitted
      * @return this builder instance
-     * @see #neverResetResevoir()
+     * @see #neverResetReservoir()
      * @see #resetReservoirOnSnapshot()
      * @see #resetReservoirPeriodically(Duration)
      */
@@ -151,7 +151,7 @@ public class HdrBuilder {
      * @see #resetReservoirOnSnapshot()
      * @see #resetReservoirByChunks(Duration, int)
      */
-    public HdrBuilder neverResetResevoir() {
+    public HdrBuilder neverResetReservoir() {
         accumulationFactory = AccumulationFactory.UNIFORM;
         return this;
     }
@@ -264,7 +264,7 @@ public class HdrBuilder {
      * Configures list of percentiles which you plan to store in monitoring database.
      * <p>
      * This method is useful when you already know list of percentiles which need to be stored in monitoring database,
-     * then you can specify it to optimize snapshot size, as result unnecessary garbage will be avoided, memory in spapshot will allocated only for percentiles which you configure.
+     * then you can specify it to optimize snapshot size, as result unnecessary garbage will be avoided, memory in snapshot will allocated only for percentiles which you configure.
      * </p>
      * <p> Moreover by default builder already configured with default list of percentiles {@link #DEFAULT_PERCENTILES} which tightly compatible with {@link com.codahale.metrics.JmxReporter},
      * the default percentiles are <code>double[] {0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999}</code>

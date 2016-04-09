@@ -20,8 +20,6 @@ package com.github.metricscore.hdrhistogram;
 import org.junit.Test;
 
 import java.time.Duration;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 
 import static com.github.metricscore.hdrhistogram.HdrBuilder.MAX_CHUNKS;
 import static com.github.metricscore.hdrhistogram.HdrBuilder.MIN_CHUNK_RESETTING_INTERVAL_MILLIS;
@@ -126,12 +124,12 @@ public class HdrBuilderArgumentCheckingTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void negativeResetPeriodShouldNotAllowedForResetResevoirPeriodically() {
+    public void negativeResetPeriodShouldNotAllowedForResetReservoirPeriodically() {
         new HdrBuilder().resetReservoirPeriodically(Duration.ofMinutes(-5));
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void zeroResetPeriodShouldNotAllowedForResetResevoirPeriodically() {
+    public void zeroResetPeriodShouldNotAllowedForResetReservoirPeriodically() {
         new HdrBuilder().resetReservoirPeriodically(Duration.ZERO);
     }
 

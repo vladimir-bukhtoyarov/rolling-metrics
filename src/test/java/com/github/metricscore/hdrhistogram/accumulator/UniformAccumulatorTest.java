@@ -29,7 +29,7 @@ public class UniformAccumulatorTest {
 
     @Test
     public void shouldCacheSnapshot() {
-        Reservoir reservoir = new HdrBuilder().neverResetResevoir().buildReservoir();
+        Reservoir reservoir = new HdrBuilder().neverResetReservoir().buildReservoir();
 
         reservoir.update(10);
         reservoir.update(20);

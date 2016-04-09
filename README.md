@@ -1,6 +1,6 @@
 # Metrics core HDR
 This library is addressed to provide tightly integration of [HdrHistogram](https://github.com/HdrHistogram/HdrHistogram) into [Metrics Core](https://dropwizard.github.io/metrics/3.1.0/manual/core/) as first class citizen.
-Do not waste your time to figure out who is better in the fight of metrics-core versus HdrHistorgam, just use two solutions together.
+Do not waste your time to figure out who is better in the fight of metrics-core versus HdrHistogram, just use two solutions together.
 
 From the HdrHistogram, you get:
 * Min/max loss-less capturing, in opposite to built-in Metrics Core reservoir implementations which can loss critical min/max values because of its sampling nature. 
@@ -157,7 +157,7 @@ but in same time it is bad because in real world use-cases you need to show meas
 nobody interests in percentiles aggregated for a few days or weeks, everybody wants to see percentiles which actual now. 
 So you need in way to deleted obsolete(already not interested) values from reservoir, Metrics-Core-Hdr provides four different strategies to do this:
 
-#### Reset resevoir on snapshot
+#### Reset reservoir on snapshot
 Reservoir configured with this strategy will be cleared each time when snapshot taken.
 ```java
   builder.resetReservoirOnSnapshot();  
@@ -186,7 +186,7 @@ But remember about memory footprint and do not split reservoir to big amount of 
 #### Never reset
 This strategy should be used if you want to store in reservoir all values since reservoir creation, in other words eviction is not needed.
 ```java
-  builder.withoutSnapshotOptimization();  
+  builder.neverResetReservoir();  
 ```
 This is default behavior, you should not configure anything to achieve it.
 
