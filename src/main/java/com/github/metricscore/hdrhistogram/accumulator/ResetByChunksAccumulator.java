@@ -128,15 +128,18 @@ public class ResetByChunksAccumulator implements Accumulator {
 
             // Current thread is responsible to rotate phases.
             Runnable phaseRotation = () -> {
-                postponedPhaseRotation = null;
-                long millisSinceCreation = currentTimeMillis - creationTimestamp;
-                long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
-                currentPhase.recorder.reset();
-                currentPhase.runningTotals.reset();
-                currentPhase.proposedInvalidationTimestamp = Long.MAX_VALUE;
-                nextPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
-                activeMutators.decrementAndGet();
-                nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingMillis;
+                try {
+                    postponedPhaseRotation = null;
+                    currentPhase.recorder.reset();
+                    currentPhase.runningTotals.reset();
+                    currentPhase.proposedInvalidationTimestamp = Long.MAX_VALUE;
+                    nextPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
+                } finally {
+                    activeMutators.decrementAndGet();
+                    long millisSinceCreation = currentTimeMillis - creationTimestamp;
+                    long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
+                    nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingMillis;
+                }
             };
 
             // Need to be aware about snapshot takers in the middle of progress state
