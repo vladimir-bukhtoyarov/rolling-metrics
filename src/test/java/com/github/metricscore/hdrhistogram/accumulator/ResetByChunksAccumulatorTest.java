@@ -15,11 +15,13 @@
  *   limitations under the License.
  */
 
-package com.github.metricscore.hdrhistogram;
+package com.github.metricscore.hdrhistogram.accumulator;
 
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
+import com.github.metricscore.hdrhistogram.HdrBuilder;
+import com.github.metricscore.hdrhistogram.MockClock;
 import org.junit.Test;
 
 import java.time.Duration;

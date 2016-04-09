@@ -22,9 +22,9 @@ import com.codahale.metrics.Clock;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-class MockClock {
+public class MockClock {
 
-    static Clock mock(AtomicLong currentTimeProvider) {
+    public static Clock mock(AtomicLong currentTimeProvider) {
         return new Clock() {
             @Override
             public long getTime() {

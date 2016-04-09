@@ -15,20 +15,21 @@
  *   limitations under the License.
  */
 
-package com.github.metricscore.hdrhistogram;
+package com.github.metricscore.hdrhistogram.accumulator;
 
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
+import com.github.metricscore.hdrhistogram.HdrBuilder;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotSame;
 
-public class ResetOnSnapshotAccumulatorTest {
+public class UniformAccumulatorTest {
 
     @Test
     public void shouldCacheSnapshot() {
-        Reservoir reservoir = new HdrBuilder().resetResevoirOnSnapshot().buildReservoir();
+        Reservoir reservoir = new HdrBuilder().neverResetResevoir().buildReservoir();
 
         reservoir.update(10);
         reservoir.update(20);
@@ -38,14 +39,14 @@ public class ResetOnSnapshotAccumulatorTest {
         reservoir.update(40);
         Snapshot secondSnapshot = reservoir.getSnapshot();
         assertNotSame(firstSnapshot, secondSnapshot);
-        assertEquals(30, secondSnapshot.getMin());
+        assertEquals(10, secondSnapshot.getMin());
         assertEquals(40, secondSnapshot.getMax());
 
-        reservoir.update(50);
+        reservoir.update(9);
         reservoir.update(60);
         Snapshot thirdSnapshot = reservoir.getSnapshot();
         assertNotSame(secondSnapshot, thirdSnapshot);
-        assertEquals(50, thirdSnapshot.getMin());
+        assertEquals(9, thirdSnapshot.getMin());
         assertEquals(60, thirdSnapshot.getMax());
     }
 

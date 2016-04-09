@@ -104,8 +104,8 @@ public class ResetByChunksAccumulator implements Accumulator {
             } finally {
                 if (activeMutators.decrementAndGet() > 0) {
                     while (this.postponedPhaseRotation == null) {
-                        // if phase rotation process is in progress by writer thread then wait in spin loop until rotation will done
-                        LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(500));
+                        // wait in spin loop until writer thread provide rotation task
+                        LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(100));
                     }
                     postponedPhaseRotation.run();
                 }
@@ -143,11 +143,10 @@ public class ResetByChunksAccumulator implements Accumulator {
             if (activeMutators.incrementAndGet() > 1) {
                 // give chance to snapshot taker to finalize snapshot extraction, rotation will be complete by snapshot taker thread
                 postponedPhaseRotation = phaseRotation;
-                return;
+            } else {
+                // There are no active snapshot takers in the progress state, lets exchange phases in this writer thread
+                phaseRotation.run();
             }
-
-            // There are no active snapshot takers in the progress state, lets exchange phases in this writer thread
-            phaseRotation.run();
         }
     }
 
