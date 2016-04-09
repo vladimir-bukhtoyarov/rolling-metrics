@@ -199,7 +199,7 @@ Histogram will auto-generate an additional series of decreasingly-smaller (down 
 ```java
   builder.withExpectedIntervalBetweenValueSamples(10);  
 ```
-<font color="red">WARNING:</font> You should not use this feature for monitoring your application in the production, its designed to be used inside benchmarks and load testing.
+**WARNING:** You should not use this feature for monitoring your application in the production, its designed to be used inside benchmarks and load testing.
 if something still unclear about this option then refer directly to HdrHistogram [documentation](https://github.com/HdrHistogram/HdrHistogram) and [sources](https://github.com/HdrHistogram/HdrHistogram/blob/master/src/main/java/org/HdrHistogram/AbstractHistogram.java).
     
 #### Snapshot caching 
