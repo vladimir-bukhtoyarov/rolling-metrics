@@ -31,48 +31,43 @@ import java.util.function.Supplier;
 
 public class ResetByChunksAccumulator implements Accumulator {
 
+    private final long intervalBetweenResettingMillis;
+    private final long creationTimestamp;
+    private final boolean reportUncompletedChunkToSnapshot;
     private final Chunk[] chunks;
     private final Clock clock;
     private final Histogram temporarySnapshotHistogram;
-    private final long intervalBetweenResettingMillis;
-    private final long creationTimestamp;
-    private final boolean incompletedChunkInclusive;
 
     private final Phase left;
     private final Phase right;
+    private final Phase[] phases;
     private final AtomicReference<Phase> currentPhaseRef;
     private final AtomicInteger activeMutators = new AtomicInteger(0);
 
     private volatile Runnable postponedPhaseRotation = null;
 
-    public ResetByChunksAccumulator(Supplier<Recorder> recorderSupplier, int numberChunks, long intervalBetweenResettingMillis, boolean incompletedChunkInclusive, Clock clock) {
+    public ResetByChunksAccumulator(Supplier<Recorder> recorderSupplier, int numberChunks, long intervalBetweenResettingMillis, boolean reportUncompletedChunkToSnapshot, Clock clock) {
         this.intervalBetweenResettingMillis = intervalBetweenResettingMillis;
         this.clock = clock;
         this.creationTimestamp = clock.getTime();
-        this.incompletedChunkInclusive = incompletedChunkInclusive;
+        this.reportUncompletedChunkToSnapshot = reportUncompletedChunkToSnapshot;
 
         this.left = new Phase(recorderSupplier, creationTimestamp + intervalBetweenResettingMillis);
         this.right = new Phase(recorderSupplier, Long.MAX_VALUE);
+        this.phases = new Phase[] {left, right};
         this.currentPhaseRef = new AtomicReference<>(left);
 
         this.chunks = new Chunk[numberChunks];
         for (int i = 0; i < numberChunks; i++) {
             Histogram chunkHistogram = left.intervalHistogram.copy();
-            this.chunks[i] = new Chunk(chunkHistogram, creationTimestamp + i * numberChunks)
+            this.chunks[i] = new Chunk(chunkHistogram, creationTimestamp + i * numberChunks);
         }
-        this.temporarySnapshotHistogram = chunks[0].copy();
+        this.temporarySnapshotHistogram = chunks[0].histogram.copy();
     }
 
     @Override
     public void recordSingleValueWithExpectedInterval(long value, long expectedIntervalBetweenValueSamples) {
-        long nowMillis = clock.getTime();
-        int chunkIndex = 0;
-        if (chunks.length > 1) {
-            long millisSinceCreation = nowMillis - creationTimestamp;
-            long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
-            chunkIndex = (int) intervalsSinceCreation % chunks.length;
-        }
-        chunks[chunkIndex].recordValue(value, expectedIntervalBetweenValueSamples, nowMillis);
+        long currentTimeMillis = clock.getTime();
         Phase currentPhase = currentPhaseRef.get();
         if (currentTimeMillis < currentPhase.proposedInvalidationTimestamp) {
             currentPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
@@ -87,18 +82,28 @@ public class ResetByChunksAccumulator implements Accumulator {
         }
 
         // Current thread is responsible to rotate phases.
+        long millisSinceCreation = currentTimeMillis - creationTimestamp;
+        long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
         Runnable phaseRotation = () -> {
             try {
                 postponedPhaseRotation = null;
-                currentPhase.recorder.reset();
-                currentPhase.runningTotals.reset();
+
+                // move values from recorder to correspondent chunk
+                long currentPhaseNumber = (currentPhase.proposedInvalidationTimestamp - creationTimestamp) / intervalBetweenResettingMillis;
+                int correspondentChunkIndex = (int) (currentPhaseNumber - 1) % chunks.length;
+                currentPhase.intervalHistogram = currentPhase.recorder.getIntervalHistogram(currentPhase.intervalHistogram);
+                chunks[correspondentChunkIndex].histogram.add(currentPhase.intervalHistogram);
+
                 currentPhase.proposedInvalidationTimestamp = Long.MAX_VALUE;
                 nextPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
+
+                // reset one chunk
+                int nextChunkIndex = (int) intervalsSinceCreation % chunks.length;
+                chunks[nextChunkIndex].histogram.reset();
+                chunks[nextChunkIndex].proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingMillis;
             } finally {
                 activeMutators.decrementAndGet();
-                long millisSinceCreation = currentTimeMillis - creationTimestamp;
-                long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
-                nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingMillis;
+                nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + 1) * intervalBetweenResettingMillis;
             }
         };
 
@@ -116,14 +121,30 @@ public class ResetByChunksAccumulator implements Accumulator {
     public final synchronized Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
         long currentTimeMillis = clock.getTime();
         temporarySnapshotHistogram.reset();
-        for (LeftRightChunk chunk : chunks) {
-            chunk.addActivePhaseToSnapshot(temporarySnapshotHistogram, currentTimeMillis);
-        }
         while (!activeMutators.compareAndSet(0, 1)) {
             // if phase rotation process is in progress by writer thread then wait inside spin loop until rotation will done
             LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(500));
         }
+
         try {
+
+
+            if (reportUncompletedChunkToSnapshot) {
+                for (Phase phase : phases) {
+                    if (phase.proposedInvalidationTimestamp > currentTimeMillis) {
+
+                    } else {
+                        long currentPhaseNumber = (phase.proposedInvalidationTimestamp - creationTimestamp) / intervalBetweenResettingMillis;
+                        int correspondentChunkIndex = (int) (currentPhaseNumber - 1) % chunks.length;
+                    }
+                }
+
+            }
+            for (Chunk chunk : chunks) {
+                if (chunk.proposedInvalidationTimestamp > currentTimeMillis) {
+                    temporarySnapshotHistogram.add(chunk.histogram);
+                }
+            }
             Phase currentPhase = currentPhaseRef.get();
             if (currentTimeMillis < currentPhase.proposedInvalidationTimestamp) {
                 currentPhase.intervalHistogram = currentPhase.recorder.getIntervalHistogram(currentPhase.intervalHistogram);

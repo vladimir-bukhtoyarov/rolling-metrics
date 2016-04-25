@@ -91,7 +91,7 @@ public class HdrBuilder {
     /**
      * Reservoir configured with this strategy will be cleared fully after each <tt>resettingPeriod</tt>.
      * <p>
-     * The measure written to reservoir will take affect at most <tt>resettingPeriod</tt> time.
+     * The value written to reservoir will take affect at most <tt>resettingPeriod</tt> time.
      * </p>
      * <p>
      * This is equivalent for {@code resetReservoirByChunks(resettingPeriod, 1)}
@@ -113,8 +113,12 @@ public class HdrBuilder {
      * This strategy is more smoothly then <tt>resetReservoirPeriodically</tt> because reservoir never zeroyed at whole,
      * so user experience provided by <tt>resetReservoirByChunks</tt> should look more pretty.
      * <p>
-     * The measure written to reservoir will take affect at least <tt>resettingPeriod * (numberChunks - 1)</tt> and at most <tt>resettingPeriod * numberChunks</tt> time,
-     * for example when you configure <tt>resettingPeriod=10 seconds and numberChunks=6</tt> then each measure written to reservoir will be stored at <tt>50-60 seconds</tt>
+     * The value written to reservoir will take affect at least <tt>resettingPeriod * (numberChunks - 1)</tt> and at most <tt>resettingPeriod * numberChunks</tt> time,
+     * for example when you configure <tt>resettingPeriod=10 seconds and numberChunks=6</tt> then each value written to reservoir will be stored at <tt>50-60 seconds</tt>
+     * </p>
+     *
+     * <p>
+     * This is equivalent for {@code resetReservoirByChunks(resettingPeriod, numberChunks, true)}
      * </p>
      *
      * @param resettingPeriod specifies interval between chunk resetting
@@ -125,6 +129,30 @@ public class HdrBuilder {
      * @see #resetReservoirPeriodically(Duration)
      */
     public HdrBuilder resetReservoirByChunks(Duration resettingPeriod, int numberChunks) {
+        return resetReservoirByChunks(resettingPeriod, numberChunks, true);
+    }
+
+    /**
+     * Reservoir configured with this strategy will be divided to <tt>numberChunks</tt> parts,
+     * and one chunk will be cleared after each <tt>resettingPeriod</tt>.
+     * This strategy is more smoothly then <tt>resetReservoirPeriodically</tt> because reservoir never zeroyed at whole,
+     * so user experience provided by <tt>resetReservoirByChunks</tt> should look more pretty.
+     * <p>
+     * If <tt>reportUncompletedChunkToSnapshot</tt> is true then the value written to reservoir will take affect at least <tt>resettingPeriod * (numberChunks - 1)</tt> and at most <tt>resettingPeriod * numberChunks</tt> time,
+     * for example when you configure <tt>resettingPeriod=10 seconds and numberChunks=6</tt> then each value written to reservoir will be stored at <tt>50-60 seconds</tt>.
+     * Else when <tt>reportUncompletedChunkToSnapshot</tt> is false then the value written to reservoir will take affect <tt>resettingPeriod * (numberChunks - 1)</tt> time,
+     * but it is need to wait until chunk will be closed before values from chunk will be added to snapshot.
+     * </p>
+     *
+     * @param resettingPeriod specifies interval between chunk resetting
+     * @param numberChunks    specifies number of chunks by which reservoir will be slitted
+     * @param reportUncompletedChunkToSnapshot specifies whether or not to report values from uncompleted(current) chunk to snapshot
+     * @return this builder instance
+     * @see #neverResetReservoir()
+     * @see #resetReservoirOnSnapshot()
+     * @see #resetReservoirPeriodically(Duration)
+     */
+    public HdrBuilder resetReservoirByChunks(Duration resettingPeriod, int numberChunks, boolean reportUncompletedChunkToSnapshot) {
         if (resettingPeriod.isNegative() || resettingPeriod.isZero()) {
             throw new IllegalArgumentException("resettingPeriod must be a positive duration");
         }
@@ -137,12 +165,12 @@ public class HdrBuilder {
         if (numberChunks > MAX_CHUNKS) {
             throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
         }
-        accumulationFactory = (recorder, clock) -> new ResetByChunksAccumulator(recorder, numberChunks, resettingPeriod.toMillis(), clock);
+        accumulationFactory = (recorder, clock) -> new ResetByChunksAccumulator(recorder, numberChunks, resettingPeriod.toMillis(), reportUncompletedChunkToSnapshot, clock);
         return this;
     }
 
     /**
-     * Reservoir configured with this strategy will store all measures since the reservoir was created.
+     * Reservoir configured with this strategy will store all values since the reservoir was created.
      *
      * <p>This is default strategy for {@link HdrBuilder}
      *

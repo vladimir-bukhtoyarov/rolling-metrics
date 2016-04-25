@@ -24,7 +24,7 @@ From the Metrics Core, you get:
 ## Get Metrics-Core-HDR library
 
 #### By direct link
-[Download compiled jar, sources, javadocs](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/releases/tag/1.1.0)
+[Download compiled jar, sources, javadocs](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/releases/tag/1.2.0)
 
 #### You can build Metrics-Core-HDR from sources
 
@@ -53,7 +53,7 @@ Then include Metrics-Core-HDR as dependency to your `pom.xml`
 <dependency>
     <groupId>com.github.metrics-core-addons</groupId>
     <artifactId>metrics-core-hdr</artifactId>
-    <version>1.1.0</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
@@ -181,7 +181,14 @@ The measure written to reservoir will take affect to the snapshot at least <tt>r
   builder.resetReservoirByChunks(Duration.ofSeconds(10), 7);  
 ```
 This strategy is more smoothly then <tt>resetReservoirPeriodically</tt> because reservoir never zeroyed at whole, so user experience provided by <tt>resetReservoirByChunks</tt> should look more pretty.
-But remember about memory footprint and do not split reservoir to big amount of chunks. The maximum possible value for <tt>numberChunks</tt> is 25. 
+But remember about memory footprint and do not split reservoir to big amount of chunks. The maximum possible value for <tt>numberChunks</tt> is 100.
+
+If you do not want to include values from uncompleted chunk to snapshot, then use overloaded version:
+```java
+  // Split reservoir by 61 chunks, each value written to reservoir will take affect to the snapshot 60 seconds,
+  // but snapshot will not include values up to the past 1 second 
+  builder.resetReservoirByChunks(Duration.ofSeconds(1), 61);  
+```
 
 #### Never reset
 This strategy should be used if you want to store in reservoir all values since reservoir creation, in other words eviction is not needed.
