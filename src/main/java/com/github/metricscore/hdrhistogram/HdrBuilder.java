@@ -18,10 +18,7 @@
 package com.github.metricscore.hdrhistogram;
 
 import com.codahale.metrics.*;
-import com.github.metricscore.hdrhistogram.accumulator.Accumulator;
-import com.github.metricscore.hdrhistogram.accumulator.ResetByChunksAccumulator;
-import com.github.metricscore.hdrhistogram.accumulator.ResetOnSnapshotAccumulator;
-import com.github.metricscore.hdrhistogram.accumulator.UniformAccumulator;
+import com.github.metricscore.hdrhistogram.accumulator.*;
 import org.HdrHistogram.Recorder;
 
 import java.time.Duration;
@@ -93,9 +90,6 @@ public class HdrBuilder {
      * <p>
      * The value written to reservoir will take affect at most <tt>resettingPeriod</tt> time.
      * </p>
-     * <p>
-     * This is equivalent for {@code resetReservoirByChunks(resettingPeriod, 1)}
-     * </p>
      *
      * @param resettingPeriod specifies how often need to reset reservoir
      * @return this builder instance
@@ -104,7 +98,12 @@ public class HdrBuilder {
      * @see #resetReservoirByChunks(Duration, int)
      */
     public HdrBuilder resetReservoirPeriodically(Duration resettingPeriod) {
-        return resetReservoirByChunks(resettingPeriod, 1);
+        long resettingPeriodMillis = resettingPeriod.toMillis();
+        if (resettingPeriodMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
+            throw new IllegalArgumentException("resettingPeriod must be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis");
+        }
+        accumulationFactory = (recorder, clock) -> new ResetPeriodicallyAccumulator(recorder.get(), resettingPeriodMillis, clock);
+        return this;
     }
 
     /**
