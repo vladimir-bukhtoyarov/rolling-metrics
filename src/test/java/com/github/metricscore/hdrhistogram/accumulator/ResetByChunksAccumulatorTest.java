@@ -25,10 +25,6 @@ import com.github.metricscore.hdrhistogram.MockClock;
 import org.junit.Test;
 
 import java.time.Duration;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static junit.framework.TestCase.assertEquals;
@@ -37,7 +33,7 @@ public class ResetByChunksAccumulatorTest {
 
     @Test
     public void testThreeChunks() {
-        AtomicLong time = new AtomicLong(1000);
+        AtomicLong time = new AtomicLong(0);
         Clock wallClock = MockClock.mock(time);
         Reservoir reservoir = new HdrBuilder(wallClock)
                 .resetReservoirByChunks(Duration.ofMillis(1000), 3)
@@ -49,14 +45,14 @@ public class ResetByChunksAccumulatorTest {
         assertEquals(10, snapshot.getMin());
         assertEquals(20, snapshot.getMax());
 
-        time.getAndAdd(900); // 1900
+        time.getAndAdd(900); // 900
         reservoir.update(30);
         reservoir.update(40);
         snapshot = reservoir.getSnapshot();
         assertEquals(10, snapshot.getMin());
         assertEquals(40, snapshot.getMax());
 
-        time.getAndAdd(99); // 1999
+        time.getAndAdd(99); // 999
         reservoir.update(9);
         reservoir.update(60);
         snapshot = reservoir.getSnapshot();
@@ -64,7 +60,7 @@ public class ResetByChunksAccumulatorTest {
         assertEquals(60, snapshot.getMax());
 
         // should be switched to second chunk
-        time.getAndAdd(1); // 2000
+        time.getAndAdd(1); // 1000
         reservoir.update(12);
         reservoir.update(70);
         snapshot = reservoir.getSnapshot();
@@ -72,21 +68,21 @@ public class ResetByChunksAccumulatorTest {
         assertEquals(70, snapshot.getMax());
 
         // should be switched to third chunk
-        time.getAndAdd(1001); // 3001
+        time.getAndAdd(1001); // 2001
         reservoir.update(13);
         reservoir.update(80);
         snapshot = reservoir.getSnapshot();
         assertEquals(9, snapshot.getMin());
         assertEquals(80, snapshot.getMax());
 
-        // should be switched to first chunk(right phase)
-        time.getAndAdd(1000); // 4001
+        // should be switched to first chunk
+        time.getAndAdd(1000); // 3001
         snapshot = reservoir.getSnapshot();
         assertEquals(12, snapshot.getMin());
         assertEquals(80, snapshot.getMax());
 
-        // should be switched to second chunk(right phase)
-        time.getAndAdd(999); // 5000
+        // should be switched to second chunk
+        time.getAndAdd(999); // 4000
         snapshot = reservoir.getSnapshot();
         assertEquals(13, snapshot.getMin());
         assertEquals(80, snapshot.getMax());
@@ -97,7 +93,7 @@ public class ResetByChunksAccumulatorTest {
         assertEquals(200, snapshot.getMax());
 
         // should invalidate all measures
-        time.getAndAdd(10000); // 15000
+        time.getAndAdd(10000); // 14000
         snapshot = reservoir.getSnapshot();
         assertEquals(0, snapshot.getMin());
         assertEquals(0, snapshot.getMax());

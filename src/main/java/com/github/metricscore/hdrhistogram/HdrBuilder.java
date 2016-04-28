@@ -158,8 +158,8 @@ public class HdrBuilder {
         if (resettingPeriod.toMillis() < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
             throw new IllegalArgumentException("resettingPeriod must be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis");
         }
-        if (numberChunks < 1) {
-            throw new IllegalArgumentException("numberChunks should be >= 1");
+        if (numberChunks < 2) {
+            throw new IllegalArgumentException("numberChunks should be >= 2");
         }
         if (numberChunks > MAX_CHUNKS) {
             throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
