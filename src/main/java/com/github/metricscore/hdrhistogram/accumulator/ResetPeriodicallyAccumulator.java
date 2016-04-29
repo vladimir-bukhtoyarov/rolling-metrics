@@ -19,6 +19,8 @@ package com.github.metricscore.hdrhistogram.accumulator;
 
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.Snapshot;
+import com.github.metricscore.hdrhistogram.util.EmptySnapshot;
+import com.github.metricscore.hdrhistogram.util.Printer;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
@@ -116,4 +118,15 @@ public class ResetPeriodicallyAccumulator implements Accumulator {
         return intervalHistogram.getEstimatedFootprintInBytes() * 3;
     }
 
+    @Override
+    public String toString() {
+        return "ResetPeriodicallyAccumulator{" +
+                "\nuniformHistogram=" + Printer.histogramToString(uniformHistogram) +
+                ",\n resetIntervalMillis=" + resetIntervalMillis +
+                ",\n clock=" + clock +
+                ",\n nextResetTimeMillisRef=" + nextResetTimeMillisRef +
+                ",\n activeMutators=" + activeMutators.get() +
+                ",\n intervalHistogram=" + Printer.histogramToString(intervalHistogram) +
+                "\n}";
+    }
 }

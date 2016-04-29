@@ -254,4 +254,14 @@ class HdrReservoir implements Reservoir {
         };
     }
 
+    @Override
+    public String toString() {
+        return "HdrReservoir{" +
+                "highestTrackableValue=" + highestTrackableValue +
+                ", overflowResolver=" + overflowResolver +
+                ", expectedIntervalBetweenValueSamples=" + expectedIntervalBetweenValueSamples +
+                "\n accumulator=" + accumulator +
+                '}';
+    }
+
 }

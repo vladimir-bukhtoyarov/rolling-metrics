@@ -19,6 +19,7 @@ package com.github.metricscore.hdrhistogram.accumulator;
 
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.Snapshot;
+import com.github.metricscore.hdrhistogram.util.Printer;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
@@ -180,6 +181,13 @@ public class ResetByChunksAccumulator implements Accumulator {
             this.proposedInvalidationTimestamp = proposedInvalidationTimestamp;
         }
 
+        @Override
+        public String toString() {
+            return "Chunk{" +
+                    "\n, proposedInvalidationTimestamp=" + proposedInvalidationTimestamp +
+                    "\n, histogram=" + Printer.histogramToString(histogram) +
+                    "\n}";
+        }
     }
 
     private static final class Phase {
@@ -199,6 +207,32 @@ public class ResetByChunksAccumulator implements Accumulator {
             }
             this.proposedInvalidationTimestamp = proposedInvalidationTimestamp;
         }
+
+        @Override
+        public String toString() {
+            return "Phase{" +
+                    "\n, proposedInvalidationTimestamp=" + proposedInvalidationTimestamp +
+                    "\n, totalsHistogram=" + Printer.histogramToString(totalsHistogram) +
+                    "\n, intervalHistogram=" + Printer.histogramToString(intervalHistogram) +
+                    "\n}";
+        }
+
     }
 
+    @Override
+    public String toString() {
+        return "ResetByChunksAccumulator{" +
+                "\nintervalBetweenResettingMillis=" + intervalBetweenResettingMillis +
+                ",\n creationTimestamp=" + creationTimestamp +
+                ",\n reportUncompletedChunkToSnapshot=" + reportUncompletedChunkToSnapshot +
+                ",\n chunks=" + Printer.printArray(chunks, "chunk") +
+                ",\n clock=" + clock +
+                ",\n left=" + left +
+                ",\n right=" + right +
+                ",\n currentPhase=" + (currentPhaseRef.get() == left? "left": "right") +
+                ",\n temporarySnapshotHistogram=" + Printer.histogramToString(temporarySnapshotHistogram)  +
+                ",\n activeMutators=" + activeMutators.get() +
+                ",\n postponedPhaseRotation=" + postponedPhaseRotation +
+                '}';
+    }
 }

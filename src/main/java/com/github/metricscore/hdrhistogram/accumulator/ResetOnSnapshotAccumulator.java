@@ -18,6 +18,7 @@
 package com.github.metricscore.hdrhistogram.accumulator;
 
 import com.codahale.metrics.Snapshot;
+import com.github.metricscore.hdrhistogram.util.Printer;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
@@ -49,5 +50,12 @@ public class ResetOnSnapshotAccumulator implements Accumulator {
     @Override
     public int getEstimatedFootprintInBytes() {
         return intervalHistogram.getEstimatedFootprintInBytes() * 2;
+    }
+
+    @Override
+    public String toString() {
+        return "ResetOnSnapshotAccumulator{" +
+                "intervalHistogram=" + Printer.histogramToString(intervalHistogram) +
+                '}';
     }
 }

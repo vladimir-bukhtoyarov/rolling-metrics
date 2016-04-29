@@ -18,6 +18,7 @@
 package com.github.metricscore.hdrhistogram.accumulator;
 
 import com.codahale.metrics.Snapshot;
+import com.github.metricscore.hdrhistogram.util.Printer;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
@@ -53,6 +54,14 @@ public class UniformAccumulator implements Accumulator {
     @Override
     public int getEstimatedFootprintInBytes() {
         return intervalHistogram.getEstimatedFootprintInBytes() * 3;
+    }
+
+    @Override
+    public String toString() {
+        return "UniformAccumulator{" +
+            "\nuniformHistogram=" + Printer.histogramToString(uniformHistogram) +
+            "\n, intervalHistogram=" + Printer.histogramToString(intervalHistogram) +
+            '}';
     }
 
 }

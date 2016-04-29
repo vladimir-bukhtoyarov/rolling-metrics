@@ -14,7 +14,7 @@
  *   See the License for the specific language governing permissions and
  *   limitations under the License.
  */
-package com.github.metricscore.hdrhistogram.accumulator;
+package com.github.metricscore.hdrhistogram.util;
 
 import com.codahale.metrics.Snapshot;
 
