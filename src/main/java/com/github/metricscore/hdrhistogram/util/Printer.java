@@ -25,13 +25,11 @@ import java.io.PrintStream;
 public class Printer {
 
     public static String histogramToString(Histogram histogram) {
-        try {
-            try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-                PrintStream writer = new PrintStream(baos);
-                histogram.outputPercentileDistribution(writer, 1.0);
-                byte[] resultBytes = baos.toByteArray();
-                return new String(resultBytes);
-            }
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            PrintStream writer = new PrintStream(baos);
+            histogram.outputPercentileDistribution(writer, 1.0);
+            byte[] resultBytes = baos.toByteArray();
+            return new String(resultBytes);
         } catch (IOException e) {
             throw new IllegalStateException(e);
         }

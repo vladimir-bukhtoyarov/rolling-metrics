@@ -23,6 +23,7 @@ import java.io.OutputStream;
 public class EmptySnapshot extends Snapshot {
 
     public static final EmptySnapshot INSTANCE = new EmptySnapshot();
+    private static final long[] VALUES = new long[0];
 
     @Override
     public double getValue(double quantile) {
@@ -31,7 +32,7 @@ public class EmptySnapshot extends Snapshot {
 
     @Override
     public long[] getValues() {
-        return new long[0];
+        return VALUES;
     }
 
     @Override

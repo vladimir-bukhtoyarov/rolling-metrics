@@ -19,6 +19,7 @@ package com.github.metricscore.hdrhistogram.accumulator;
 
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.Snapshot;
+import com.github.metricscore.hdrhistogram.util.EmptySnapshot;
 import com.github.metricscore.hdrhistogram.util.Printer;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
@@ -31,6 +32,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ResetByChunksAccumulator implements Accumulator {
+
+    private static final long FAKE_VALUE = Long.MIN_VALUE;
 
     private final long intervalBetweenResettingMillis;
     private final long creationTimestamp;
@@ -69,55 +72,7 @@ public class ResetByChunksAccumulator implements Accumulator {
     @Override
     public void recordSingleValueWithExpectedInterval(long value, long expectedIntervalBetweenValueSamples) {
         long currentTimeMillis = clock.getTime();
-        Phase currentPhase = currentPhaseRef.get();
-        if (currentTimeMillis < currentPhase.proposedInvalidationTimestamp) {
-            currentPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
-            return;
-        }
-
-        Phase nextPhase = currentPhase == left ? right : left;
-        nextPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
-        if (!currentPhaseRef.compareAndSet(currentPhase, nextPhase)) {
-            // another writer achieved progress and must clear current phase data, current writer tread just can write value to next phase and return
-            return;
-        }
-
-        // Current thread is responsible to rotate phases.
-        long millisSinceCreation = currentTimeMillis - creationTimestamp;
-        long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
-        Runnable phaseRotation = () -> {
-            try {
-                postponedPhaseRotation = null;
-
-                // move values from recorder to correspondent chunk
-                long currentPhaseNumber = (currentPhase.proposedInvalidationTimestamp - creationTimestamp) / intervalBetweenResettingMillis;
-                int correspondentChunkIndex = (int) (currentPhaseNumber - 1) % chunks.length;
-                currentPhase.intervalHistogram = currentPhase.recorder.getIntervalHistogram(currentPhase.intervalHistogram);
-                Chunk correspondentChunk = chunks[correspondentChunkIndex];
-                correspondentChunk.histogram.reset();
-                if (reportUncompletedChunkToSnapshot) {
-                    currentPhase.totalsHistogram.add(currentPhase.intervalHistogram);
-                    correspondentChunk.histogram.add(currentPhase.totalsHistogram);
-                    currentPhase.totalsHistogram.reset();
-                } else {
-                    correspondentChunk.histogram.add(currentPhase.intervalHistogram);
-                }
-                correspondentChunk.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + chunks.length - 1) * intervalBetweenResettingMillis;
-            } finally {
-                currentPhase.proposedInvalidationTimestamp = Long.MAX_VALUE;
-                activeMutators.decrementAndGet();
-                nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + 1) * intervalBetweenResettingMillis;
-            }
-        };
-
-        // Need to be aware about snapshot takers in the middle of progress state
-        if (activeMutators.incrementAndGet() > 1) {
-            // give chance to snapshot taker to finalize snapshot extraction, rotation will be complete by snapshot taker thread
-            postponedPhaseRotation = phaseRotation;
-        } else {
-            // There are no active snapshot takers in the progress state, lets exchange phases in this writer thread
-            phaseRotation.run();
-        }
+        recordValue(value, expectedIntervalBetweenValueSamples, currentTimeMillis, true);
     }
 
     @Override
@@ -127,16 +82,22 @@ public class ResetByChunksAccumulator implements Accumulator {
         while (!activeMutators.compareAndSet(0, 1)) {
             // if phase rotation process is in progress by writer thread then wait inside spin loop until rotation will be done
             LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(500));
+            if (Thread.currentThread().isInterrupted()) {
+                return EmptySnapshot.INSTANCE;
+            }
         }
 
         try {
-            if (reportUncompletedChunkToSnapshot) {
-                for (Phase phase : phases) {
-                    if (phase.proposedInvalidationTimestamp > currentTimeMillis) {
-                        phase.intervalHistogram = phase.recorder.getIntervalHistogram(phase.intervalHistogram);
-                        phase.totalsHistogram.add(phase.intervalHistogram);
-                        temporarySnapshotHistogram.add(phase.totalsHistogram);
-                    }
+            for (Phase phase : phases) {
+                if (phase.proposedInvalidationTimestamp <= currentTimeMillis) {
+                    // detected that reservoir was unused by writer for a long time
+                    // lets record fake value in order to trigger the rotation process
+                    recordValue(FAKE_VALUE, 0, currentTimeMillis, false);
+                }
+                if (reportUncompletedChunkToSnapshot) {
+                    phase.intervalHistogram = phase.recorder.getIntervalHistogram(phase.intervalHistogram);
+                    phase.totalsHistogram.add(phase.intervalHistogram);
+                    temporarySnapshotHistogram.add(phase.totalsHistogram);
                 }
             }
             for (Chunk chunk : chunks) {
@@ -156,13 +117,69 @@ public class ResetByChunksAccumulator implements Accumulator {
         return snapshotTaker.apply(temporarySnapshotHistogram);
     }
 
+    private void recordValue(long value, long expectedIntervalBetweenValueSamples, long currentTimeMillis, boolean currentThreadIsWriter) {
+        Phase currentPhase = currentPhaseRef.get();
+        if (currentTimeMillis < currentPhase.proposedInvalidationTimestamp) {
+            if (value != FAKE_VALUE) {
+                currentPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
+            }
+            return;
+        }
+
+        Phase nextPhase = currentPhase == left ? right : left;
+        if (value != FAKE_VALUE) {
+            nextPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
+        }
+        if (!currentPhaseRef.compareAndSet(currentPhase, nextPhase)) {
+            // another writer achieved progress and must clear current phase data, current writer tread just can write value to next phase and return
+            return;
+        }
+
+        // Current thread is responsible to rotate phases.
+        Runnable phaseRotation = () -> {
+            try {
+                postponedPhaseRotation = null;
+
+                // move values from recorder to correspondent chunk
+                long currentPhaseNumber = (currentPhase.proposedInvalidationTimestamp - creationTimestamp) / intervalBetweenResettingMillis;
+                int correspondentChunkIndex = (int) (currentPhaseNumber - 1) % chunks.length;
+                currentPhase.intervalHistogram = currentPhase.recorder.getIntervalHistogram(currentPhase.intervalHistogram);
+                Chunk correspondentChunk = chunks[correspondentChunkIndex];
+                correspondentChunk.histogram.reset();
+                if (reportUncompletedChunkToSnapshot) {
+                    currentPhase.totalsHistogram.add(currentPhase.intervalHistogram);
+                    correspondentChunk.histogram.add(currentPhase.totalsHistogram);
+                    currentPhase.totalsHistogram.reset();
+                } else {
+                    correspondentChunk.histogram.add(currentPhase.intervalHistogram);
+                }
+                correspondentChunk.proposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp + (chunks.length - 1) * intervalBetweenResettingMillis;
+            } finally {
+                long millisSinceCreation = currentTimeMillis - creationTimestamp;
+                long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
+                currentPhase.proposedInvalidationTimestamp = Long.MAX_VALUE;
+                activeMutators.decrementAndGet();
+                nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + 1) * intervalBetweenResettingMillis;
+            }
+        };
+
+        // Need to be aware about snapshot takers in the middle of progress state
+        if (activeMutators.incrementAndGet() > 1 && currentThreadIsWriter) {
+            // give chance to snapshot taker to finalize snapshot extraction, rotation will be complete by snapshot taker thread
+            postponedPhaseRotation = phaseRotation;
+        } else {
+            // There are no active snapshot takers in the progress state, lets exchange phases in this writer thread
+            phaseRotation.run();
+        }
+    }
+
     @Override
     public int getEstimatedFootprintInBytes() {
         // each histogram has equivalent pessimistic estimation
         int oneHistogramPessimisticFootprint = temporarySnapshotHistogram.getEstimatedFootprintInBytes();
 
         // 4 - two recorders with two histogram
-        // 2 - two histogram for storing accumulated values from current chunk
+        // 2 - two histogram for storing accumulated values from current phase
         // 1 - temporary histogram used for snapshot extracting
         if (reportUncompletedChunkToSnapshot) {
             return oneHistogramPessimisticFootprint * (chunks.length + 4 + 2 + 1);
@@ -212,7 +229,7 @@ public class ResetByChunksAccumulator implements Accumulator {
         public String toString() {
             return "Phase{" +
                     "\n, proposedInvalidationTimestamp=" + proposedInvalidationTimestamp +
-                    "\n, totalsHistogram=" + Printer.histogramToString(totalsHistogram) +
+                    "\n, totalsHistogram=" + (totalsHistogram != null? Printer.histogramToString(totalsHistogram): "null") +
                     "\n, intervalHistogram=" + Printer.histogramToString(intervalHistogram) +
                     "\n}";
         }

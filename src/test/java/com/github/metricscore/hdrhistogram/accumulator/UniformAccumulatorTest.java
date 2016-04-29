@@ -22,6 +22,8 @@ import com.codahale.metrics.Snapshot;
 import com.github.metricscore.hdrhistogram.HdrBuilder;
 import org.junit.Test;
 
+import java.time.Duration;
+
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotSame;
 
@@ -48,6 +50,11 @@ public class UniformAccumulatorTest {
         assertNotSame(secondSnapshot, thirdSnapshot);
         assertEquals(9, thirdSnapshot.getMin());
         assertEquals(60, thirdSnapshot.getMax());
+    }
+
+    @Test
+    public void testToString() {
+        new HdrBuilder().neverResetReservoir().buildReservoir().toString();
     }
 
 }

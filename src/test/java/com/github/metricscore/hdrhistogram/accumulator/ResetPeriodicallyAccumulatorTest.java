@@ -91,6 +91,11 @@ public class ResetPeriodicallyAccumulatorTest {
         assertEquals(0, snapshot.getMax());
     }
 
+    @Test
+    public void testToString() {
+        new HdrBuilder().resetReservoirPeriodically(Duration.ofSeconds(1)).buildReservoir().toString();
+    }
+
     @Test(timeout = 12000)
     public void testThatConcurrentThreadsNotHungWithOneChunk() throws InterruptedException {
         Reservoir reservoir = new HdrBuilder()
