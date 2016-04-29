@@ -72,7 +72,7 @@ public class ResetByChunksAccumulator implements Accumulator {
     @Override
     public void recordSingleValueWithExpectedInterval(long value, long expectedIntervalBetweenValueSamples) {
         long currentTimeMillis = clock.getTime();
-        recordValue(value, expectedIntervalBetweenValueSamples, currentTimeMillis, true);
+        recordOrTouch(value, expectedIntervalBetweenValueSamples, currentTimeMillis, true);
     }
 
     @Override
@@ -92,7 +92,7 @@ public class ResetByChunksAccumulator implements Accumulator {
                 if (phase.proposedInvalidationTimestamp <= currentTimeMillis) {
                     // detected that reservoir was unused by writer for a long time
                     // lets record fake value in order to trigger the rotation process
-                    recordValue(FAKE_VALUE, 0, currentTimeMillis, false);
+                    recordOrTouch(FAKE_VALUE, 0, currentTimeMillis, false);
                 }
                 if (reportUncompletedChunkToSnapshot) {
                     phase.intervalHistogram = phase.recorder.getIntervalHistogram(phase.intervalHistogram);
@@ -117,17 +117,17 @@ public class ResetByChunksAccumulator implements Accumulator {
         return snapshotTaker.apply(temporarySnapshotHistogram);
     }
 
-    private void recordValue(long value, long expectedIntervalBetweenValueSamples, long currentTimeMillis, boolean currentThreadIsWriter) {
+    private void recordOrTouch(long value, long expectedIntervalBetweenValueSamples, long currentTimeMillis, boolean currentThreadIsWriter) {
         Phase currentPhase = currentPhaseRef.get();
         if (currentTimeMillis < currentPhase.proposedInvalidationTimestamp) {
-            if (value != FAKE_VALUE) {
+            if (currentThreadIsWriter) {
                 currentPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
             }
             return;
         }
 
         Phase nextPhase = currentPhase == left ? right : left;
-        if (value != FAKE_VALUE) {
+        if (currentThreadIsWriter) {
             nextPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
         }
         if (!currentPhaseRef.compareAndSet(currentPhase, nextPhase)) {
