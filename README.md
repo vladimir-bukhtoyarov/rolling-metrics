@@ -187,7 +187,7 @@ If you do not want to include values from uncompleted chunk to snapshot, then us
 ```java
   // Split reservoir by 61 chunks, each value written to reservoir will take affect to the snapshot 60 seconds,
   // but snapshot will not include values up to the past 1 second 
-  builder.resetReservoirByChunks(Duration.ofSeconds(1), 61);  
+  builder.resetReservoirByChunks(Duration.ofSeconds(1), 61, false);  
 ```
 
 #### Never reset
