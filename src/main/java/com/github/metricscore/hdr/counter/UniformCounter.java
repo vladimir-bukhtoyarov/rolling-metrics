@@ -17,31 +17,30 @@
 package com.github.metricscore.hdr.counter;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Created by vladimir.bukhtoyarov on 02.09.2016.
  */
-class ResetAtSnapshotCounter implements WindowCounter {
+class UniformCounter implements WindowCounter {
 
     private final AtomicLong value = new AtomicLong();
 
-    public ResetAtSnapshotCounter() {
+    public UniformCounter() {
         super();
     }
 
     @Override
-    public void increment(long value, long measureTimestampMillis) {
-        if (value < 1) {
-            throw new IllegalArgumentException("value should be >= 1");
+    public void increment(long delta, long measureTimestampMillis) {
+        if (delta < 1) {
+            throw new IllegalArgumentException("delta should be >= 1");
         }
-        this.value.addAndGet(value);
+        this.value.addAndGet(delta);
     }
 
     @Override
-    synchronized public Long getValue() {
-        long sum = value.get();
-        value.addAndGet(-sum);
-        return sum;
+    public Long getValue() {
+        return value.get();
     }
 
 }

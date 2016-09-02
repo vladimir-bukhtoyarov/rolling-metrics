@@ -18,6 +18,7 @@
 package com.github.metricscore.hdr.histogram;
 
 import com.codahale.metrics.*;
+import com.github.metricscore.hdr.ChunkEvictionPolicy;
 import com.github.metricscore.hdr.histogram.accumulator.*;
 import org.HdrHistogram.Recorder;
 
@@ -126,7 +127,9 @@ public class HdrBuilder {
      * @see #neverResetReservoir()
      * @see #resetReservoirOnSnapshot()
      * @see #resetReservoirPeriodically(Duration)
+     * @deprecated As of release 1.3, replaced by {@link #resetReservoirByChunks(ChunkEvictionPolicy)} ()}
      */
+    @Deprecated
     public HdrBuilder resetReservoirByChunks(Duration resettingPeriod, int numberChunks) {
         return resetReservoirByChunks(resettingPeriod, numberChunks, true);
     }
@@ -150,21 +153,25 @@ public class HdrBuilder {
      * @see #neverResetReservoir()
      * @see #resetReservoirOnSnapshot()
      * @see #resetReservoirPeriodically(Duration)
+     *
+     * @deprecated As of release 1.3, replaced by {@link #resetReservoirByChunks(ChunkEvictionPolicy)} ()}
      */
+    @Deprecated
     public HdrBuilder resetReservoirByChunks(Duration resettingPeriod, int numberChunks, boolean reportUncompletedChunkToSnapshot) {
-        if (resettingPeriod.isNegative() || resettingPeriod.isZero()) {
-            throw new IllegalArgumentException("resettingPeriod must be a positive duration");
-        }
-        if (resettingPeriod.toMillis() < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
+        return resetReservoirByChunks(new ChunkEvictionPolicy(resettingPeriod, numberChunks, reportUncompletedChunkToSnapshot, false));
+    }
+
+    public HdrBuilder resetReservoirByChunks(ChunkEvictionPolicy policy) {
+        long resettingPeriodMillis = policy.getResettingPeriod().toMillis();
+        if (resettingPeriodMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
             throw new IllegalArgumentException("resettingPeriod must be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis");
         }
-        if (numberChunks < 2) {
-            throw new IllegalArgumentException("numberChunks should be >= 2");
-        }
+        int numberChunks = policy.getNumberChunks();
         if (numberChunks > MAX_CHUNKS) {
             throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
         }
-        accumulationFactory = (recorder, clock) -> new ResetByChunksAccumulator(recorder, numberChunks, resettingPeriod.toMillis(), reportUncompletedChunkToSnapshot, clock);
+
+        accumulationFactory = (recorder, clock) -> new ResetByChunksAccumulator(recorder, numberChunks, resettingPeriodMillis, policy.isReportUncompletedChunkToSnapshot(), clock);
         return this;
     }
 
