@@ -16,23 +16,21 @@
 
 package com.github.metricscore.hdr.counter;
 
+import com.codahale.metrics.Clock;
 import com.codahale.metrics.Gauge;
+
+import java.time.Duration;
 
 public interface WindowCounter extends Gauge<Long> {
 
-    static WindowCounter createResetAtSnapshotCounter() {
+    static WindowCounter resetAtSnapshotCounter() {
         return new ResetAtSnapshotCounter();
     }
 
-
-    default void increment() {
-        increment(1, System.currentTimeMillis());
+    static WindowCounter resetPeriodicallyCounter(Duration duration) {
+        return new ResetPeriodicallyCounter(duration.toMillis(), Clock.defaultClock());
     }
 
-    default void increment(long delta) {
-        increment(delta, System.currentTimeMillis());
-    }
-
-    void increment(long delta, long measureTimestampMillis);
+    void add(long delta);
 
 }

@@ -30,11 +30,11 @@ class ResetAtSnapshotCounter implements WindowCounter {
     }
 
     @Override
-    public void increment(long value, long measureTimestampMillis) {
-        if (value < 1) {
-            throw new IllegalArgumentException("value should be >= 1");
+    public void add(long delta) {
+        if (delta < 1) {
+            throw new IllegalArgumentException("delta should be >= 1");
         }
-        this.value.addAndGet(value);
+        this.value.addAndGet(delta);
     }
 
     @Override
