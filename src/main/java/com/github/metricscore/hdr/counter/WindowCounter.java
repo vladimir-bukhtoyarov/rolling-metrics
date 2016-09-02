@@ -24,10 +24,6 @@ public interface WindowCounter extends Gauge<Long> {
         return new ResetAtSnapshotCounter();
     }
 
-    static WindowCounter createUniformCounter() {
-        return new ResetAtSnapshotCounter();
-    }
-
 
     default void increment() {
         increment(1, System.currentTimeMillis());
