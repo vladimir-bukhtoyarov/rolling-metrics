@@ -33,4 +33,6 @@ public interface WindowCounter extends Gauge<Long> {
 
     void add(long delta);
 
+    long getSum();
+
 }

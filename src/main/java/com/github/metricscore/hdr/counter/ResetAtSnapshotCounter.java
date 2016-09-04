@@ -38,10 +38,15 @@ class ResetAtSnapshotCounter implements WindowCounter {
     }
 
     @Override
-    synchronized public Long getValue() {
+    synchronized public long getSum() {
         long sum = value.get();
         value.addAndGet(-sum);
         return sum;
+    }
+
+    @Override
+    synchronized public Long getValue() {
+        return getSum();
     }
 
 }

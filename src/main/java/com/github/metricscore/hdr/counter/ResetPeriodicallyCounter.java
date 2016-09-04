@@ -71,7 +71,7 @@ public class ResetPeriodicallyCounter implements WindowCounter {
     }
 
     @Override
-    public Long getValue() {
+    synchronized public long getSum() {
         while (true) {
             long nextResetTimeMillis = nextResetTimeMillisRef.get();
             long currentTimeMillis = clock.getTime();
@@ -85,6 +85,21 @@ public class ResetPeriodicallyCounter implements WindowCounter {
                 return result;
             }
         }
+    }
+
+    @Override
+    synchronized public Long getValue() {
+        return getSum();
+    }
+
+    @Override
+    public String toString() {
+        return "ResetPeriodicallyCounter{" +
+                "value=" + value +
+                ", resetIntervalMillis=" + resetIntervalMillis +
+                ", clock=" + clock +
+                ", nextResetTimeMillisRef=" + nextResetTimeMillisRef +
+                '}';
     }
 
 }
