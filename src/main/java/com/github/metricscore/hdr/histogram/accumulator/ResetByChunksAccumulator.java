@@ -19,12 +19,10 @@ package com.github.metricscore.hdr.histogram.accumulator;
 
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.Snapshot;
-import com.github.metricscore.hdr.histogram.util.EmptySnapshot;
 import com.github.metricscore.hdr.histogram.util.Printer;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -32,8 +30,6 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class ResetByChunksAccumulator implements Accumulator {
-
-    private static final long FAKE_VALUE = Long.MIN_VALUE;
 
     private final long intervalBetweenResettingMillis;
     private final long creationTimestamp;
@@ -46,9 +42,10 @@ public class ResetByChunksAccumulator implements Accumulator {
     private final Phase right;
     private final Phase[] phases;
     private final AtomicReference<Phase> currentPhaseRef;
-    private final AtomicInteger activeMutators = new AtomicInteger(0);
+    private final AtomicInteger phaseMutators = new AtomicInteger(0);
 
     private volatile Runnable postponedPhaseRotation = null;
+    private volatile Thread snapshotTakerThread = null;
 
     public ResetByChunksAccumulator(Supplier<Recorder> recorderSupplier, int numberChunks, long intervalBetweenResettingMillis, boolean reportUncompletedChunkToSnapshot, Clock clock) {
         this.intervalBetweenResettingMillis = intervalBetweenResettingMillis;
@@ -105,15 +102,19 @@ public class ResetByChunksAccumulator implements Accumulator {
                 long millisSinceCreation = currentTimeMillis - creationTimestamp;
                 long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
                 currentPhase.proposedInvalidationTimestamp = Long.MAX_VALUE;
-                activeMutators.decrementAndGet();
+                if (phaseMutators.decrementAndGet() > 0) {
+                    // snapshot taker wait permit from current thread
+                    LockSupport.unpark(this.snapshotTakerThread);
+                }
                 nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + 1) * intervalBetweenResettingMillis;
             }
         };
 
         // Need to be aware about snapshot takers in the middle of progress state
-        if (activeMutators.incrementAndGet() > 1) {
+        if (phaseMutators.incrementAndGet() > 1) {
             // give chance to snapshot taker to finalize snapshot extraction, rotation will be complete by snapshot taker thread
-            postponedPhaseRotation = phaseRotation;
+            this.postponedPhaseRotation = phaseRotation;
+            LockSupport.unpark(this.snapshotTakerThread);
         } else {
             // There are no active snapshot takers in the progress state, lets exchange phases in this writer thread
             phaseRotation.run();
@@ -123,14 +124,23 @@ public class ResetByChunksAccumulator implements Accumulator {
     @Override
     public final synchronized Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
         temporarySnapshotHistogram.reset();
-        long currentTimeMillis = clock.getTime();
-        while (!activeMutators.compareAndSet(0, 1)) {
-            // if phase rotation process is in progress by writer thread then wait inside spin loop until rotation will be done
-            LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(500));
-            if (Thread.currentThread().isInterrupted()) {
-                return EmptySnapshot.INSTANCE;
-            }
+
+        Thread currentThread = Thread.currentThread();
+        boolean wasInterrupted = false;
+
+        // Save reference to current currentThread before increment of atomic,
+        // it will provide guarantee that snapshot taker will be visible by writers
+        this.snapshotTakerThread = currentThread;
+
+        if (phaseMutators.incrementAndGet() > 1) {
+            // phase rotation process is in progress by writer thread, it is need to park and wait permit from writer
+            do {
+                LockSupport.park(this);
+                wasInterrupted = wasInterrupted || Thread.interrupted();
+                // Due to possibility of spurious wake up we need to wait in loop
+            } while (phaseMutators.get() > 1);
         }
+        long currentTimeMillis = clock.getTime();
 
         try {
             for (Phase phase : phases) {
@@ -146,13 +156,20 @@ public class ResetByChunksAccumulator implements Accumulator {
                 }
             }
         } finally {
-            if (activeMutators.decrementAndGet() > 0) {
-                while (this.postponedPhaseRotation == null) {
-                    // wait in spin loop until writer thread provide rotation task
-                    LockSupport.parkNanos(TimeUnit.MICROSECONDS.toNanos(100));
-                }
+            if (phaseMutators.decrementAndGet() > 0) {
+                // the writer thread postponed rotation in order to provide for current thread ability to complete snapshot,
+                // so current thread need to complete rotation by itself
+                Runnable postponedPhaseRotation;
+                do {
+                    LockSupport.park(this);
+                    wasInterrupted = wasInterrupted || Thread.interrupted();
+                } while ((postponedPhaseRotation = this.postponedPhaseRotation) == null);
                 postponedPhaseRotation.run();
             }
+        }
+        this.snapshotTakerThread = null;
+        if (wasInterrupted) {
+            currentThread.interrupt();
         }
         return snapshotTaker.apply(temporarySnapshotHistogram);
     }
@@ -231,8 +248,9 @@ public class ResetByChunksAccumulator implements Accumulator {
                 ",\n right=" + right +
                 ",\n currentPhase=" + (currentPhaseRef.get() == left? "left": "right") +
                 ",\n temporarySnapshotHistogram=" + Printer.histogramToString(temporarySnapshotHistogram)  +
-                ",\n activeMutators=" + activeMutators.get() +
+                ",\n phaseMutators=" + phaseMutators.get() +
                 ",\n postponedPhaseRotation=" + postponedPhaseRotation +
                 '}';
     }
+
 }

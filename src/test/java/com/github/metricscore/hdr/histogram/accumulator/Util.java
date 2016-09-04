@@ -24,11 +24,13 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class Util {
 
     public static void runInParallel(Reservoir reservoir, Duration duration) throws InterruptedException {
         AtomicBoolean stopFlag = new AtomicBoolean(false);
+        AtomicReference<Throwable> errorRef = new AtomicReference<>();
 
         // let concurrent threads to work fo 3 seconds
         new Timer().schedule(new TimerTask() {
@@ -44,19 +46,23 @@ public class Util {
                 try {
                     // update reservoir 100 times and take snapshot on each cycle
                     while (!stopFlag.get()) {
-                        for (int j = 1; j <= 100; j++) {
+                        for (int j = 1; j <= 10; j++) {
                             reservoir.update(ThreadLocalRandom.current().nextInt(j));
                         }
                         reservoir.getSnapshot();
                     }
                 } catch (Exception e){
                     e.printStackTrace();
+                    errorRef.set(e);
                 }
             });
             threads[i].start();
         }
         for (Thread thread: threads) {
             thread.join();
+        }
+        if (errorRef.get() != null) {
+            throw new RuntimeException(errorRef.get());
         }
     }
 }

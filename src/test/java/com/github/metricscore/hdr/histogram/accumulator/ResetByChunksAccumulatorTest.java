@@ -188,22 +188,22 @@ public class ResetByChunksAccumulatorTest {
                 .buildReservoir().toString();
     }
 
-    @Test(timeout = 12000)
+    @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHungWithThreeChunks() throws InterruptedException {
         Reservoir reservoir = new HdrBuilder()
                 .resetReservoirByChunks(Duration.ofSeconds(1), 3, false)
                 .buildReservoir();
 
-        Util.runInParallel(reservoir, Duration.ofSeconds(10));
+        Util.runInParallel(reservoir, Duration.ofSeconds(30));
     }
 
-    @Test(timeout = 12000)
+    @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHungWithFourChunks() throws InterruptedException {
         Reservoir reservoir = new HdrBuilder()
                 .resetReservoirByChunks(Duration.ofSeconds(1), 4)
                 .buildReservoir();
 
-        Util.runInParallel(reservoir, Duration.ofSeconds(10));
+        Util.runInParallel(reservoir, Duration.ofSeconds(30));
     }
 
 }
