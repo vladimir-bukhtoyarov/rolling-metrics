@@ -162,7 +162,7 @@ public class HdrBuilder {
     }
 
     public HdrBuilder resetReservoirByChunks(ChunkEvictionPolicy policy) {
-        long resettingPeriodMillis = policy.getResettingPeriod().toMillis();
+        long resettingPeriodMillis = policy.getResettingPeriodMillis();
         if (resettingPeriodMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
             throw new IllegalArgumentException("resettingPeriod must be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis");
         }

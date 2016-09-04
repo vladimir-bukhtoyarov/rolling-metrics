@@ -56,8 +56,8 @@ public class ResetByChunksAccumulator implements Accumulator {
         this.creationTimestamp = clock.getTime();
         this.reportUncompletedChunkToSnapshot = reportUncompletedChunkToSnapshot;
 
-        this.left = new Phase(recorderSupplier, creationTimestamp + intervalBetweenResettingMillis, reportUncompletedChunkToSnapshot);
-        this.right = new Phase(recorderSupplier, Long.MAX_VALUE, reportUncompletedChunkToSnapshot);
+        this.left = new Phase(recorderSupplier, creationTimestamp + intervalBetweenResettingMillis);
+        this.right = new Phase(recorderSupplier, Long.MAX_VALUE);
         this.phases = new Phase[] {left, right};
         this.currentPhaseRef = new AtomicReference<>(left);
 
@@ -72,7 +72,52 @@ public class ResetByChunksAccumulator implements Accumulator {
     @Override
     public void recordSingleValueWithExpectedInterval(long value, long expectedIntervalBetweenValueSamples) {
         long currentTimeMillis = clock.getTime();
-        recordOrTouch(value, expectedIntervalBetweenValueSamples, currentTimeMillis, true);
+        Phase currentPhase = currentPhaseRef.get();
+        if (currentTimeMillis < currentPhase.proposedInvalidationTimestamp) {
+            currentPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
+            return;
+        }
+
+        Phase nextPhase = currentPhase == left ? right : left;
+        nextPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
+
+        if (!currentPhaseRef.compareAndSet(currentPhase, nextPhase)) {
+            // another writer achieved progress and must clear current phase data, current writer tread just can write value to next phase and return
+            return;
+        }
+
+        // Current thread is responsible to rotate phases.
+        Runnable phaseRotation = () -> {
+            try {
+                postponedPhaseRotation = null;
+
+                // move values from recorder to correspondent chunk
+                long currentPhaseNumber = (currentPhase.proposedInvalidationTimestamp - creationTimestamp) / intervalBetweenResettingMillis;
+                int correspondentChunkIndex = (int) (currentPhaseNumber - 1) % chunks.length;
+                currentPhase.intervalHistogram = currentPhase.recorder.getIntervalHistogram(currentPhase.intervalHistogram);
+                Chunk correspondentChunk = chunks[correspondentChunkIndex];
+                correspondentChunk.histogram.reset();
+                currentPhase.totalsHistogram.add(currentPhase.intervalHistogram);
+                correspondentChunk.histogram.add(currentPhase.totalsHistogram);
+                currentPhase.totalsHistogram.reset();
+                correspondentChunk.proposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp + (chunks.length - 1) * intervalBetweenResettingMillis;
+            } finally {
+                long millisSinceCreation = currentTimeMillis - creationTimestamp;
+                long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
+                currentPhase.proposedInvalidationTimestamp = Long.MAX_VALUE;
+                activeMutators.decrementAndGet();
+                nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + 1) * intervalBetweenResettingMillis;
+            }
+        };
+
+        // Need to be aware about snapshot takers in the middle of progress state
+        if (activeMutators.incrementAndGet() > 1) {
+            // give chance to snapshot taker to finalize snapshot extraction, rotation will be complete by snapshot taker thread
+            postponedPhaseRotation = phaseRotation;
+        } else {
+            // There are no active snapshot takers in the progress state, lets exchange phases in this writer thread
+            phaseRotation.run();
+        }
     }
 
     @Override
@@ -89,12 +134,7 @@ public class ResetByChunksAccumulator implements Accumulator {
 
         try {
             for (Phase phase : phases) {
-                if (phase.proposedInvalidationTimestamp <= currentTimeMillis) {
-                    // detected that reservoir was unused by writer for a long time
-                    // lets record fake value in order to trigger the rotation process
-                    recordOrTouch(FAKE_VALUE, 0, currentTimeMillis, false);
-                }
-                if (reportUncompletedChunkToSnapshot) {
+                if (phase.isNeedToBeReportedToSnapshot(currentTimeMillis)) {
                     phase.intervalHistogram = phase.recorder.getIntervalHistogram(phase.intervalHistogram);
                     phase.totalsHistogram.add(phase.intervalHistogram);
                     temporarySnapshotHistogram.add(phase.totalsHistogram);
@@ -117,62 +157,6 @@ public class ResetByChunksAccumulator implements Accumulator {
         return snapshotTaker.apply(temporarySnapshotHistogram);
     }
 
-    private void recordOrTouch(long value, long expectedIntervalBetweenValueSamples, long currentTimeMillis, boolean currentThreadIsWriter) {
-        Phase currentPhase = currentPhaseRef.get();
-        if (currentTimeMillis < currentPhase.proposedInvalidationTimestamp) {
-            if (currentThreadIsWriter) {
-                currentPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
-            }
-            return;
-        }
-
-        Phase nextPhase = currentPhase == left ? right : left;
-        if (currentThreadIsWriter) {
-            nextPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
-        }
-        if (!currentPhaseRef.compareAndSet(currentPhase, nextPhase)) {
-            // another writer achieved progress and must clear current phase data, current writer tread just can write value to next phase and return
-            return;
-        }
-
-        // Current thread is responsible to rotate phases.
-        Runnable phaseRotation = () -> {
-            try {
-                postponedPhaseRotation = null;
-
-                // move values from recorder to correspondent chunk
-                long currentPhaseNumber = (currentPhase.proposedInvalidationTimestamp - creationTimestamp) / intervalBetweenResettingMillis;
-                int correspondentChunkIndex = (int) (currentPhaseNumber - 1) % chunks.length;
-                currentPhase.intervalHistogram = currentPhase.recorder.getIntervalHistogram(currentPhase.intervalHistogram);
-                Chunk correspondentChunk = chunks[correspondentChunkIndex];
-                correspondentChunk.histogram.reset();
-                if (reportUncompletedChunkToSnapshot) {
-                    currentPhase.totalsHistogram.add(currentPhase.intervalHistogram);
-                    correspondentChunk.histogram.add(currentPhase.totalsHistogram);
-                    currentPhase.totalsHistogram.reset();
-                } else {
-                    correspondentChunk.histogram.add(currentPhase.intervalHistogram);
-                }
-                correspondentChunk.proposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp + (chunks.length - 1) * intervalBetweenResettingMillis;
-            } finally {
-                long millisSinceCreation = currentTimeMillis - creationTimestamp;
-                long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
-                currentPhase.proposedInvalidationTimestamp = Long.MAX_VALUE;
-                activeMutators.decrementAndGet();
-                nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + 1) * intervalBetweenResettingMillis;
-            }
-        };
-
-        // Need to be aware about snapshot takers in the middle of progress state
-        if (activeMutators.incrementAndGet() > 1 && currentThreadIsWriter) {
-            // give chance to snapshot taker to finalize snapshot extraction, rotation will be complete by snapshot taker thread
-            postponedPhaseRotation = phaseRotation;
-        } else {
-            // There are no active snapshot takers in the progress state, lets exchange phases in this writer thread
-            phaseRotation.run();
-        }
-    }
-
     @Override
     public int getEstimatedFootprintInBytes() {
         // each histogram has equivalent pessimistic estimation
@@ -181,14 +165,10 @@ public class ResetByChunksAccumulator implements Accumulator {
         // 4 - two recorders with two histogram
         // 2 - two histogram for storing accumulated values from current phase
         // 1 - temporary histogram used for snapshot extracting
-        if (reportUncompletedChunkToSnapshot) {
-            return oneHistogramPessimisticFootprint * (chunks.length + 4 + 2 + 1);
-        } else {
-            return oneHistogramPessimisticFootprint * (chunks.length + 4 + 1);
-        }
+        return oneHistogramPessimisticFootprint * (chunks.length + 4 + 2 + 1);
     }
 
-    private static final class Chunk {
+    private final class Chunk {
 
         private final Histogram histogram;
         private volatile long proposedInvalidationTimestamp;
@@ -207,21 +187,17 @@ public class ResetByChunksAccumulator implements Accumulator {
         }
     }
 
-    private static final class Phase {
+    private final class Phase {
 
         final Recorder recorder;
         final Histogram totalsHistogram;
         Histogram intervalHistogram;
         volatile long proposedInvalidationTimestamp;
 
-        Phase(Supplier<Recorder> recorderSupplier, long proposedInvalidationTimestamp, boolean reportUncompletedChunkToSnapshot) {
+        Phase(Supplier<Recorder> recorderSupplier, long proposedInvalidationTimestamp) {
             this.recorder = recorderSupplier.get();
             this.intervalHistogram = recorder.getIntervalHistogram();
-            if (reportUncompletedChunkToSnapshot) {
-                totalsHistogram = intervalHistogram.copy();
-            } else {
-                totalsHistogram = null;
-            }
+            this.totalsHistogram = intervalHistogram.copy();
             this.proposedInvalidationTimestamp = proposedInvalidationTimestamp;
         }
 
@@ -234,6 +210,13 @@ public class ResetByChunksAccumulator implements Accumulator {
                     "\n}";
         }
 
+        boolean isNeedToBeReportedToSnapshot(long currentTimeMillis) {
+            if (proposedInvalidationTimestamp > currentTimeMillis) {
+                return reportUncompletedChunkToSnapshot;
+            }
+            long correspondentChunkProposedInvalidationTimestamp = proposedInvalidationTimestamp + (chunks.length - 1) * intervalBetweenResettingMillis;
+            return correspondentChunkProposedInvalidationTimestamp > currentTimeMillis;
+        }
     }
 
     @Override

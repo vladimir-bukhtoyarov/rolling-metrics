@@ -23,7 +23,7 @@ import java.time.Duration;
  */
 public class ChunkEvictionPolicy {
 
-    private final Duration resettingPeriod;
+    private final long resettingPeriodMillis;
     private final int numberChunks;
     private final boolean reportUncompletedChunkToSnapshot;
     private final boolean smoothlyEvictFromOldestChunk;
@@ -43,14 +43,14 @@ public class ChunkEvictionPolicy {
         if (numberChunks < 2) {
             throw new IllegalArgumentException("numberChunks should be >= 2");
         }
-        this.resettingPeriod = resettingPeriod;
+        this.resettingPeriodMillis = resettingPeriod.toMillis();
         this.numberChunks = numberChunks;
         this.reportUncompletedChunkToSnapshot = reportUncompletedChunkToSnapshot;
         this.smoothlyEvictFromOldestChunk = smoothlyEvictFromOldestChunk;
     }
 
-    public Duration getResettingPeriod() {
-        return resettingPeriod;
+    public long getResettingPeriodMillis() {
+        return resettingPeriodMillis;
     }
 
     public int getNumberChunks() {
@@ -63,6 +63,16 @@ public class ChunkEvictionPolicy {
 
     public boolean isSmoothlyEvictFromOldestChunk() {
         return smoothlyEvictFromOldestChunk;
+    }
+
+    @Override
+    public String toString() {
+        return "ChunkEvictionPolicy{" +
+                "resettingPeriodMillis=" + resettingPeriodMillis +
+                ", numberChunks=" + numberChunks +
+                ", reportUncompletedChunkToSnapshot=" + reportUncompletedChunkToSnapshot +
+                ", smoothlyEvictFromOldestChunk=" + smoothlyEvictFromOldestChunk +
+                '}';
     }
 
 }

@@ -41,7 +41,7 @@ public class EstimationFootprintInBytesTest {
         assertEquals(histogramEquivalentEstimate * 3, builder.resetReservoirPeriodically(Duration.ofMinutes(1)).getEstimatedFootprintInBytes());
         assertEquals(histogramEquivalentEstimate * (10 + 7), builder.resetReservoirByChunks(Duration.ofMinutes(1), 10).getEstimatedFootprintInBytes());
         assertEquals(histogramEquivalentEstimate * (10 + 7), builder.resetReservoirByChunks(Duration.ofMinutes(1), 10, true).getEstimatedFootprintInBytes());
-        assertEquals(histogramEquivalentEstimate * (10 + 5), builder.resetReservoirByChunks(Duration.ofMinutes(1), 10, false).getEstimatedFootprintInBytes());
+        assertEquals(histogramEquivalentEstimate * (10 + 7), builder.resetReservoirByChunks(Duration.ofMinutes(1), 10, false).getEstimatedFootprintInBytes());
     }
 
 }

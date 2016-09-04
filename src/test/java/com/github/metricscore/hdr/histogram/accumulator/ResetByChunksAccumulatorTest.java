@@ -97,6 +97,15 @@ public class ResetByChunksAccumulatorTest {
         snapshot = reservoir.getSnapshot();
         assertEquals(0, snapshot.getMin());
         assertEquals(0, snapshot.getMax());
+
+        reservoir.update(3);
+        time.addAndGet(2000); // 16000
+        snapshot = reservoir.getSnapshot();
+        assertEquals(3, snapshot.getMax());
+
+        time.addAndGet(1000); // 17000
+        snapshot = reservoir.getSnapshot();
+        assertEquals(0, snapshot.getMax());
     }
 
     @Test
