@@ -125,7 +125,7 @@ public class ResetPeriodicallyAccumulator implements Accumulator {
                 ",\n resetIntervalMillis=" + resetIntervalMillis +
                 ",\n clock=" + clock +
                 ",\n nextResetTimeMillisRef=" + nextResetTimeMillisRef +
-                ",\n activeMutators=" + activeMutators.get() +
+                ",\n phaseMutators=" + activeMutators.get() +
                 ",\n intervalHistogram=" + Printer.histogramToString(intervalHistogram) +
                 "\n}";
     }

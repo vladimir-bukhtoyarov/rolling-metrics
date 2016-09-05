@@ -16,8 +16,6 @@
  */
 
 package com.github.metricscore.hdr.histogram;
-import com.github.metricscore.hdr.histogram.HdrBuilder;
-import com.github.metricscore.hdr.histogram.OverflowResolver;
 import org.HdrHistogram.Recorder;
 import org.junit.Test;
 
@@ -35,13 +33,12 @@ public class EstimationFootprintInBytesTest {
 
     @Test
     public void testEstimationFootprintInBytes() {
-        System.out.println(histogramEquivalentEstimate * (61 + 5));
         assertEquals(histogramEquivalentEstimate * 3, builder.neverResetReservoir().getEstimatedFootprintInBytes());
         assertEquals(histogramEquivalentEstimate * 2, builder.resetReservoirOnSnapshot().getEstimatedFootprintInBytes());
         assertEquals(histogramEquivalentEstimate * 3, builder.resetReservoirPeriodically(Duration.ofMinutes(1)).getEstimatedFootprintInBytes());
-        assertEquals(histogramEquivalentEstimate * (10 + 7), builder.resetReservoirByChunks(Duration.ofMinutes(1), 10).getEstimatedFootprintInBytes());
-        assertEquals(histogramEquivalentEstimate * (10 + 7), builder.resetReservoirByChunks(Duration.ofMinutes(1), 10, true).getEstimatedFootprintInBytes());
-        assertEquals(histogramEquivalentEstimate * (10 + 7), builder.resetReservoirByChunks(Duration.ofMinutes(1), 10, false).getEstimatedFootprintInBytes());
+        assertEquals(histogramEquivalentEstimate * (10 * 6 + 1), builder.resetReservoirByChunks(Duration.ofMinutes(1), 10).getEstimatedFootprintInBytes());
+        assertEquals(histogramEquivalentEstimate * (10 * 6 + 1), builder.resetReservoirByChunks(Duration.ofMinutes(1), 10, true).getEstimatedFootprintInBytes());
+        assertEquals(histogramEquivalentEstimate * (10 * 6 + 1), builder.resetReservoirByChunks(Duration.ofMinutes(1), 10, false).getEstimatedFootprintInBytes());
     }
 
 }
