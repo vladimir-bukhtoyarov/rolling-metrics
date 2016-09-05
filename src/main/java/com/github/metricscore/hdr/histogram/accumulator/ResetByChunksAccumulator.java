@@ -23,7 +23,6 @@ import com.github.metricscore.hdr.histogram.util.Printer;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -184,11 +183,12 @@ public final class ResetByChunksAccumulator implements Accumulator {
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder("LeftRightChunk{");
-            sb.append("left=").append(left);
+            sb.append("currentPhase is ").append(currentPhaseRef.get() == left? "left" : "right");
+            sb.append(", left=").append(left);
             sb.append(", right=").append(right);
-            sb.append(", currentPhaseRef=").append(currentPhaseRef);
             sb.append(", phaseMutators=").append(phaseMutators);
             sb.append(", postponedPhaseRotation=").append(postponedPhaseRotation);
+            sb.append(", snapshotTakerThread=").append(snapshotTakerThread);
             sb.append('}');
             return sb.toString();
         }
