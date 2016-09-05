@@ -18,20 +18,10 @@
 package com.github.metricscore.hdr.counter;
 
 import com.codahale.metrics.Clock;
-import com.codahale.metrics.Snapshot;
-import com.github.metricscore.hdr.histogram.accumulator.Accumulator;
-import com.github.metricscore.hdr.histogram.util.EmptySnapshot;
-import com.github.metricscore.hdr.histogram.util.Printer;
-import org.HdrHistogram.Histogram;
-import org.HdrHistogram.Recorder;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
-import java.util.function.Function;
 
-public class ResetPeriodicallyCounter implements WindowCounter {
+class ResetPeriodicallyCounter implements WindowCounter {
 
     static final long MIN_RESETTING_INTERVAL_MILLIS = 1000;
 

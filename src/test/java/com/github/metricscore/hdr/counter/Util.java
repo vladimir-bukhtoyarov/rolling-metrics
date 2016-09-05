@@ -15,21 +15,20 @@
  *   limitations under the License.
  */
 
-package com.github.metricscore.hdr.histogram.accumulator;
-
-import com.codahale.metrics.Reservoir;
+package com.github.metricscore.hdr.counter;
 
 import java.time.Duration;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class Util {
 
-    public static void runInParallel(Reservoir reservoir, Duration duration) throws InterruptedException {
+    public static void runInParallel(WindowCounter counter, Duration duration) throws InterruptedException {
         AtomicBoolean stopFlag = new AtomicBoolean(false);
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
 
@@ -48,9 +47,9 @@ public class Util {
                     // update reservoir 100 times and take snapshot on each cycle
                     while (!stopFlag.get()) {
                         for (int j = 1; j <= 10; j++) {
-                            reservoir.update(ThreadLocalRandom.current().nextInt(j));
+                            counter.add(ThreadLocalRandom.current().nextInt(j) + 1);
                         }
-                        reservoir.getSnapshot();
+                        counter.getValue();
                     }
                 } catch (Exception e){
                     e.printStackTrace();
@@ -59,6 +58,7 @@ public class Util {
                     latch.countDown();
                 }
             });
+            threads[i].setDaemon(true);
             threads[i].start();
         }
         latch.await();

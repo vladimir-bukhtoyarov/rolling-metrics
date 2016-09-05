@@ -18,17 +18,22 @@ package com.github.metricscore.hdr.counter;
 
 import com.codahale.metrics.Clock;
 import com.codahale.metrics.Gauge;
+import com.github.metricscore.hdr.ChunkEvictionPolicy;
 
 import java.time.Duration;
 
 public interface WindowCounter extends Gauge<Long> {
 
-    static WindowCounter resetAtSnapshotCounter() {
+    static WindowCounter newResetAtSnapshotCounter() {
         return new ResetAtSnapshotCounter();
     }
 
-    static WindowCounter resetPeriodicallyCounter(Duration duration) {
+    static WindowCounter newResetPeriodicallyCounter(Duration duration) {
         return new ResetPeriodicallyCounter(duration.toMillis(), Clock.defaultClock());
+    }
+
+    static WindowCounter newResetByChunkCounter(ChunkEvictionPolicy evictionPolicy) {
+        return new ResetByChunksCounter(evictionPolicy, Clock.defaultClock());
     }
 
     void add(long delta);
