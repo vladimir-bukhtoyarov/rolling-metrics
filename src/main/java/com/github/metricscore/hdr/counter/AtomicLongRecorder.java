@@ -79,13 +79,10 @@ class AtomicLongRecorder {
             inactiveAtomic = activeAtomic;
             activeAtomic = temp;
 
-            // Make sure we are not in the middle of recording a value on the previously active histogram:
-            // Flip phase to make sure no recordings that were in flight pre-flip are still active:
-            recordingPhaser.flipPhase(500000L /* yield in 0.5 msec units if needed */);
+            recordingPhaser.flipPhase();
         } finally {
             recordingPhaser.readerUnlock();
         }
     }
-
 
 }
