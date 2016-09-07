@@ -21,24 +21,24 @@ import com.codahale.metrics.Clock;
 import com.github.metricscore.hdr.ChunkEvictionPolicy;
 import com.github.metricscore.hdr.histogram.util.Printer;
 
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.LockSupport;
 
 
 final class ResetByChunksCounter implements WindowCounter {
 
     // meaningful limits to disallow user to kill performance(or memory footprint) by mistake
-    static final int MAX_CHUNKS = 100;
-    static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
+    static final int MAX_CHUNKS = 1000;
+    static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 100;
 
     private final boolean smoothlyEvictFromOldestChunk;
+    private final int numberChunks;
     private final long intervalBetweenResettingMillis;
     private final boolean reportUncompletedChunkToSnapshot;
     private final Clock clock;
     private final long creationTimestamp;
-    private final LeftRightChunk[] chunks;
+
+    private final Chunk[] chunks;
 
     ResetByChunksCounter(ChunkEvictionPolicy evictionPolicy, Clock clock) {
         this.smoothlyEvictFromOldestChunk = evictionPolicy.isSmoothlyEvictFromOldestChunk();
@@ -52,12 +52,13 @@ final class ResetByChunksCounter implements WindowCounter {
         this.clock = clock;
         this.creationTimestamp = clock.getTime();
 
-        if (evictionPolicy.getNumberChunks() > MAX_CHUNKS) {
+        this.numberChunks = evictionPolicy.getNumberChunks();
+        if (numberChunks > MAX_CHUNKS) {
             throw new IllegalArgumentException("number of chunks should be <=" + MAX_CHUNKS);
         }
-        this.chunks = new LeftRightChunk[evictionPolicy.getNumberChunks()];
+        this.chunks = new Chunk[evictionPolicy.getNumberChunks()];
         for (int i = 0; i < chunks.length; i++) {
-            this.chunks[i] = new LeftRightChunk(i);
+            this.chunks[i] = new Chunk(i);
         }
     }
 
@@ -74,127 +75,54 @@ final class ResetByChunksCounter implements WindowCounter {
     }
 
     @Override
-    synchronized public long getSum() {
+    public long getSum() {
         long currentTimeMillis = clock.getTime();
-        AtomicLong sum = new AtomicLong();
-        boolean wasInterrupted = false;
-        for (LeftRightChunk chunk : chunks) {
-            wasInterrupted = wasInterrupted || chunk.addActivePhaseToSum(sum, currentTimeMillis);
+        long sum = 0;
+        for (Chunk chunk : chunks) {
+            sum += chunk.getSum(currentTimeMillis);
         }
-        if (wasInterrupted) {
-            Thread.currentThread().interrupt();
-        }
-        return sum.get();
+        return sum;
     }
 
     @Override
-    synchronized public Long getValue() {
+    public Long getValue() {
         return getSum();
     }
 
-    private final class LeftRightChunk {
+    private final class Chunk {
 
-        final Phase left;
-        final Phase right;
         final AtomicReference<Phase> currentPhaseRef;
-        final AtomicInteger phaseMutators = new AtomicInteger(0);
-        volatile Runnable postponedPhaseRotation = null;
-        volatile Thread snapshotTakerThread = null;
 
-        LeftRightChunk(int chunkIndex) {
-            left = new Phase(creationTimestamp + (chunks.length + chunkIndex) * intervalBetweenResettingMillis);
-            right = new Phase(Long.MAX_VALUE);
-            this.currentPhaseRef = new AtomicReference<>(left);
+        Chunk(int chunkIndex) {
+            long invalidationTimestamp = creationTimestamp + (chunks.length + chunkIndex) * intervalBetweenResettingMillis;
+            this.currentPhaseRef = new AtomicReference<>(new Phase(invalidationTimestamp));
         }
 
-        boolean addActivePhaseToSum(AtomicLong sum, long currentTimeMillis) {
-            Thread currentThread = Thread.currentThread();
-            boolean wasInterrupted = false;
-
-            // Save reference to current currentThread before increment of atomic,
-            // it will provide guarantee that snapshot taker will be visible by writers
-            this.snapshotTakerThread = currentThread;
-
-            if (phaseMutators.incrementAndGet() > 1) {
-                // phase rotation process is in progress by writer thread, it is need to park and wait permit from writer
-                do {
-                    LockSupport.park(this);
-                    wasInterrupted = wasInterrupted || Thread.interrupted();
-                    // Due to possibility of spurious wake up we need to wait in loop
-                } while (phaseMutators.get() > 1);
-            }
-            try {
-                Phase currentPhase = currentPhaseRef.get();
-                currentPhase.addItselfToSum(sum, currentTimeMillis);
-            } finally {
-                if (phaseMutators.decrementAndGet() > 0) {
-                    // the writer thread postponed rotation in order to provide for current thread ability to complete snapshot,
-                    // so current thread need to complete rotation by itself
-                    Runnable postponedPhaseRotation;
-                    do {
-                        LockSupport.park(this);
-                        wasInterrupted = wasInterrupted || Thread.interrupted();
-                    } while ((postponedPhaseRotation = this.postponedPhaseRotation) == null);
-                    postponedPhaseRotation.run();
-                }
-            }
-            this.snapshotTakerThread = null;
-            return wasInterrupted;
+        long getSum(long currentTimeMillis) {
+            return currentPhaseRef.get().getSum(currentTimeMillis);
         }
 
         void add(long delta, long currentTimeMillis) {
             Phase currentPhase = currentPhaseRef.get();
-            if (currentTimeMillis < currentPhase.proposedInvalidationTimestamp) {
-                currentPhase.recorder.add(delta);
-                return;
-            }
-
-            Phase nextPhase = currentPhase == left ? right : left;
-            if (!currentPhaseRef.compareAndSet(currentPhase, nextPhase)) {
-                // another writer achieved progress and must clear current phase data, current writer tread just can write delta to next phase and return
-                nextPhase.recorder.add(delta);
-                return;
-            }
-
-            // Current thread is responsible to rotate phases.
-            Runnable phaseRotation = () -> {
-                try {
-                    postponedPhaseRotation = null;
-                    currentPhase.recorder.reset();
-                    currentPhase.runningTotals.set(0);
-                    currentPhase.proposedInvalidationTimestamp = Long.MAX_VALUE;
-                    nextPhase.recorder.add(delta);
-                } finally {
-                    if (phaseMutators.decrementAndGet() > 0) {
-                        // snapshot taker wait permit from current thread
-                        LockSupport.unpark(this.snapshotTakerThread);
-                    }
-                    long millisSinceCreation = currentTimeMillis - creationTimestamp;
-                    long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
-                    nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingMillis;
+            while (currentTimeMillis >= currentPhase.proposedInvalidationTimestamp) {
+                long millisSinceCreation = currentTimeMillis - creationTimestamp;
+                long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
+                long nextProposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingMillis;
+                Phase replacement = new Phase(nextProposedInvalidationTimestamp);
+                if (currentPhaseRef.compareAndSet(currentPhase, replacement)) {
+                    currentPhase = replacement;
+                } else {
+                    currentPhase = currentPhaseRef.get();
                 }
-            };
-
-            // Need to be aware about snapshot takers in the middle of progress state
-            if (phaseMutators.incrementAndGet() > 1) {
-                // give chance to snapshot taker to finalize snapshot extraction, rotation will be complete by snapshot taker thread
-                postponedPhaseRotation = phaseRotation;
-                LockSupport.unpark(this.snapshotTakerThread);
-            } else {
-                // There are no active snapshot takers in the progress state, lets exchange phases in this writer thread
-                phaseRotation.run();
             }
+
+            currentPhase.sum.addAndGet(delta);
         }
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("LeftRightChunk{");
-            sb.append("currentPhase is ").append(currentPhaseRef.get() == left? "left" : "right");
-            sb.append(", left=").append(left);
-            sb.append(", right=").append(right);
-            sb.append(", phaseMutators=").append(phaseMutators);
-            sb.append(", postponedPhaseRotation=").append(postponedPhaseRotation);
-            sb.append(", snapshotTakerThread=").append(snapshotTakerThread);
+            final StringBuilder sb = new StringBuilder("Chunk{");
+            sb.append("currentPhaseRef=").append(currentPhaseRef);
             sb.append('}');
             return sb.toString();
         }
@@ -202,53 +130,46 @@ final class ResetByChunksCounter implements WindowCounter {
 
     private final class Phase {
 
-        final AtomicLong runningTotals;
-        final AtomicLongRecorder recorder;
-
-        AtomicLong intervalAtomic;
-        volatile long proposedInvalidationTimestamp;
+        final AtomicLong sum;
+        final long proposedInvalidationTimestamp;
 
         Phase(long proposedInvalidationTimestamp) {
-            this.recorder = new AtomicLongRecorder();
-            this.intervalAtomic = recorder.getIntervalAtomic();
-            this.runningTotals = new AtomicLong();
+            this.sum = new AtomicLong();
             this.proposedInvalidationTimestamp = proposedInvalidationTimestamp;
         }
 
-        void addItselfToSum(AtomicLong sum, long currentTimeMillis) {
+        long getSum(long currentTimeMillis) {
             long proposedInvalidationTimestamp = this.proposedInvalidationTimestamp;
             if (currentTimeMillis >= proposedInvalidationTimestamp) {
                 // The chunk was unused by writers for a long time
-                return;
+                return 0;
             }
 
             if (!reportUncompletedChunkToSnapshot) {
                 if (currentTimeMillis < proposedInvalidationTimestamp - (chunks.length - 1) * intervalBetweenResettingMillis) {
                     // By configuration we should not add phase to snapshot until it fully completed
-                    return;
+                    return 0;
                 }
             }
 
-            intervalAtomic = recorder.getIntervalAtomic(intervalAtomic);
-            long runningTotalValue = runningTotals.addAndGet(intervalAtomic.get());
+            long sum = this.sum.get();
             if (smoothlyEvictFromOldestChunk) {
                 long beforeInvalidateMillis = proposedInvalidationTimestamp - currentTimeMillis;
                 if (beforeInvalidateMillis < intervalBetweenResettingMillis) {
-                    runningTotalValue = (long) ((double)runningTotalValue * ((double)beforeInvalidateMillis / (double)intervalBetweenResettingMillis));
+                    sum = (long) ((double)sum * ((double)beforeInvalidateMillis / (double)intervalBetweenResettingMillis));
                 }
             }
-            sum.addAndGet(runningTotalValue);
+            return sum;
         }
 
         @Override
         public String toString() {
-            return "Phase{" +
-                    "\n, proposedInvalidationTimestamp=" + proposedInvalidationTimestamp +
-                    "\n, runningTotals=" + runningTotals +
-                    "\n, intervalAtomic=" + intervalAtomic +
-                    "\n}";
+            final StringBuilder sb = new StringBuilder("Phase{");
+            sb.append("sum=").append(sum);
+            sb.append(", proposedInvalidationTimestamp=").append(proposedInvalidationTimestamp);
+            sb.append('}');
+            return sb.toString();
         }
-
     }
 
     @Override

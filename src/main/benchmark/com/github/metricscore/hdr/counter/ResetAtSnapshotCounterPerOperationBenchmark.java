@@ -53,19 +53,29 @@ public class ResetAtSnapshotCounterPerOperationBenchmark {
         public final WindowCounter counter =  new ResetByChunksCounter(new ChunkEvictionPolicy(Duration.ofSeconds(1), 10), clock) ;
     }
 
+    @State(Scope.Benchmark)
+    public static class IncrementAtomicState {
+        AtomicLong sum = new AtomicLong();
+    }
+
     @Benchmark
-    public long baseLine() {
+    public long baseLineCurrentTimeMillis() {
         return System.currentTimeMillis();
     }
 
     @Benchmark
+    public long baseLineIncrementAtomic(IncrementAtomicState state) {
+        return state.sum.addAndGet(1);
+    }
+
+    @Benchmark
     public void benchmarkAddToCounterWithLongResettingPeriod(ResetAtSnapshotCounterWithLongResettingPeriodState state) {
-        state.counter.add(42);
+        state.counter.add(1);
     }
 
     @Benchmark
     public void benchmarkAddToCounterWithShortResettingPeriod(ResetAtSnapshotCounterWithShortResettingPeriodState state) {
-        state.counter.add(42);
+        state.counter.add(1);
     }
 
     @Benchmark
