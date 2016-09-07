@@ -22,6 +22,7 @@ import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Snapshot;
 import com.github.metricscore.hdr.RunnerUtil;
 import com.github.metricscore.hdr.histogram.HdrBuilder;
+import com.github.metricscore.hdr.histogram.OverflowResolver;
 import org.HdrHistogram.ConcurrentHistogram;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.RunnerException;
@@ -35,31 +36,45 @@ import java.util.concurrent.TimeUnit;
 public class ResetByChunksAccumulatorPerOperationBenchmark {
 
     @State(Scope.Benchmark)
-    public static class AddState {
+    public static class ChunkedHistogramState {
         public final Histogram chunkedHistogram = new HdrBuilder()
                 .resetReservoirByChunks(Duration.ofSeconds(10), 7)
                 .buildHistogram();
+    }
+
+    @State(Scope.Benchmark)
+    public static class ChunkedUpperLimitedHistogramState {
+        public final Histogram chunkedHistogram = new HdrBuilder()
+                .resetReservoirByChunks(Duration.ofSeconds(10), 7)
+                .buildHistogram();
+    }
+
+    @State(Scope.Benchmark)
+    public static class MetricsHistogramState {
 
         public final Histogram metricsCoreHistogram = new Histogram(new ExponentiallyDecayingReservoir());
+
+    }
+
+    @State(Scope.Benchmark)
+    public static class HdrHistogramState {
 
         public final ConcurrentHistogram hdrHistogram = new ConcurrentHistogram(2);
 
     }
 
     @State(Scope.Benchmark)
-    public static class GetSnapshotState {
+    public static class GetChunkedSnapshotState {
         public final Histogram chunkedHistogram = new HdrBuilder()
                 .resetReservoirByChunks(Duration.ofSeconds(10), 7)
                 .buildHistogram();
 
-        public final Histogram metricsCoreHistogram = new Histogram(new ExponentiallyDecayingReservoir());
-
-        {
+        @Setup
+        public void setup() {
             for (int i = 0; i < 7; i++) {
                 for (int j = 0; j < 2000; j++) {
                     long random = ThreadLocalRandom.current().nextLong(3000);
                     chunkedHistogram.update(random);
-                    metricsCoreHistogram.update(random);
                 }
                 try {
                     Thread.sleep(1000);
@@ -72,33 +87,93 @@ public class ResetByChunksAccumulatorPerOperationBenchmark {
 
     }
 
+    @State(Scope.Benchmark)
+    public static class GetChunkedUpperLimitedSnapshotState {
+        public final Histogram chunkedHistogram = new HdrBuilder()
+                .resetReservoirByChunks(Duration.ofSeconds(10), 7)
+                .withHighestTrackableValue(5000, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
+                .buildHistogram();
+
+        @Setup
+        public void setup() {
+            for (int i = 0; i < 7; i++) {
+                for (int j = 0; j < 2000; j++) {
+                    long random = ThreadLocalRandom.current().nextLong(3000);
+                    chunkedHistogram.update(random);
+                }
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
+        }
+
+    }
+
+    @State(Scope.Benchmark)
+    public static class GetMetricsSnapshotState {
+
+        public final Histogram metricsCoreHistogram = new Histogram(new ExponentiallyDecayingReservoir());
+
+        @Setup
+        public void setup() {
+            for (int i = 0; i < 7; i++) {
+                for (int j = 0; j < 2000; j++) {
+                    long random = ThreadLocalRandom.current().nextLong(3000);
+                    metricsCoreHistogram.update(random);
+                }
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+    }
+
     @Benchmark
-    public long baseLine(AddState state) {
+    public long baseLine() {
         return ThreadLocalRandom.current().nextLong(10000);
     }
 
     @Benchmark
-    public void metricsCoreAdd(AddState state) {
+    public void metricsCoreAdd(MetricsHistogramState state) {
         state.metricsCoreHistogram.update(ThreadLocalRandom.current().nextLong(10000));
     }
 
     @Benchmark
-    public void chunkedHistogramAdd(AddState state) {
+    public void chunkedHistogramAdd(ChunkedHistogramState state) {
         state.chunkedHistogram.update(ThreadLocalRandom.current().nextLong(10000));
     }
 
     @Benchmark
-    public void hdrHistogramAdd(AddState state) {
+    public void chunkedUpperLimitedHistogramAdd(ChunkedUpperLimitedHistogramState state) {
+        state.chunkedHistogram.update(ThreadLocalRandom.current().nextLong(10000));
+    }
+
+    @Benchmark
+    public void hdrHistogramAdd(HdrHistogramState state) {
         state.hdrHistogram.recordValue(ThreadLocalRandom.current().nextLong(10000));
     }
 
+    @Threads(1)
     @Benchmark
-    public Snapshot getMetricsCoreSnapshot(GetSnapshotState state) {
+    public Snapshot getMetricsCoreSnapshot(GetMetricsSnapshotState state) {
         return state.metricsCoreHistogram.getSnapshot();
     }
 
+    @Threads(1)
     @Benchmark
-    public Snapshot getChunkedHistogramSnapshot(GetSnapshotState state) {
+    public Snapshot getChunkedUpperLimitedHistogramSnapshot(GetChunkedUpperLimitedSnapshotState state) {
+        return state.chunkedHistogram.getSnapshot();
+    }
+
+    @Threads(1)
+    @Benchmark
+    public Snapshot getChunkedHistogramSnapshot(GetChunkedSnapshotState state) {
         return state.chunkedHistogram.getSnapshot();
     }
 

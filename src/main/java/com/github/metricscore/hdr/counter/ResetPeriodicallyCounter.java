@@ -22,6 +22,30 @@ import com.codahale.metrics.Clock;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * The counter which reset its state to zero each time when configured interval is elapsed.
+ *
+ * <p>
+ * Concurrency properties:
+ * <ul>
+ *     <li>Writing is lock-free.
+ *     <li>Sum reading is lock-free.
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Usage recommendations:
+ * <ul>
+ *     <li>When you do not need in "rolling time window" semantic. Else use {@link SmoothlyDecayingRollingCounter}</li>
+ *     <li>When you want to limit time which each increment takes affect to counter sum in order to avoid reporting of obsolete measurements.
+ *     <li>Only if you accept the fact that several increments can be never observed by reader(because rotation to zero can happen before reader seen the written values).</li>
+ * </ul>
+ * </p>
+ *
+ * @see SmoothlyDecayingRollingCounter
+ * @see MetricsCounter
+ * @see MetricsGauge
+ */
 public class ResetPeriodicallyCounter implements WindowCounter {
 
     private final AtomicLong value = new AtomicLong();
@@ -29,6 +53,11 @@ public class ResetPeriodicallyCounter implements WindowCounter {
     private final Clock clock;
     private final AtomicLong nextResetTimeMillisRef;
 
+    /**
+     * Constructs the counter which reset its state to zero each time when {@code resetInterval} is elapsed.
+     *
+     * @param resetInterval the interval between counter resetting
+     */
     public ResetPeriodicallyCounter(Duration resetInterval) {
         this(resetInterval, Clock.defaultClock());
     }

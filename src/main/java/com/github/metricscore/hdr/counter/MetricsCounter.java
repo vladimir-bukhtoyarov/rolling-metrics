@@ -17,9 +17,21 @@
 package com.github.metricscore.hdr.counter;
 
 import com.codahale.metrics.Counter;
+import com.codahale.metrics.Gauge;
 
 import java.util.Objects;
 
+/**
+ * This is adapter for any implementation of {@link WindowCounter} which convert it to {@link Counter}.
+ * The windowCounter wrapped by this adapter can be added to {@link com.codahale.metrics.MetricRegistry} as {@link Counter}.
+ *
+ * <p><br> The example of usage:
+ * <pre><code>
+ *         WindowCounter counter = new ResetAtSnapshotCounter();
+ *         registry.register("my-counter", new MetricsCounter(counter));
+ *     </code>
+ * </pre>
+ */
 public class MetricsCounter extends Counter {
 
     private final WindowCounter counter;

@@ -24,7 +24,54 @@ import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-
+/**
+ * The counter which resets its state by chunks, the count of chunk and interval between chunk resetting(except oldest chunk) are configurable at construction and can not be changed after.
+ *
+ * The unique properties which makes this counter probably the best "rolling time window" implementation are following:
+ * <ul>
+ *     <li>Sufficient performance about tens of millions concurrent writes and reads per second.</li>
+ *     <li>Predictable and low memory consumption, the memory which consumed by counter does not depend from amount and frequency of writes.</li>
+ *     <li>Perfectly user experience, the continuous observation does not see the sudden changes of sum.
+ *     This property achieved by smoothly decaying of oldest chunk of counter. For the proof run <a href="https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/1.3/src/test/java/examples/SmoothlyDecayingRollingCounterPrecisionDemo.java">SmoothlyDecayingRollingCounterPrecisionDemo</a>.
+ *     </li>
+ * </ul>
+ *
+ * <p>
+ * Concurrency properties:
+ * <ul>
+ *     <li>Writing is lock-free.
+ *     <li>Sum reading is lock-free.
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Usage recommendations:
+ * <ul>
+ *     <li>Only when you need in "rolling time window" semantic.
+ *     <li>Only if you accept the fact that several increments can be reported to reader twice(because the frequency of reading exceeds the rate of decay of the counter.).</li>
+ * </ul>
+ * </p>
+ *
+ * <p>
+ * Performance considerations:
+ * <ul>
+ *     <li>You can consider writing speed as a constant. The write latency does not depend from count of chunk or frequency of chunk rotation.
+ *     <li>The writing depends only from level of contention between writers(internally counter implemented across AtomicLong).</li>
+ *     <li>The huge count of chunk leads to the slower calculation of their sum. So precision of sum conflicts with latency of sum. You need to choose meaningful values.
+ *     For example 10 chunks will guarantee at least 90% accuracy and ten million reads per second.</li>
+ * </ul>
+ * </p>
+ *
+ * <p> Example of usage:
+ * <pre><code>
+ *         // constructs the counter which divided by 10 chunks and one chunk will be reset to zero after each 6 second,
+ *         // so counter will hold values written at last 60 seconds (10 * 6).
+ *         WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(6), 10);
+ *         counter.add(42);
+ *     </code>
+ * </pre>
+ * </p>
+ */
 public class SmoothlyDecayingRollingCounter implements WindowCounter {
 
     // meaningful limits to disallow user to kill performance(or memory footprint) by mistake
@@ -37,6 +84,23 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
 
     private final Chunk[] chunks;
 
+    /**
+     * Constructs the chunked counter which invalidate one chunk each time when {@intervalBetweenChunkResetting} has elapsed(except oldest chunk which invalidated continuously).
+     * The memory consumed by counter and latency of sum calculation depend directly from {@code numberChunks}
+     *
+     * <p> Example of usage:
+     * <pre><code>
+     *         // constructs the counter which divided by 10 chunks and one chunk will be reset to zero after each 6 second,
+     *         // so counter will hold values written at last 60 seconds (10 * 6).
+     *         WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(6), 10);
+     *         counter.add(42);
+     *     </code>
+     * </pre>
+     * </p>
+     *
+     * @param intervalBetweenChunkResetting the interval between chunk resetting
+     * @param numberChunks The count of chunk to split counter
+     */
     public SmoothlyDecayingRollingCounter(Duration intervalBetweenChunkResetting, int numberChunks) {
         this(intervalBetweenChunkResetting, numberChunks, Clock.defaultClock());
     }

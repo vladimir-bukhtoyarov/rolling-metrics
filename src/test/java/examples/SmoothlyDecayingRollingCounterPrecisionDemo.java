@@ -24,43 +24,50 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class ResetByChunkCounterExample {
+public class SmoothlyDecayingRollingCounterPrecisionDemo {
 
-    public static void main(String[] args) {
-        final WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 7);
+    public static void main(String[] args) throws InterruptedException {
+        // the counter which storing measurements for last 10 seconds
+        final WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 10);
 
         // report sum each second
-        System.out.println("Waiting 9 seconds before start sum reporting");
         AtomicLong previousSumRef = new AtomicLong(Long.MIN_VALUE);
         new Timer("report-sum", true).scheduleAtFixedRate(new TimerTask() {
+
+            AtomicInteger measureIndex = new AtomicInteger();
+
             @Override
             public void run() {
                 long sum = counter.getSum();
                 long previousSum = previousSumRef.get();
+                long diff = Math.abs(previousSum - sum);
                 double difPercentage = 0.0;
                 if (previousSum != Long.MIN_VALUE) {
-                    double diff = Math.abs(previousSum - sum);
-                    difPercentage = diff / previousSum * 100;
+                    difPercentage = (double)diff / (double)previousSum * 100;
                 }
-                System.out.println("sum = " + sum + " ; diff: " + difPercentage + "%");
+                String message = String.format("%3d sum = %14d; dif = %10d; difPercentage = ", measureIndex.incrementAndGet(),  sum, diff);
+                System.out.println(message + difPercentage + "%");
                 previousSumRef.set(sum);
             }
-        }, 9000, 1000);
+        }, 0, 1000);
 
         // stop test after five minutes
-        AtomicBoolean stopped = new AtomicBoolean();
+        AtomicBoolean incrementingStopped = new AtomicBoolean();
         new Timer("test-finalizer", true).schedule(new TimerTask() {
             @Override
             public void run() {
-                stopped.set(true);
+                incrementingStopped.set(true);
             }
-        }, TimeUnit.MINUTES.toMillis(5));
+        }, TimeUnit.MINUTES.toMillis(1));
 
-        while (!stopped.get()) {
+        while (!incrementingStopped.get()) {
             counter.add(1);
         }
+
+        Thread.sleep(9000);
     }
 
 }

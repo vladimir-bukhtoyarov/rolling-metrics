@@ -20,6 +20,18 @@ import com.codahale.metrics.Gauge;
 
 import java.util.Objects;
 
+/**
+ * This is adapter for any implementation of {@link WindowCounter} which convert it to {@link Gauge}.
+ * The windowCounter wrapped by this adapter can be added to {@link com.codahale.metrics.MetricRegistry} as {@link Gauge}.
+ *
+ * <p><br> The example of usage:
+ * <pre><code>
+ *         WindowCounter counter = new ResetAtSnapshotCounter();
+ *         registry.register("my-gauge", new MetricsGauge(counter));
+ *     </code>
+ * </pre>
+ *
+ */
 public class MetricsGauge implements Gauge<Long> {
 
     private final WindowCounter counter;
