@@ -49,7 +49,7 @@ public class CounterTestUtil {
                         for (int j = 1; j <= 10; j++) {
                             counter.add(ThreadLocalRandom.current().nextInt(j) + 1);
                         }
-                        counter.getValue();
+                        counter.getSum();
                     }
                 } catch (Exception e){
                     e.printStackTrace();

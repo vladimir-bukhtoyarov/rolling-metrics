@@ -19,26 +19,31 @@ package com.github.metricscore.hdr.counter;
 
 import com.codahale.metrics.Clock;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
-class ResetPeriodicallyCounter implements WindowCounter {
+public class ResetPeriodicallyCounter implements WindowCounter {
 
     private final AtomicLong value = new AtomicLong();
     private final long resetIntervalMillis;
     private final Clock clock;
     private final AtomicLong nextResetTimeMillisRef;
 
-    ResetPeriodicallyCounter(long resetIntervalMillis, Clock clock) {
-        this.resetIntervalMillis = resetIntervalMillis;
+    public ResetPeriodicallyCounter(Duration resetInterval) {
+        this(resetInterval, Clock.defaultClock());
+    }
+
+    ResetPeriodicallyCounter(Duration resetInterval, Clock clock) {
+        if (resetInterval.isNegative() || resetInterval.isZero()) {
+            throw new IllegalArgumentException("intervalBetweenChunkResetting must be a positive duration");
+        }
+        this.resetIntervalMillis = resetInterval.toMillis();
         this.clock = clock;
         this.nextResetTimeMillisRef = new AtomicLong(clock.getTime() + resetIntervalMillis);
     }
 
     @Override
     public void add(long delta) {
-        if (delta < 1) {
-            throw new IllegalArgumentException("value should be >= 1");
-        }
         while (true) {
             long nextResetTimeMillis = nextResetTimeMillisRef.get();
             long currentTimeMillis = clock.getTime();
@@ -56,7 +61,7 @@ class ResetPeriodicallyCounter implements WindowCounter {
     }
 
     @Override
-    synchronized public long getSum() {
+    public long getSum() {
         while (true) {
             long nextResetTimeMillis = nextResetTimeMillisRef.get();
             long currentTimeMillis = clock.getTime();
@@ -70,11 +75,6 @@ class ResetPeriodicallyCounter implements WindowCounter {
                 return result;
             }
         }
-    }
-
-    @Override
-    synchronized public Long getValue() {
-        return getSum();
     }
 
     @Override

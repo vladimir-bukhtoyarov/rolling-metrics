@@ -29,22 +29,20 @@ import static org.junit.Assert.assertEquals;
 public class ResetPeriodicallyCounterTest {
 
     @Test(expected = IllegalArgumentException.class)
-    public void negativeValuesShouldBeDepricated() {
-        WindowCounter counter = WindowCounter.newResetPeriodicallyCounter(Duration.ofSeconds(1));
-        counter.add(-1);
+    public void negativeResettingDurationShouldBeDisallowed() {
+        new ResetPeriodicallyCounter(Duration.ofSeconds(-1));
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void zeroValuesShouldBeDepricated() {
-        WindowCounter counter = WindowCounter.newResetPeriodicallyCounter(Duration.ofSeconds(1));
-        counter.add(0);
+    public void zeroResettingDurationShouldBeDisallowed() {
+        new ResetPeriodicallyCounter(Duration.ZERO);
     }
 
     @Test
     public void testRotation() {
         AtomicLong timeMillis = new AtomicLong();
         Clock clock = MockClock.mock(timeMillis);
-        WindowCounter counter = new ResetPeriodicallyCounter(1000, clock);
+        WindowCounter counter = new ResetPeriodicallyCounter(Duration.ofMillis(1000), clock);
 
         counter.add(100);
         assertEquals(100, counter.getSum());

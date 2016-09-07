@@ -18,45 +18,47 @@
 package com.github.metricscore.hdr.counter;
 
 import com.codahale.metrics.Clock;
-import com.github.metricscore.hdr.ChunkEvictionPolicy;
 import com.github.metricscore.hdr.histogram.util.Printer;
 
+import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 
-final class ResetByChunksCounter implements WindowCounter {
+public class SmoothlyDecayingRollingCounter implements WindowCounter {
 
     // meaningful limits to disallow user to kill performance(or memory footprint) by mistake
     static final int MAX_CHUNKS = 1000;
     static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 100;
 
-    private final boolean smoothlyEvictFromOldestChunk;
-    private final int numberChunks;
     private final long intervalBetweenResettingMillis;
-    private final boolean reportUncompletedChunkToSnapshot;
     private final Clock clock;
     private final long creationTimestamp;
 
     private final Chunk[] chunks;
 
-    ResetByChunksCounter(ChunkEvictionPolicy evictionPolicy, Clock clock) {
-        this.smoothlyEvictFromOldestChunk = evictionPolicy.isSmoothlyEvictFromOldestChunk();
+    public SmoothlyDecayingRollingCounter(Duration intervalBetweenChunkResetting, int numberChunks) {
+        this(intervalBetweenChunkResetting, numberChunks, Clock.defaultClock());
+    }
 
-        this.intervalBetweenResettingMillis = evictionPolicy.getResettingPeriodMillis();
+    SmoothlyDecayingRollingCounter(Duration intervalBetweenChunkResetting, int numberChunks, Clock clock) {
+        if (numberChunks < 2) {
+            throw new IllegalArgumentException("numberChunks should be >= 2");
+        }
+
+        this.intervalBetweenResettingMillis = intervalBetweenChunkResetting.toMillis();
         if (intervalBetweenResettingMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
             throw new IllegalArgumentException("intervalBetweenResettingMillis should be >=" + MIN_CHUNK_RESETTING_INTERVAL_MILLIS);
         }
 
-        this.reportUncompletedChunkToSnapshot = evictionPolicy.isReportUncompletedChunkToSnapshot();
         this.clock = clock;
         this.creationTimestamp = clock.getTime();
 
-        this.numberChunks = evictionPolicy.getNumberChunks();
         if (numberChunks > MAX_CHUNKS) {
             throw new IllegalArgumentException("number of chunks should be <=" + MAX_CHUNKS);
         }
-        this.chunks = new Chunk[evictionPolicy.getNumberChunks()];
+
+        this.chunks = new Chunk[numberChunks + 1];
         for (int i = 0; i < chunks.length; i++) {
             this.chunks[i] = new Chunk(i);
         }
@@ -64,9 +66,6 @@ final class ResetByChunksCounter implements WindowCounter {
 
     @Override
     public void add(long delta) {
-        if (delta < 1) {
-            throw new IllegalArgumentException("value should be >= 1");
-        }
         long nowMillis = clock.getTime();
         long millisSinceCreation = nowMillis - creationTimestamp;
         long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
@@ -82,11 +81,6 @@ final class ResetByChunksCounter implements WindowCounter {
             sum += chunk.getSum(currentTimeMillis);
         }
         return sum;
-    }
-
-    @Override
-    public Long getValue() {
-        return getSum();
     }
 
     private final class Chunk {
@@ -145,20 +139,14 @@ final class ResetByChunksCounter implements WindowCounter {
                 return 0;
             }
 
-            if (!reportUncompletedChunkToSnapshot) {
-                if (currentTimeMillis < proposedInvalidationTimestamp - (chunks.length - 1) * intervalBetweenResettingMillis) {
-                    // By configuration we should not add phase to snapshot until it fully completed
-                    return 0;
-                }
+            long sum = this.sum.get();
+
+            // if this is oldest chunk then we need to
+            long beforeInvalidateMillis = proposedInvalidationTimestamp - currentTimeMillis;
+            if (beforeInvalidateMillis < intervalBetweenResettingMillis) {
+                sum = (long) ((double)sum * ((double)beforeInvalidateMillis / (double)intervalBetweenResettingMillis));
             }
 
-            long sum = this.sum.get();
-            if (smoothlyEvictFromOldestChunk) {
-                long beforeInvalidateMillis = proposedInvalidationTimestamp - currentTimeMillis;
-                if (beforeInvalidateMillis < intervalBetweenResettingMillis) {
-                    sum = (long) ((double)sum * ((double)beforeInvalidateMillis / (double)intervalBetweenResettingMillis));
-                }
-            }
             return sum;
         }
 
@@ -174,10 +162,8 @@ final class ResetByChunksCounter implements WindowCounter {
 
     @Override
     public String toString() {
-        return "ResetByChunksCounter{" +
-                "smoothlyEvictFromOldestChunk=" + smoothlyEvictFromOldestChunk +
+        return "SmoothlyDecayingRollingCounter{" +
                 ", intervalBetweenResettingMillis=" + intervalBetweenResettingMillis +
-                ", reportUncompletedChunkToSnapshot=" + reportUncompletedChunkToSnapshot +
                 ", clock=" + clock +
                 ", creationTimestamp=" + creationTimestamp +
                 ", chunks=" + Printer.printArray(chunks, "chunk") +

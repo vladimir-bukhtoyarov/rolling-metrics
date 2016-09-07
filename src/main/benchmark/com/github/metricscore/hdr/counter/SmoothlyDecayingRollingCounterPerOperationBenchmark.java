@@ -18,13 +18,9 @@
 package com.github.metricscore.hdr.counter;
 
 import com.codahale.metrics.Clock;
-import com.github.metricscore.hdr.ChunkEvictionPolicy;
 import com.github.metricscore.hdr.RunnerUtil;
 import org.openjdk.jmh.annotations.*;
-import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -32,12 +28,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 @BenchmarkMode({Mode.Throughput, Mode.AverageTime})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-public class ResetAtSnapshotCounterPerOperationBenchmark {
+public class SmoothlyDecayingRollingCounterPerOperationBenchmark {
 
     @State(Scope.Benchmark)
     public static class ResetAtSnapshotCounterWithLongResettingPeriodState {
 
-        public final WindowCounter counter = WindowCounter.newResetByChunkCounter(new ChunkEvictionPolicy(Duration.ofSeconds(3600), 7));
+        public final WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(3600), 7);
     }
 
     @State(Scope.Benchmark)
@@ -50,7 +46,7 @@ public class ResetAtSnapshotCounterPerOperationBenchmark {
                 return timeMillis.addAndGet(1000L);
             }
         };
-        public final WindowCounter counter =  new ResetByChunksCounter(new ChunkEvictionPolicy(Duration.ofSeconds(1), 10), clock) ;
+        public final WindowCounter counter =  new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 10, clock);
     }
 
     @State(Scope.Benchmark)
@@ -85,13 +81,13 @@ public class ResetAtSnapshotCounterPerOperationBenchmark {
 
     public static class OneThread {
         public static void main(String[] args) throws RunnerException {
-            RunnerUtil.runBenchmark(1, ResetAtSnapshotCounterPerOperationBenchmark.class);
+            RunnerUtil.runBenchmark(1, SmoothlyDecayingRollingCounterPerOperationBenchmark.class);
         }
     }
 
     public static class FourThread {
         public static void main(String[] args) throws RunnerException {
-            RunnerUtil.runBenchmark(4, ResetAtSnapshotCounterPerOperationBenchmark.class);
+            RunnerUtil.runBenchmark(4, SmoothlyDecayingRollingCounterPerOperationBenchmark.class);
         }
     }
 

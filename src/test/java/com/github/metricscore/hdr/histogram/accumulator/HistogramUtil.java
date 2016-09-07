@@ -27,7 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class Util {
+public class HistogramUtil {
 
     public static void runInParallel(Reservoir reservoir, Duration duration) throws InterruptedException {
         AtomicBoolean stopFlag = new AtomicBoolean(false);

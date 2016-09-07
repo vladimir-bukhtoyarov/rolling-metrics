@@ -16,25 +16,21 @@
 
 package com.github.metricscore.hdr.counter;
 
-import java.util.concurrent.atomic.AtomicLong;
+import com.codahale.metrics.Gauge;
 
-/**
- * Created by vladimir.bukhtoyarov on 02.09.2016.
- */
-public class ResetAtSnapshotCounter implements WindowCounter {
+import java.util.Objects;
 
-    private final AtomicLong value = new AtomicLong();
+public class MetricsGauge implements Gauge<Long> {
 
-    @Override
-    public void add(long delta) {
-        this.value.addAndGet(delta);
+    private final WindowCounter counter;
+
+    public MetricsGauge(WindowCounter counter) {
+        this.counter = Objects.requireNonNull(counter);
     }
 
     @Override
-    synchronized public long getSum() {
-        long sum = value.get();
-        value.addAndGet(-sum);
-        return sum;
+    public Long getValue() {
+        return counter.getSum();
     }
 
 }

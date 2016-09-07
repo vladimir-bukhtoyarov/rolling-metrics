@@ -17,24 +17,20 @@
 
 package com.github.metricscore.hdr.counter;
 
-import com.github.metricscore.hdr.ChunkEvictionPolicy;
 import com.github.metricscore.hdr.RunnerUtil;
 import org.openjdk.jmh.annotations.*;
-import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
-import org.openjdk.jmh.runner.options.Options;
-import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode({Mode.Throughput, Mode.AverageTime})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-public class ResetAtSnapshotCounterCombinedBenchmark {
+public class SmoothlyDecayingRollingCounterBenchmark {
 
     @State(Scope.Benchmark)
     public static class CounterState {
-        public final WindowCounter counter = WindowCounter.newResetByChunkCounter(new ChunkEvictionPolicy(Duration.ofSeconds(1), 10));
+        public final WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 10);
     }
 
     @Benchmark
@@ -52,7 +48,7 @@ public class ResetAtSnapshotCounterCombinedBenchmark {
     }
 
     public static void main(String[] args) throws RunnerException {
-        RunnerUtil.runBenchmark(4, ResetAtSnapshotCounterCombinedBenchmark.class);
+        RunnerUtil.runBenchmark(4, SmoothlyDecayingRollingCounterBenchmark.class);
     }
 
 }

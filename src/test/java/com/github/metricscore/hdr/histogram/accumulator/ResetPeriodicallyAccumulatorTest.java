@@ -97,12 +97,12 @@ public class ResetPeriodicallyAccumulatorTest {
     }
 
     @Test(timeout = 12000)
-    public void testThatConcurrentThreadsNotHungWithOneChunk() throws InterruptedException {
+    public void testThatConcurrentThreadsNotHung() throws InterruptedException {
         Reservoir reservoir = new HdrBuilder()
                 .resetReservoirPeriodically(Duration.ofSeconds(1))
                 .buildReservoir();
 
-        Util.runInParallel(reservoir, Duration.ofSeconds(10));
+        HistogramUtil.runInParallel(reservoir, Duration.ofSeconds(10));
     }
 
 }

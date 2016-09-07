@@ -16,7 +16,7 @@
 
 package examples;
 
-import com.github.metricscore.hdr.ChunkEvictionPolicy;
+import com.github.metricscore.hdr.counter.SmoothlyDecayingRollingCounter;
 import com.github.metricscore.hdr.counter.WindowCounter;
 
 import java.time.Duration;
@@ -24,18 +24,28 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class ResetByChunkCounterExample {
 
     public static void main(String[] args) {
-        final WindowCounter counter = WindowCounter.newResetByChunkCounter(new ChunkEvictionPolicy(Duration.ofSeconds(1), 7));
+        final WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 7);
 
         // report sum each second
         System.out.println("Waiting 9 seconds before start sum reporting");
+        AtomicLong previousSumRef = new AtomicLong(Long.MIN_VALUE);
         new Timer("report-sum", true).scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
-                System.out.println(counter.getSum());
+                long sum = counter.getSum();
+                long previousSum = previousSumRef.get();
+                double difPercentage = 0.0;
+                if (previousSum != Long.MIN_VALUE) {
+                    double diff = Math.abs(previousSum - sum);
+                    difPercentage = diff / previousSum * 100;
+                }
+                System.out.println("sum = " + sum + " ; diff: " + difPercentage + "%");
+                previousSumRef.set(sum);
             }
         }, 9000, 1000);
 

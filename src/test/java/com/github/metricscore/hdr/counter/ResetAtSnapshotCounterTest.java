@@ -19,25 +19,15 @@ package com.github.metricscore.hdr.counter;
 
 import org.junit.Test;
 
+import java.time.Duration;
+
 import static org.junit.Assert.assertEquals;
 
 public class ResetAtSnapshotCounterTest {
 
-    @Test(expected = IllegalArgumentException.class)
-    public void negativeValuesShouldBeDepricated() {
-        WindowCounter counter = WindowCounter.newResetAtSnapshotCounter();
-        counter.add(-1);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void zeroValuesShouldBeDepricated() {
-        WindowCounter counter = WindowCounter.newResetAtSnapshotCounter();
-        counter.add(0);
-    }
-
     @Test
     public void sumShouldBeClearedAtSnapshot() {
-        WindowCounter counter = WindowCounter.newResetAtSnapshotCounter();
+        WindowCounter counter = new ResetAtSnapshotCounter();
         counter.add(2);
         assertEquals(2, counter.getSum());
         assertEquals(0, counter.getSum());
