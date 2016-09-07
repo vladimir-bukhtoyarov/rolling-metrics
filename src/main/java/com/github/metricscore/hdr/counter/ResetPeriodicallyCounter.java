@@ -23,17 +23,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 class ResetPeriodicallyCounter implements WindowCounter {
 
-    static final long MIN_RESETTING_INTERVAL_MILLIS = 1000;
-
     private final AtomicLong value = new AtomicLong();
     private final long resetIntervalMillis;
     private final Clock clock;
     private final AtomicLong nextResetTimeMillisRef;
 
     ResetPeriodicallyCounter(long resetIntervalMillis, Clock clock) {
-        if (resetIntervalMillis < MIN_RESETTING_INTERVAL_MILLIS) {
-            throw new IllegalArgumentException("resetIntervalMillis should be >= " + MIN_RESETTING_INTERVAL_MILLIS);
-        }
         this.resetIntervalMillis = resetIntervalMillis;
         this.clock = clock;
         this.nextResetTimeMillisRef = new AtomicLong(clock.getTime() + resetIntervalMillis);

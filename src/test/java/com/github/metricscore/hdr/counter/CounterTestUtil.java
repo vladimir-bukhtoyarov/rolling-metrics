@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class Util {
+public class CounterTestUtil {
 
     public static void runInParallel(WindowCounter counter, Duration duration) throws InterruptedException {
         AtomicBoolean stopFlag = new AtomicBoolean(false);

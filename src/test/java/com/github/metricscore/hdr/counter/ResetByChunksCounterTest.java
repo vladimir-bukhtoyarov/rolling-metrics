@@ -141,14 +141,14 @@ public class ResetByChunksCounterTest {
     public void testThatConcurrentThreadsNotHungWithThreeChunks() throws InterruptedException {
         ChunkEvictionPolicy evictionPolicy = new ChunkEvictionPolicy(Duration.ofSeconds(1), 3, true, false);
         WindowCounter counter = WindowCounter.newResetByChunkCounter(evictionPolicy);
-        Util.runInParallel(counter, Duration.ofSeconds(30));
+        CounterTestUtil.runInParallel(counter, Duration.ofSeconds(30));
     }
 
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHungWithFourChunks() throws InterruptedException {
         ChunkEvictionPolicy evictionPolicy = new ChunkEvictionPolicy(Duration.ofSeconds(1), 4, true, false);
         WindowCounter counter = WindowCounter.newResetByChunkCounter(evictionPolicy);
-        Util.runInParallel(counter, Duration.ofSeconds(30));
+        CounterTestUtil.runInParallel(counter, Duration.ofSeconds(30));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -158,9 +158,15 @@ public class ResetByChunksCounterTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void shouldAllowOnlyPositiveDelta() {
+    public void negativeValuesShouldBeDisallowed() {
         ChunkEvictionPolicy evictionPolicy = new ChunkEvictionPolicy(Duration.ofMillis((ResetByChunksCounter.MIN_CHUNK_RESETTING_INTERVAL_MILLIS) - 1), 4);
         WindowCounter.newResetByChunkCounter(evictionPolicy).add(-1);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void zeroValuesShouldBeDisallowed() {
+        ChunkEvictionPolicy evictionPolicy = new ChunkEvictionPolicy(Duration.ofMillis((ResetByChunksCounter.MIN_CHUNK_RESETTING_INTERVAL_MILLIS) - 1), 4);
+        WindowCounter.newResetByChunkCounter(evictionPolicy).add(0);
     }
 
     @Test(expected = IllegalArgumentException.class)
