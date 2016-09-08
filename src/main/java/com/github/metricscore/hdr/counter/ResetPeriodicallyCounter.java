@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.LongAdder;
  *     <li>Writing is lock-free.</li>
  *     <li>Sum reading is lock-free.</li>
  * </ul>
- * </p>
  *
  * <p>
  * Usage recommendations:
@@ -41,7 +40,6 @@ import java.util.concurrent.atomic.LongAdder;
  *     <li>When you want to limit time which each increment takes affect to counter sum in order to avoid reporting of obsolete measurements.</li>
  *     <li>Only if you accept the fact that several increments can be never observed by reader(because rotation to zero can happen before reader seen the written values).</li>
  * </ul>
- * </p>
  *
  * @see SmoothlyDecayingRollingCounter
  * @see MetricsCounter

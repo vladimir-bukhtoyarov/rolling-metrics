@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.LongAdder;
  *     <li>Writing is lock-free. Writers do not block writers and readers.</li>
  *     <li>Sum reading always happen inside synchronized block, so readers block each other, but readers never block writers.</li>
  * </ul>
- * </p>
  *
  * <p>
  * Usage recommendations:
@@ -39,7 +38,6 @@ import java.util.concurrent.atomic.LongAdder;
  *     Usage of this implementation for case of multiple readers will be a bad idea because of readers will steal data from each other.
  *     </li>
  * </ul>
- * </p>
  *
  * @see SmoothlyDecayingRollingCounter
  * @see MetricsCounter

@@ -42,14 +42,12 @@ import java.util.concurrent.atomic.LongAdder;
  *     <li>Writing is lock-free.
  *     <li>Sum reading is lock-free.
  * </ul>
- * </p>
  *
  * <p>
  * Usage recommendations:
  * <ul>
  *     <li>Only when you need in "rolling time window" semantic.</li>
  * </ul>
- * </p>
  *
  * <p>
  * Performance considerations:
@@ -59,7 +57,6 @@ import java.util.concurrent.atomic.LongAdder;
  *     <li>The huge count of chunk leads to the slower calculation of their sum. So precision of sum conflicts with latency of sum. You need to choose meaningful values.
  *     For example 10 chunks will guarantee at least 90% accuracy and ten million reads per second.</li>
  * </ul>
- * </p>
  *
  * <p> Example of usage:
  * <pre><code>
@@ -69,7 +66,6 @@ import java.util.concurrent.atomic.LongAdder;
  *         counter.add(42);
  *     </code>
  * </pre>
- * </p>
  */
 public class SmoothlyDecayingRollingCounter implements WindowCounter {
 
@@ -97,7 +93,6 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
      *         counter.add(42);
      *     </code>
      * </pre>
-     * </p>
      *
      * @param rollingWindow the rolling time window duration
      * @param numberChunks The count of chunk to split counter

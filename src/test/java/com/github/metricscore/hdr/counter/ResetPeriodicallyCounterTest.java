@@ -69,5 +69,11 @@ public class ResetPeriodicallyCounterTest {
         System.out.println(new ResetPeriodicallyCounter(Duration.ofMillis(1000)).toString());
     }
 
+    @Test(timeout = 32000)
+    public void testThatConcurrentThreadsNotHung() throws InterruptedException {
+        WindowCounter counter = new ResetPeriodicallyCounter(Duration.ofMillis(50));
+        CounterTestUtil.runInParallel(counter, Duration.ofSeconds(30));
+    }
+
 
 }
