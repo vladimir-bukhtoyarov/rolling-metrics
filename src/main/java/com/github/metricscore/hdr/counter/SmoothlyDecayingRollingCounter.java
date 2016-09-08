@@ -55,7 +55,7 @@ import java.util.concurrent.atomic.LongAdder;
  * Performance considerations:
  * <ul>
  *     <li>You can consider writing speed as a constant. The write latency does not depend from count of chunk or frequency of chunk rotation.
- *     <li>The writing depends only from level of contention between writers(internally counter implemented across AtomicLong).</li>
+ *     <li>The writing depends only from level of contention between writers(internally counter implemented across LongAdder).</li>
  *     <li>The huge count of chunk leads to the slower calculation of their sum. So precision of sum conflicts with latency of sum. You need to choose meaningful values.
  *     For example 10 chunks will guarantee at least 90% accuracy and ten million reads per second.</li>
  * </ul>
@@ -63,9 +63,9 @@ import java.util.concurrent.atomic.LongAdder;
  *
  * <p> Example of usage:
  * <pre><code>
- *         // constructs the counter which divided by 10 chunks and one chunk will be reset to zero after each 6 second,
- *         // so counter will hold values written at last 60 seconds (10 * 6).
- *         WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(6), 10);
+ *         // constructs the counter which divided by 10 chunks with 60 seconds time window.
+ *         // one chunk will be reset to zero after each 6 second,
+ *         WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(60), 10);
  *         counter.add(42);
  *     </code>
  * </pre>

@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.LongAdder;
  *     <li>When you do not need in "rolling time window" semantic. Else use {@link SmoothlyDecayingRollingCounter}</li>
  *     <li>When you need in 100 percents guarantee that one measure can not be reported twice.</li>
  *     <li>Only if one kind of reader interests in value of counter.
- *     Usage of this implementation for case of multiple readers will bad idea because of readers will steal data from each other.
+ *     Usage of this implementation for case of multiple readers will be a bad idea because of readers will steal data from each other.
  *     </li>
  * </ul>
  * </p>
