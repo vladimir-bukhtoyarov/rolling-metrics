@@ -17,30 +17,21 @@
 
 package com.github.metricscore.hdr.counter;
 
+import com.codahale.metrics.MetricRegistry;
 import org.junit.Test;
-
-import java.time.Duration;
 
 import static org.junit.Assert.assertEquals;
 
-public class ResetAtSnapshotCounterTest {
+public class MetricsGaugeTest {
 
     @Test
-    public void sumShouldBeClearedAtSnapshot() {
+    public void theGaugeShouldBeCompatibleWithMetricRegistry() {
+        MetricRegistry registry = new MetricRegistry();
         WindowCounter counter = new ResetAtSnapshotCounter();
-        counter.add(2);
-        assertEquals(2, counter.getSum());
-        assertEquals(0, counter.getSum());
+        registry.register("cnt", new MetricsGauge(counter));
 
-        counter.add(7);
-        counter.add(3);
-        assertEquals(10, counter.getSum());
-        assertEquals(0, counter.getSum());
-    }
-
-    @Test
-    public void testToString() {
-        System.out.println(new ResetAtSnapshotCounter());
+        counter.add(42);
+        assertEquals(Long.valueOf(42), registry.getGauges().get("cnt").getValue());
     }
 
 }

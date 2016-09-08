@@ -19,28 +19,36 @@ package com.github.metricscore.hdr.counter;
 
 import org.junit.Test;
 
-import java.time.Duration;
+import static org.junit.Assert.*;
 
-import static org.junit.Assert.assertEquals;
+public class MetricsCounterTest {
 
-public class ResetAtSnapshotCounterTest {
+    WindowCounter windowCounter = new ResetAtSnapshotCounter();
+    MetricsCounter counter = new MetricsCounter(windowCounter);
 
     @Test
-    public void sumShouldBeClearedAtSnapshot() {
-        WindowCounter counter = new ResetAtSnapshotCounter();
-        counter.add(2);
-        assertEquals(2, counter.getSum());
-        assertEquals(0, counter.getSum());
-
-        counter.add(7);
-        counter.add(3);
-        assertEquals(10, counter.getSum());
-        assertEquals(0, counter.getSum());
+    public void incByOne() throws Exception {
+        counter.inc();
+        assertEquals(1L, counter.getCount());
     }
 
     @Test
-    public void testToString() {
-        System.out.println(new ResetAtSnapshotCounter());
+    public void inc() throws Exception {
+        counter.inc(42);
+        assertEquals(42L, counter.getCount());
+    }
+
+    @Test
+    public void decByOne() throws Exception {
+        counter.dec();
+        counter.dec();
+        assertEquals(-2L, counter.getCount());
+    }
+
+    @Test
+    public void dec() throws Exception {
+        counter.dec(42L);
+        assertEquals(-42L, counter.getCount());
     }
 
 }

@@ -31,8 +31,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class SmoothlyDecayingRollingCounterPrecisionDemo {
 
     public static void main(String[] args) throws InterruptedException {
-        // the counter which storing measurements for last 10 seconds
-        final WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 10);
+        // the counter which storing measurements for last 10 seconds and split counter by 4 chunks
+        final WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(10), 4);
 
         // report sum each second
         AtomicLong previousSumRef = new AtomicLong(Long.MIN_VALUE);

@@ -19,9 +19,6 @@ package com.github.metricscore.hdr.histogram.util;
 
 import junit.framework.TestCase;
 
-/**
- * Created by vermut on 30.04.16.
- */
 public class EmptySnapshotTest extends TestCase {
 
     public void testGetValue() throws Exception {

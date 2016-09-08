@@ -103,7 +103,7 @@ public class ResetPeriodicallyCounter implements WindowCounter {
             if (nextResetTimeMillisRef.compareAndSet(nextResetTimeMillis, Long.MAX_VALUE)) {
                 value.add(-currentValue);
                 nextResetTimeMillisRef.set(currentTimeMillis + resetIntervalMillis);
-                return currentValue;
+                return value.sum();
             }
         }
     }

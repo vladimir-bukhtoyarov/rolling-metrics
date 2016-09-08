@@ -17,7 +17,6 @@
 
 package com.github.metricscore.hdr.counter;
 
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
@@ -62,4 +61,10 @@ public class ResetAtSnapshotCounter implements WindowCounter {
         return sum;
     }
 
+    @Override
+    public String toString() {
+        return "ResetAtSnapshotCounter{" +
+                "value=" + value +
+                '}';
+    }
 }

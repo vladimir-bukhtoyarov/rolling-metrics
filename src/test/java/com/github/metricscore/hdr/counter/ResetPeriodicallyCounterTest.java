@@ -64,4 +64,10 @@ public class ResetPeriodicallyCounterTest {
         assertEquals(0, counter.getSum());
     }
 
+    @Test
+    public void testToString() {
+        System.out.println(new ResetPeriodicallyCounter(Duration.ofMillis(1000)).toString());
+    }
+
+
 }

@@ -25,14 +25,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.LongAdder;
 
 /**
- * The rolling time window counter which resets its state by chunks.
+ * The rolling time window counter implementation which resets its state by chunks.
  *
  * The unique properties which makes this counter probably the best "rolling time window" implementation are following:
  * <ul>
  *     <li>Sufficient performance about tens of millions concurrent writes and reads per second.</li>
  *     <li>Predictable and low memory consumption, the memory which consumed by counter does not depend from amount and frequency of writes.</li>
  *     <li>Perfectly user experience, the continuous observation does not see the sudden changes of sum.
- *     This property achieved by smoothly decaying of oldest chunk of counter. For the proof run <a href="https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/1.3/src/test/java/examples/SmoothlyDecayingRollingCounterPrecisionDemo.java">SmoothlyDecayingRollingCounterPrecisionDemo</a>.
+ *     This property achieved by smoothly decaying of oldest chunk of counter.
  *     </li>
  * </ul>
  *
@@ -47,8 +47,7 @@ import java.util.concurrent.atomic.LongAdder;
  * <p>
  * Usage recommendations:
  * <ul>
- *     <li>Only when you need in "rolling time window" semantic.
- *     <li>Only if you accept the fact that several increments can be reported to reader twice(because the frequency of reading exceeds the rate of decay of the counter.).</li>
+ *     <li>Only when you need in "rolling time window" semantic.</li>
  * </ul>
  * </p>
  *
@@ -85,20 +84,22 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
     private final Chunk[] chunks;
 
     /**
-     * Constructs the chunked counter which invalidate one chunk each time when {@intervalBetweenChunkResetting} has elapsed(except oldest chunk which invalidated continuously).
+     * Constructs the chunked counter divided by {@code numberChunks}.
+     * The counter will invalidate one chunk each time when {@code rollingWindow/numberChunks} millis has elapsed,
+     * except oldest chunk which invalidated continuously.
      * The memory consumed by counter and latency of sum calculation depend directly from {@code numberChunks}
      *
      * <p> Example of usage:
      * <pre><code>
-     *         // constructs the counter which divided by 10 chunks and one chunk will be reset to zero after each 6 second,
-     *         // so counter will hold values written at last 60 seconds (10 * 6).
-     *         WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(6), 10);
+     *         // constructs the counter which divided by 10 chunks with 60 seconds time window.
+     *         // one chunk will be reset to zero after each 6 second,
+     *         WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(60), 10);
      *         counter.add(42);
      *     </code>
      * </pre>
      * </p>
      *
-     * @param rollingWindow the rolling window duration
+     * @param rollingWindow the rolling time window duration
      * @param numberChunks The count of chunk to split counter
      */
     public SmoothlyDecayingRollingCounter(Duration rollingWindow, int numberChunks) {
