@@ -15,21 +15,45 @@
  *   limitations under the License.
  */
 
-package com.github.metricscore.hdr;
+package com.github.metricscore.hdr.counter;
 
+import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-public class RunnerUtil {
+import java.util.concurrent.TimeUnit;
 
-    public static void runBenchmark(int threadCount, Class benchmarkClass) {
+@BenchmarkMode({Mode.Throughput, Mode.AverageTime})
+@OutputTimeUnit(TimeUnit.MICROSECONDS)
+public class ResetAtSnapshotCounterBenchmark {
+
+    @State(Scope.Benchmark)
+    public static class CounterState {
+        public final WindowCounter counter = new ResetAtSnapshotCounter();
+    }
+
+    @Benchmark
+    @Group("readSumWithContendedWrite")
+    @GroupThreads(3)
+    public void add(CounterState state) {
+        state.counter.add(42);
+    }
+
+    @Benchmark
+    @Group("readSumWithContendedWrite")
+    @GroupThreads(1)
+    public long readSum(CounterState state) {
+        return state.counter.getSum();
+    }
+
+    public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(benchmarkClass.getSimpleName())
+                .include(ResetAtSnapshotCounterBenchmark.class.getSimpleName())
                 .warmupIterations(5)
                 .measurementIterations(5)
-                .threads(threadCount)
+                .threads(4)
                 .forks(1)
                 .build();
         try {

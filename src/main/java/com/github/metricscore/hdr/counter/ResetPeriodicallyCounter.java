@@ -21,6 +21,7 @@ import com.codahale.metrics.Clock;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * The counter which reset its state to zero each time when configured interval is elapsed.
@@ -48,7 +49,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class ResetPeriodicallyCounter implements WindowCounter {
 
-    private final AtomicLong value = new AtomicLong();
+    private final LongAdder value = new LongAdder();
     private final long resetIntervalMillis;
     private final Clock clock;
     private final AtomicLong nextResetTimeMillisRef;
@@ -77,12 +78,12 @@ public class ResetPeriodicallyCounter implements WindowCounter {
             long nextResetTimeMillis = nextResetTimeMillisRef.get();
             long currentTimeMillis = clock.getTime();
             if (currentTimeMillis < nextResetTimeMillis) {
-                value.addAndGet(delta);
+                value.add(delta);
                 return;
             }
-            long currentValue = value.get();
+            long currentValue = value.sum();
             if (nextResetTimeMillisRef.compareAndSet(nextResetTimeMillis, Long.MAX_VALUE)) {
-                value.addAndGet(delta - currentValue);
+                value.add(delta - currentValue);
                 nextResetTimeMillisRef.set(currentTimeMillis + resetIntervalMillis);
                 return;
             }
@@ -93,15 +94,16 @@ public class ResetPeriodicallyCounter implements WindowCounter {
     public long getSum() {
         while (true) {
             long nextResetTimeMillis = nextResetTimeMillisRef.get();
+            long currentValue = value.sum();
             long currentTimeMillis = clock.getTime();
             if (currentTimeMillis < nextResetTimeMillis) {
-                return value.get();
+                return currentValue;
             }
-            long currentValue = value.get();
+
             if (nextResetTimeMillisRef.compareAndSet(nextResetTimeMillis, Long.MAX_VALUE)) {
-                long result = value.addAndGet(-currentValue);
+                value.add(-currentValue);
                 nextResetTimeMillisRef.set(currentTimeMillis + resetIntervalMillis);
-                return result;
+                return currentValue;
             }
         }
     }

@@ -18,9 +18,11 @@
 package com.github.metricscore.hdr.counter;
 
 import com.codahale.metrics.Clock;
-import com.github.metricscore.hdr.RunnerUtil;
 import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -81,13 +83,35 @@ public class SmoothlyDecayingRollingCounterPerOperationBenchmark {
 
     public static class OneThread {
         public static void main(String[] args) throws RunnerException {
-            RunnerUtil.runBenchmark(1, SmoothlyDecayingRollingCounterPerOperationBenchmark.class);
+            Options opt = new OptionsBuilder()
+                    .include(((Class) SmoothlyDecayingRollingCounterPerOperationBenchmark.class).getSimpleName())
+                    .warmupIterations(5)
+                    .measurementIterations(5)
+                    .threads(1)
+                    .forks(1)
+                    .build();
+            try {
+                new Runner(opt).run();
+            } catch (RunnerException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
     public static class FourThread {
         public static void main(String[] args) throws RunnerException {
-            RunnerUtil.runBenchmark(4, SmoothlyDecayingRollingCounterPerOperationBenchmark.class);
+            Options opt = new OptionsBuilder()
+                    .include(((Class) SmoothlyDecayingRollingCounterPerOperationBenchmark.class).getSimpleName())
+                    .warmupIterations(5)
+                    .measurementIterations(5)
+                    .threads(4)
+                    .forks(1)
+                    .build();
+            try {
+                new Runner(opt).run();
+            } catch (RunnerException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

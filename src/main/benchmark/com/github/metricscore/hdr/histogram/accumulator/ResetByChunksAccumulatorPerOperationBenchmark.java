@@ -20,12 +20,14 @@ package com.github.metricscore.hdr.histogram.accumulator;
 import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Snapshot;
-import com.github.metricscore.hdr.RunnerUtil;
 import com.github.metricscore.hdr.histogram.HdrBuilder;
 import com.github.metricscore.hdr.histogram.OverflowResolver;
 import org.HdrHistogram.ConcurrentHistogram;
 import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
+import org.openjdk.jmh.runner.options.Options;
+import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 import java.time.Duration;
 import java.util.concurrent.ThreadLocalRandom;
@@ -179,13 +181,35 @@ public class ResetByChunksAccumulatorPerOperationBenchmark {
 
     public static class OneThread {
         public static void main(String[] args) throws RunnerException {
-            RunnerUtil.runBenchmark(1, ResetByChunksAccumulatorPerOperationBenchmark.class);
+            Options opt = new OptionsBuilder()
+                    .include(((Class) ResetByChunksAccumulatorPerOperationBenchmark.class).getSimpleName())
+                    .warmupIterations(5)
+                    .measurementIterations(5)
+                    .threads(1)
+                    .forks(1)
+                    .build();
+            try {
+                new Runner(opt).run();
+            } catch (RunnerException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
     public static class FourThread {
         public static void main(String[] args) throws RunnerException {
-            RunnerUtil.runBenchmark(4, ResetByChunksAccumulatorPerOperationBenchmark.class);
+            Options opt = new OptionsBuilder()
+                    .include(((Class) ResetByChunksAccumulatorPerOperationBenchmark.class).getSimpleName())
+                    .warmupIterations(5)
+                    .measurementIterations(5)
+                    .threads(4)
+                    .forks(1)
+                    .build();
+            try {
+                new Runner(opt).run();
+            } catch (RunnerException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 

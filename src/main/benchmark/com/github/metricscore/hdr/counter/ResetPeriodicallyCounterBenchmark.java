@@ -28,11 +28,11 @@ import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode({Mode.Throughput, Mode.AverageTime})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-public class SmoothlyDecayingRollingCounterBenchmark {
+public class ResetPeriodicallyCounterBenchmark {
 
     @State(Scope.Benchmark)
     public static class CounterState {
-        public final WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofMillis(1000), 10);
+        public final WindowCounter counter = new ResetPeriodicallyCounter(Duration.ofMillis(100));
     }
 
     @Benchmark
@@ -51,7 +51,7 @@ public class SmoothlyDecayingRollingCounterBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(((Class) SmoothlyDecayingRollingCounterBenchmark.class).getSimpleName())
+                .include(ResetPeriodicallyCounterBenchmark.class.getSimpleName())
                 .warmupIterations(5)
                 .measurementIterations(5)
                 .threads(4)

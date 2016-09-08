@@ -33,7 +33,7 @@ public class SmoothlyDecayingRollingCounterTest {
         AtomicLong timeMillis = new AtomicLong();
         Clock clock = MockClock.mock(timeMillis);
 
-        SmoothlyDecayingRollingCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 2, clock);
+        WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(2), 2, clock);
 
         counter.add(100);
         assertEquals(100, counter.getSum());
@@ -63,12 +63,23 @@ public class SmoothlyDecayingRollingCounterTest {
 
         timeMillis.set(6000);
         assertEquals(300, counter.getSum());
+
+        // clear counter
+        timeMillis.set(10_000);
+        assertEquals(0, counter.getSum());
     }
 
     @Test
     public void testToString() {
         WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 3);
         System.out.println(counter.toString());
+    }
+
+    @Test
+    public void testGetRollingWindowAndChunks() {
+        SmoothlyDecayingRollingCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(10), 5);
+        assertEquals(Duration.ofSeconds(10), counter.getRollingWindow());
+        assertEquals(5, counter.getChunkCount());
     }
 
     @Test(timeout = 32000)
