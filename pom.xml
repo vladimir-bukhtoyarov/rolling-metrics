@@ -60,6 +60,13 @@
         </repository>
     </repositories>
 
+    <distributionManagement>
+        <repository>
+            <id>vladimir-bukhtoyarov-bintray-repo</id>
+            <url>https://api.bintray.com/maven/vladimir-bukhtoyarov/maven/metrics-core-hdr/</url>
+        </repository>
+    </distributionManagement>
+
     <dependencies>
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
