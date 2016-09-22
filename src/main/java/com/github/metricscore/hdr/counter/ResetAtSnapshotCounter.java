@@ -17,7 +17,7 @@
 
 package com.github.metricscore.hdr.counter;
 
-import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The counter which reset its state to zero after each invocation of {@link #getSum()}.
@@ -45,17 +45,17 @@ import java.util.concurrent.atomic.LongAdder;
  */
 public class ResetAtSnapshotCounter implements WindowCounter {
 
-    private final LongAdder value = new LongAdder();
+    private final AtomicLong value = new AtomicLong();
 
     @Override
     public void add(long delta) {
-        this.value.add(delta);
+        this.value.addAndGet(delta);
     }
 
     @Override
     synchronized public long getSum() {
-        long sum = value.sum();
-        value.add(-sum);
+        long sum = value.get();
+        value.addAndGet(-sum);
         return sum;
     }
 

@@ -21,8 +21,8 @@ import com.codahale.metrics.Clock;
 import com.github.metricscore.hdr.histogram.util.Printer;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.atomic.LongAdder;
 
 /**
  * The rolling time window counter implementation which resets its state by chunks.
@@ -53,7 +53,7 @@ import java.util.concurrent.atomic.LongAdder;
  * Performance considerations:
  * <ul>
  *     <li>You can consider writing speed as a constant. The write latency does not depend from count of chunk or frequency of chunk rotation.
- *     <li>The writing depends only from level of contention between writers(internally counter implemented across LongAdder).</li>
+ *     <li>The writing depends only from level of contention between writers(internally counter implemented across AtomicLong).</li>
  *     <li>The huge count of chunk leads to the slower calculation of their sum. So precision of sum conflicts with latency of sum. You need to choose meaningful values.
  *     For example 10 chunks will guarantee at least 90% accuracy and ten million reads per second.</li>
  * </ul>
@@ -195,7 +195,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
                 }
             }
 
-            currentPhase.sum.add(delta);
+            currentPhase.sum.addAndGet(delta);
         }
 
         @Override
@@ -209,11 +209,11 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
 
     private final class Phase {
 
-        final LongAdder sum;
+        final AtomicLong sum;
         final long proposedInvalidationTimestamp;
 
         Phase(long proposedInvalidationTimestamp) {
-            this.sum = new LongAdder();
+            this.sum = new AtomicLong();
             this.proposedInvalidationTimestamp = proposedInvalidationTimestamp;
         }
 
@@ -224,7 +224,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
                 return 0;
             }
 
-            long sum = this.sum.sum();
+            long sum = this.sum.get();
 
             // if this is oldest chunk then we need to
             long beforeInvalidateMillis = proposedInvalidationTimestamp - currentTimeMillis;
