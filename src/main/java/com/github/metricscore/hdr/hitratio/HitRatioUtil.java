@@ -22,8 +22,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class HitRatioUtil {
 
     static double getRatio(long compositeRatio) {
-        int hit = (int) (compositeRatio >> 32);
-        int total = (int) compositeRatio;
+        int hit = getHitFromCompositeRatio(compositeRatio);
+        int total = getTotalCountFromCompositeRatio(compositeRatio);
         return (double) hit / (double) total;
     }
 
@@ -39,9 +39,9 @@ public class HitRatioUtil {
         }
         while (true) {
             long compositeRatio = compositeRatioRef.get();
-            long accumulatedHit = compositeRatio >> 32;
+            long accumulatedHit = getHitFromCompositeRatio(compositeRatio);
             accumulatedHit += hitCount;
-            long accumulatedTotal = (int) compositeRatio;
+            long accumulatedTotal = getTotalCountFromCompositeRatio(compositeRatio);
             accumulatedTotal += totalCount;
 
             if (accumulatedTotal > Integer.MAX_VALUE) {
@@ -54,6 +54,14 @@ public class HitRatioUtil {
                 return newCompositeRatio;
             }
         }
+    }
+
+    static int getHitFromCompositeRatio(long compositeRatio) {
+        return (int) (compositeRatio >> 32);
+    }
+
+    static int getTotalCountFromCompositeRatio(long compositeRatio) {
+        return (int) compositeRatio;
     }
 
     static long toLong(int first, int second) {
