@@ -27,7 +27,7 @@ public class HitRatioUtil {
         return (double) hit / (double) total;
     }
 
-    static void updateRatio(AtomicLong compositeRatioRef, int hitCount, int totalCount) {
+    static long updateRatio(AtomicLong compositeRatioRef, int hitCount, int totalCount) {
         if (hitCount > totalCount) {
             throw new IllegalArgumentException("hitCount should be <= totalCount");
         }
@@ -51,7 +51,7 @@ public class HitRatioUtil {
 
             long newCompositeRatio = toLong((int) accumulatedHit, (int) accumulatedTotal);
             if (compositeRatioRef.compareAndSet(compositeRatio, newCompositeRatio)) {
-                return;
+                return newCompositeRatio;
             }
         }
     }

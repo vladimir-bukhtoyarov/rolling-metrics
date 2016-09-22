@@ -17,30 +17,11 @@
 
 package com.github.metricscore.hdr.hitratio;
 
-import com.codahale.metrics.Clock;
-
-import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ResetOnSnapshotHitRatio implements HitRatio {
 
     private final AtomicLong ratio = new AtomicLong();
-    private final long resetIntervalMillis;
-    private final Clock clock;
-    private final AtomicLong nextResetTimeMillisRef;
-
-    public ResetOnSnapshotHitRatio(Duration resetInterval) {
-        this(resetInterval, Clock.defaultClock());
-    }
-
-    ResetOnSnapshotHitRatio(Duration resetInterval, Clock clock) {
-        if (resetInterval.isNegative() || resetInterval.isZero()) {
-            throw new IllegalArgumentException("intervalBetweenChunkResetting must be a positive duration");
-        }
-        this.resetIntervalMillis = resetInterval.toMillis();
-        this.clock = clock;
-        this.nextResetTimeMillisRef = new AtomicLong(clock.getTime() + resetIntervalMillis);
-    }
 
     @Override
     public void update(int hitCount, int totalCount) {
