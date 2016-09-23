@@ -25,9 +25,9 @@ import static org.junit.Assert.assertEquals;
 /**
  * Created by vladimir.bukhtoyarov on 23.09.2016.
  */
-public class UniformHitRatioTest {
+public class ResetOnSnapshotHitRatioTest {
 
-    HitRatio hitRatio = new UniformHitRatio();
+    HitRatio hitRatio = new ResetOnSnapshotHitRatio();
 
     @Test
     public void shouldReturnNanWhenNothingREcorded() {
@@ -37,28 +37,24 @@ public class UniformHitRatioTest {
     @Test
     public void testRegularUsage() {
         hitRatio.incrementHitCount(); // 1 - hit, 1 - total
-        assertEquals(1.0, hitRatio.getHitRatio(), 0.0);
-
         hitRatio.incrementMissCount(); // 1 - hit, 2 - total
-        assertEquals(0.5, hitRatio.getHitRatio(), 0.0);
-
         hitRatio.update(2, 3); // 3 - hit, 5 - total
-        assertEquals(0.6, hitRatio.getHitRatio(), 0.0);
-
         hitRatio.update(0, 5); // 3 - hit, 10 - total
-        assertEquals(0.3, hitRatio.getHitRatio(), 0.0);
+        assertEquals(0.3, hitRatio.getHitRatio(), 0.0); // 0 - hit, 0 - total
+        assertEquals(Double.NaN, hitRatio.getHitRatio(), 0.0); // 0 - hit, 0 - total
+
+        hitRatio.update(2, 100); // 2 - hit, 100 - total
+        assertEquals(0.02, hitRatio.getHitRatio(), 0.0); // 0 - hit, 0 - total
+        assertEquals(Double.NaN, hitRatio.getHitRatio(), 0.0); // 0 - hit, 0 - total
     }
 
     @Test
     public void testHandlingArithmeticOverflow() {
         hitRatio.update(Integer.MAX_VALUE / 2, Integer.MAX_VALUE);
-        assertEquals(0.5, hitRatio.getHitRatio(), 0.0001);
-
         hitRatio.update(0, Integer.MAX_VALUE);
-        assertEquals(0.25, hitRatio.getHitRatio(), 0.0001);
-
         hitRatio.update(Integer.MAX_VALUE, Integer.MAX_VALUE);
         assertEquals(0.625, hitRatio.getHitRatio(), 0.0001);
+        assertEquals(Double.NaN, hitRatio.getHitRatio(), 0.0);
     }
 
     @Test

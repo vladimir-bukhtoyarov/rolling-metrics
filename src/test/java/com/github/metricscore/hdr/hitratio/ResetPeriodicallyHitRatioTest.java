@@ -16,18 +16,25 @@
 
 package com.github.metricscore.hdr.hitratio;
 
+import com.codahale.metrics.Clock;
+import com.github.metricscore.hdr.MockClock;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
 
 /**
  * Created by vladimir.bukhtoyarov on 23.09.2016.
  */
-public class UniformHitRatioTest {
+public class ResetPeriodicallyHitRatioTest {
 
-    HitRatio hitRatio = new UniformHitRatio();
+    private static int RESET_PERIOD = 1000;
+
+    AtomicLong currentTimeMillis = new AtomicLong(0);
+    Clock clock = MockClock.mock(currentTimeMillis);
+    HitRatio hitRatio = new ResetPeriodicallyHitRatio(Duration.ofMillis(RESET_PERIOD), clock);
 
     @Test
     public void shouldReturnNanWhenNothingREcorded() {
@@ -47,6 +54,16 @@ public class UniformHitRatioTest {
 
         hitRatio.update(0, 5); // 3 - hit, 10 - total
         assertEquals(0.3, hitRatio.getHitRatio(), 0.0);
+
+        currentTimeMillis.set(RESET_PERIOD + 1);
+        // state should be cleared to zero
+        assertEquals(Double.NaN, hitRatio.getHitRatio(), 0.0);
+
+        hitRatio.update(6, 10); // 3 - hit, 10 - total
+        assertEquals(0.6, hitRatio.getHitRatio(), 0.0);
+        currentTimeMillis.set(RESET_PERIOD * 2 + 1);
+        // state should be cleared to zero
+        assertEquals(Double.NaN, hitRatio.getHitRatio(), 0.0);
     }
 
     @Test
@@ -66,9 +83,19 @@ public class UniformHitRatioTest {
         HitRationTestUtil.checkIllegalApiUsageDetection(hitRatio);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldCheckThatResettingPeriodCanNotBeNegative() {
+        new ResetPeriodicallyHitRatio(Duration.ofMillis(-1));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldCheckThatResettingPeriodCanNotBeZero() {
+        new ResetPeriodicallyHitRatio(Duration.ZERO);
+    }
+
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
-        HitRationTestUtil.runInParallel(hitRatio, Duration.ofSeconds(30));
+        HitRationTestUtil.runInParallel(new ResetPeriodicallyHitRatio(Duration.ofMillis(1)), Duration.ofSeconds(30));
     }
 
 }
