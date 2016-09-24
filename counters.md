@@ -46,8 +46,8 @@ Usage recommendations:
  
 Performance considerations:
 * You can consider writing speed as a constant. The write latency does not depend from count of chunk or frequency of chunk rotation.
-* The writing depends only from level of contention between writers(internally counter implemented across LongAdder).
-* The huge count of chunk leads to the slower calculation of their sum. So precision of sum conflicts with latency of sum. You need to choose meaningful values. 
+* The writing depends only from level of contention between writers(internally counter implemented across AtomicLong).
+* The huge count of chunk leads to the slower calculation of their sum. So precision of sum conflicts with latency of sum. You need to choose meaningful values.
 For example 10 chunks will guarantee at least 90% accuracy and ten million reads per second.
 
 Example of usage:
