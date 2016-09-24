@@ -22,9 +22,6 @@ import java.time.Duration;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by vladimir.bukhtoyarov on 23.09.2016.
- */
 public class ResetOnSnapshotHitRatioTest {
 
     HitRatio hitRatio = new ResetOnSnapshotHitRatio();

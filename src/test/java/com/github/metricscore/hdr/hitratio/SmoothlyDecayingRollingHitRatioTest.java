@@ -26,17 +26,15 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
 
-/**
- * Created by vermut on 23.09.16.
- */
-public class SmoothlyDecayingHitRatioTest {
+
+public class SmoothlyDecayingRollingHitRatioTest {
 
     private static int ROLLING_TIME_WINDOW_MILLIS = 5_000;
     private static int CHUNK_COUNT = 5;
 
     AtomicLong currentTimeMillis = new AtomicLong(0);
     Clock clock = MockClock.mock(currentTimeMillis);
-    HitRatio hitRatio = new SmoothlyDecayingHitRatio(Duration.ofMillis(ROLLING_TIME_WINDOW_MILLIS), CHUNK_COUNT, clock);
+    HitRatio hitRatio = new SmoothlyDecayingRollingHitRatio(Duration.ofMillis(ROLLING_TIME_WINDOW_MILLIS), CHUNK_COUNT, clock);
 
     @Test
     public void testChunkRotation() {
@@ -136,35 +134,35 @@ public class SmoothlyDecayingHitRatioTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void tooShortTimeWindowShouldBeDisallowed() {
-        new SmoothlyDecayingHitRatio(Duration.ofMillis(SmoothlyDecayingHitRatio.MIN_ROLLING_WINDOW_MILLIS - 1), 5);
+        new SmoothlyDecayingRollingHitRatio(Duration.ofMillis(SmoothlyDecayingRollingHitRatio.MIN_ROLLING_WINDOW_MILLIS - 1), 5);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void tooManyChunksShouldBeDisallowed() {
-        new SmoothlyDecayingHitRatio(Duration.ofMinutes(1), SmoothlyDecayingHitRatio.MAX_CHUNKS + 1);
+        new SmoothlyDecayingRollingHitRatio(Duration.ofMinutes(1), SmoothlyDecayingRollingHitRatio.MAX_CHUNKS + 1);
     }
 
     @Test
     public void getRollingWindow() throws Exception {
-        SmoothlyDecayingHitRatio hitRatio = new SmoothlyDecayingHitRatio(Duration.ofMinutes(1), 6);
+        SmoothlyDecayingRollingHitRatio hitRatio = new SmoothlyDecayingRollingHitRatio(Duration.ofMinutes(1), 6);
         assertEquals(Duration.ofMinutes(1), hitRatio.getRollingWindow());
     }
 
     @Test
     public void getChunkCount() throws Exception {
-        SmoothlyDecayingHitRatio hitRatio = new SmoothlyDecayingHitRatio(Duration.ofMinutes(1), 6);
+        SmoothlyDecayingRollingHitRatio hitRatio = new SmoothlyDecayingRollingHitRatio(Duration.ofMinutes(1), 6);
         assertEquals(6, hitRatio.getChunkCount());
     }
 
     @Test
     public void testToString() throws Exception {
-        SmoothlyDecayingHitRatio hitRatio = new SmoothlyDecayingHitRatio(Duration.ofMinutes(1), 6);
+        SmoothlyDecayingRollingHitRatio hitRatio = new SmoothlyDecayingRollingHitRatio(Duration.ofMinutes(1), 6);
         System.out.println(hitRatio.toString());
     }
 
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
-        SmoothlyDecayingHitRatio hitRatio = new SmoothlyDecayingHitRatio(Duration.ofSeconds(1), 100);
+        SmoothlyDecayingRollingHitRatio hitRatio = new SmoothlyDecayingRollingHitRatio(Duration.ofSeconds(1), 100);
         HitRationTestUtil.runInParallel(hitRatio, Duration.ofSeconds(30));
     }
 

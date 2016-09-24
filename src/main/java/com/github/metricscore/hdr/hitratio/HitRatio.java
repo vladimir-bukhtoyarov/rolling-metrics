@@ -17,18 +17,79 @@
 
 package com.github.metricscore.hdr.hitratio;
 
+/**
+ * The metric for hit ratio measurement.
+ *
+ * @see SmoothlyDecayingRollingHitRatio
+ * @see ResetOnSnapshotHitRatio
+ * @see ResetPeriodicallyHitRatio
+ * @see UniformHitRatio
+ */
 public interface HitRatio {
 
+    /**
+     * Registers the fact of single hit.
+     *
+     * <p> Example of usage:
+     * <pre><code>
+     *         Something cached = cache.get(id);
+     *         if (cached != null) {
+     *             hitRatio.incrementHitCount();
+     *         } else {
+     *             hitRatio.incrementMissCount();
+     *         }
+     *     </code>
+     * </pre>
+     */
     default void incrementHitCount() {
         update(1, 1);
     }
 
+    /**
+     * Registers the fact of single miss.
+     *
+     * <p> Example of usage:
+     * <pre><code>
+     *         Something cached = cache.get(id);
+     *         if (cached != null) {
+     *             hitRatio.incrementHitCount();
+     *         } else {
+     *             hitRatio.incrementMissCount();
+     *         }
+     *     </code>
+     * </pre>
+     */
     default void incrementMissCount() {
         update(0, 1);
     }
 
+    /**
+     * Registers an result of bulk operations.
+     *
+     * <p> Example of usage:
+     * <pre>
+     * {@code
+     * Set<Something> cachedValues = cache.get(keys);
+     * hitRatio.update(cachedValues.size(), keys.size());
+     * }
+     * </pre>
+     *
+     * @param hitCount
+     * @param totalCount
+     *
+     * @throws IllegalArgumentException In case of:<ul>
+     *     <li>{@code hitCount < 0}</li>
+     *     <li>{@code totalCount < 1}</li>
+     *     <li>{@code hitCount > totalCount}</li>
+     * </ul>
+     */
     void update(int hitCount, int totalCount);
 
+    /**
+     * Returns the ratio between hits and misses
+     *
+     * @return the ratio between hits and misses
+     */
     double getHitRatio();
 
 }

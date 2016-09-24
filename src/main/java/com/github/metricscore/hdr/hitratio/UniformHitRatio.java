@@ -19,6 +19,20 @@ package com.github.metricscore.hdr.hitratio;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * The hit-ratio which never evicts collected values.
+ *
+ * <p>
+ * Concurrency properties:
+ * <ul>
+ *     <li>Writing is lock-free. Writers do not block writers and readers.</li>
+ *     <li>Reading is lock-free. Readers do not block writers and readers.</li>
+ * </ul>
+ *
+ * @see SmoothlyDecayingRollingHitRatio
+ * @see ResetPeriodicallyHitRatio
+ * @see ResetOnSnapshotHitRatio
+ */
 public class UniformHitRatio implements HitRatio {
 
     private final AtomicLong ratio = new AtomicLong();

@@ -24,9 +24,44 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Created by vladimir.bukhtoyarov on 22.09.2016.
+ * The rolling time window hit-ratio implementation which resets its state by chunks.
+ *
+ * The unique properties which makes this hit-ratio probably the best "rolling time window" implementation are following:
+ * <ul>
+ *     <li>Sufficient performance about tens of millions concurrent writes and reads per second.</li>
+ *     <li>Predictable and low memory consumption, the memory which consumed by hit-ratio does not depend from amount and frequency of writes.</li>
+ *     <li>Perfectly user experience, the continuous observation does not see the sudden changes of sum.
+ *     This property achieved by smoothly decaying of oldest chunk of hit-ratio.
+ *     </li>
+ * </ul>
+ *
+ * <p>
+ * Concurrency properties:
+ * <ul>
+ *     <li>Writing is lock-free.
+ *     <li>Ratio calculation is lock-free.
+ * </ul>
+ *
+ * <p>
+ * Usage recommendations:
+ * <ul>
+ *     <li>Only when you need in "rolling time window" semantic.</li>
+ * </ul>
+ *
+ * <p>
+ * Performance considerations:
+ * <ul>
+ *     <li>You can consider writing speed as a constant. The write latency does not depend from count of chunk or frequency of chunk rotation.
+ *     <li>The writing depends only from level of contention between writers(internally hit-ratio implemented across AtomicLong).</li>
+ *     <li>The huge count of chunk leads to the slower calculation of their ratio. So precision of getHitRatio conflicts with latency of getHitRatio. You need to choose meaningful values.
+ *     For example 10 chunks will guarantee at least 90% accuracy and ten million reads per second.</li>
+ * </ul>
+ *
+ * @see ResetOnSnapshotHitRatio
+ * @see ResetPeriodicallyHitRatio
+ * @see UniformHitRatio
  */
-public class SmoothlyDecayingHitRatio implements HitRatio {
+public class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
     // meaningful limits to disallow user to kill performance(or memory footprint) by mistake
     static final int MAX_CHUNKS = 100;
@@ -45,21 +80,12 @@ public class SmoothlyDecayingHitRatio implements HitRatio {
      * Constructs the chunked hit-ratio divided by {@code numberChunks}.
      * The hit-ratio will invalidate one chunk each time when {@code rollingWindow/numberChunks} millis has elapsed,
      * except oldest chunk which invalidated continuously.
-     * The memory consumed by counter and latency of sum calculation depend directly from {@code numberChunks}
-     *
-     * <p> Example of usage:
-     * <pre><code>
-     *         // constructs the counter which divided by 10 chunks with 60 seconds time window.
-     *         // one chunk will be reset to zero after each 6 second,
-     *         SmoothlyDecayingHitRatio hitRatio = new SmoothlyDecayingHitRatio(Duration.ofSeconds(60), 10);
-     *         counter.add(42);
-     *     </code>
-     * </pre>
+     * The memory consumed by hit-ratio and latency of ratio calculation depend directly from {@code numberChunks}
      *
      * @param rollingWindow the rolling time window duration
      * @param numberChunks The count of chunk to split
      */
-    public SmoothlyDecayingHitRatio(Duration rollingWindow, int numberChunks) {
+    public SmoothlyDecayingRollingHitRatio(Duration rollingWindow, int numberChunks) {
         this(rollingWindow, numberChunks, Clock.defaultClock());
     }
 
@@ -77,7 +103,7 @@ public class SmoothlyDecayingHitRatio implements HitRatio {
         return chunks.length - 1;
     }
 
-    SmoothlyDecayingHitRatio(Duration rollingWindow, int numberChunks, Clock clock) {
+    SmoothlyDecayingRollingHitRatio(Duration rollingWindow, int numberChunks, Clock clock) {
         if (numberChunks < 2) {
             throw new IllegalArgumentException("numberChunks should be >= 2");
         }
@@ -114,7 +140,7 @@ public class SmoothlyDecayingHitRatio implements HitRatio {
     public double getHitRatio() {
         long currentTimeMillis = clock.getTime();
 
-        // To miss as less as possible we need to calculate sum in order from oldest to newest
+        // To get as fresh value as possible we need to calculate ratio in order from oldest to newest
         long millisSinceCreation = currentTimeMillis - creationTimestamp;
         long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
         int newestChunkIndex = (int) intervalsSinceCreation % chunks.length;
@@ -216,7 +242,7 @@ public class SmoothlyDecayingHitRatio implements HitRatio {
 
     @Override
     public String toString() {
-        return "SmoothlyDecayingRollingCounter{" +
+        return "SmoothlyDecayingRollingHitRatio{" +
                 ", intervalBetweenResettingMillis=" + intervalBetweenResettingMillis +
                 ", clock=" + clock +
                 ", creationTimestamp=" + creationTimestamp +

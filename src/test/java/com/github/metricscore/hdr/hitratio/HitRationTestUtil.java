@@ -26,9 +26,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static junit.framework.TestCase.fail;
 
-/**
- * Created by vladimir.bukhtoyarov on 23.09.2016.
- */
 public class HitRationTestUtil {
 
     public static void checkIllegalApiUsageDetection(HitRatio hitRatio) {

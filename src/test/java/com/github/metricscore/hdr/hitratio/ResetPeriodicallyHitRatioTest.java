@@ -25,9 +25,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
 
-/**
- * Created by vladimir.bukhtoyarov on 23.09.2016.
- */
 public class ResetPeriodicallyHitRatioTest {
 
     private static int RESET_PERIOD = 1000;

@@ -19,6 +19,9 @@ package com.github.metricscore.hdr.hitratio;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * This is not part of public API.
+ */
 public class HitRatioUtil {
 
     static double getRatio(long compositeRatio) {

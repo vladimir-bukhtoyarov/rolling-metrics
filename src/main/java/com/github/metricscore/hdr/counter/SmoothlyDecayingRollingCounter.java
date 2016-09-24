@@ -152,7 +152,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
     public long getSum() {
         long currentTimeMillis = clock.getTime();
 
-        // To miss as less as possible we need to calculate sum in order from oldest to newest
+        // To get as fresh value as possible we need to calculate sum in order from oldest to newest
         long millisSinceCreation = currentTimeMillis - creationTimestamp;
         long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
         int newestChunkIndex = (int) intervalsSinceCreation % chunks.length;

@@ -18,10 +18,35 @@
 package com.github.metricscore.hdr.hitratio;
 
 import com.codahale.metrics.Clock;
+import com.github.metricscore.hdr.counter.MetricsCounter;
+import com.github.metricscore.hdr.counter.MetricsGauge;
+import com.github.metricscore.hdr.counter.SmoothlyDecayingRollingCounter;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * The hit-ratio which reset its state to zero each time when configured interval is elapsed.
+ *
+ * <p>
+ * Concurrency properties:
+ * <ul>
+ *     <li>Writing is lock-free.</li>
+ *     <li>Ratio calculation is lock-free.</li>
+ * </ul>
+ *
+ * <p>
+ * Usage recommendations:
+ * <ul>
+ *     <li>When you do not need in "rolling time window" semantic. Else use {@link SmoothlyDecayingRollingHitRatio}</li>
+ *     <li>When you want to limit time which each increment takes affect to hit-ratio in order to avoid reporting of obsolete measurements.</li>
+ *     <li>Only if you accept the fact that several increments can be never observed by reader(because rotation to zero can happen before reader seen the written values).</li>
+ * </ul>
+ *
+ * @see SmoothlyDecayingRollingHitRatio
+ * @see ResetPeriodicallyHitRatio
+ * @see UniformHitRatio
+ */
 public class ResetPeriodicallyHitRatio implements HitRatio {
 
     private final AtomicLong ratio = new AtomicLong();
@@ -30,7 +55,7 @@ public class ResetPeriodicallyHitRatio implements HitRatio {
     private final AtomicLong nextResetTimeMillisRef;
 
     /**
-     * Constructs the HitRatio which reset its state to zero each time when {@code resetInterval} is elapsed.
+     * Constructs the hit-ratio which reset its state to zero each time when {@code resetInterval} is elapsed.
      *
      * @param resetInterval the interval between counter resetting
      */

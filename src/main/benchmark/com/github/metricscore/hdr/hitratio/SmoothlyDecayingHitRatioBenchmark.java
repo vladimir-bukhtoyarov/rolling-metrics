@@ -32,7 +32,7 @@ public class SmoothlyDecayingHitRatioBenchmark {
 
     @org.openjdk.jmh.annotations.State(Scope.Benchmark)
     public static class State {
-        public final HitRatio hitRatio = new SmoothlyDecayingHitRatio(Duration.ofSeconds(1), 100);
+        public final HitRatio hitRatio = new SmoothlyDecayingRollingHitRatio(Duration.ofSeconds(1), 100);
     }
 
     @Benchmark
