@@ -30,10 +30,10 @@ public class SmoothlyDecayingHitRatio implements HitRatio {
 
     // meaningful limits to disallow user to kill performance(or memory footprint) by mistake
     static final int MAX_CHUNKS = 100;
-    static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
+    static final long MIN_ROLLING_WINDOW_MILLIS = 1000;
 
     private static final int HIT_INDEX = 0;
-    private static final int TOTAL_INDEX = 0;
+    private static final int TOTAL_INDEX = 1;
 
     private final long intervalBetweenResettingMillis;
     private final Clock clock;
@@ -87,10 +87,10 @@ public class SmoothlyDecayingHitRatio implements HitRatio {
         }
 
         long rollingWindowMillis = rollingWindow.toMillis();
-        this.intervalBetweenResettingMillis = rollingWindowMillis / numberChunks;
-        if (intervalBetweenResettingMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
-            throw new IllegalArgumentException("intervalBetweenResettingMillis should be >=" + MIN_CHUNK_RESETTING_INTERVAL_MILLIS);
+        if (rollingWindowMillis < MIN_ROLLING_WINDOW_MILLIS) {
+            throw new IllegalArgumentException("rollingWindowMillis should be >=" + MIN_ROLLING_WINDOW_MILLIS);
         }
+        this.intervalBetweenResettingMillis = rollingWindowMillis / numberChunks;
 
         this.clock = clock;
         this.creationTimestamp = clock.getTime();
@@ -188,6 +188,9 @@ public class SmoothlyDecayingHitRatio implements HitRatio {
             long compositeRatio = ratio.get();
             int hitCount = HitRatioUtil.getHitFromCompositeRatio(compositeRatio);
             int totalCount = HitRatioUtil.getTotalCountFromCompositeRatio(compositeRatio);
+            if (totalCount == 0) {
+                return;
+            }
 
             // if this is oldest chunk then we need to reduce its weight
             long beforeInvalidateMillis = proposedInvalidationTimestamp - currentTimeMillis;

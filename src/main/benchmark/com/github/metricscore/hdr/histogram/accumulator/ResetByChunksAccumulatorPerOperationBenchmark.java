@@ -48,6 +48,7 @@ public class ResetByChunksAccumulatorPerOperationBenchmark {
     public static class ChunkedUpperLimitedHistogramState {
         public final Histogram chunkedHistogram = new HdrBuilder()
                 .resetReservoirByChunks(Duration.ofSeconds(10), 7)
+                .withHighestTrackableValue(5000, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .buildHistogram();
     }
 
@@ -161,19 +162,16 @@ public class ResetByChunksAccumulatorPerOperationBenchmark {
         state.hdrHistogram.recordValue(ThreadLocalRandom.current().nextLong(10000));
     }
 
-    @Threads(1)
     @Benchmark
     public Snapshot getMetricsCoreSnapshot(GetMetricsSnapshotState state) {
         return state.metricsCoreHistogram.getSnapshot();
     }
 
-    @Threads(1)
     @Benchmark
     public Snapshot getChunkedUpperLimitedHistogramSnapshot(GetChunkedUpperLimitedSnapshotState state) {
         return state.chunkedHistogram.getSnapshot();
     }
 
-    @Threads(1)
     @Benchmark
     public Snapshot getChunkedHistogramSnapshot(GetChunkedSnapshotState state) {
         return state.chunkedHistogram.getSnapshot();
