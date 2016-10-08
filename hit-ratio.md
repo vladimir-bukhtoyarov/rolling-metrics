@@ -1,6 +1,40 @@
 # Hit-ratios
 HitRatio the metric which measure ratio between hits and misses.
 
+## Description for hit-ratio interface
+The [HitRatio](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/1.4/src/main/java/com/github/metricscore/hdr/hitratio/HitRatio.java) - consists from four methods:
+
+**1. incrementHitCount** - registers the fact of single hit:
+``` java
+    Something cached = cache.get(id);
+    if (cached != null) {
+        hitRatio.incrementHitCount();
+    } else {
+        hitRatio.incrementMissCount();
+    }
+```
+
+**2. incrementMissCount** - registers the fact of single miss:
+``` java
+    Something cached = cache.get(id);
+    if (cached != null) {
+        hitRatio.incrementHitCount();
+    } else {
+        hitRatio.incrementMissCount();
+    }
+```
+
+**3. update** - registers an result of bulk operations:
+``` java
+    Set<Something> cachedValues = cache.get(keys);
+    hitRatio.update(cachedValues.size(), keys.size());
+```
+
+**4. getHitRatio** - returns the ratio between hits and misses:
+``` java
+    System.out.println(hitRatio.getHitRatio());
+```
+
 ## Types of hit-ratios
 The metrics core HDR provides four types of hit-ratio implementations:
 * [ResetOnSnapshotHitRatio](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/1.4/src/main/java/com/github/metricscore/hdr/hitratio/ResetOnSnapshotHitRatio.java) - the hit-ratio which reset its state to zero after each invocation of *getHitRatio()*.
