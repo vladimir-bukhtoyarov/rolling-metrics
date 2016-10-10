@@ -17,10 +17,9 @@
 
 package com.github.metricscore.hdr.histogram.accumulator;
 
-import com.codahale.metrics.Clock;
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
-import com.github.metricscore.hdr.MockClock;
+import com.github.metricscore.hdr.Clock;
 import com.github.metricscore.hdr.histogram.HdrBuilder;
 import org.junit.Test;
 
@@ -34,7 +33,7 @@ public class ResetByChunksAccumulatorTest {
     @Test
     public void testIncludingUncompletedPhaseToSnapshot() {
         AtomicLong time = new AtomicLong(0);
-        Clock wallClock = MockClock.mock(time);
+        Clock wallClock = Clock.mock(time);
         Reservoir reservoir = new HdrBuilder(wallClock)
                 .resetReservoirByChunks(Duration.ofMillis(1000), 3)
                 .buildReservoir();
@@ -111,7 +110,7 @@ public class ResetByChunksAccumulatorTest {
     @Test
     public void testExcludingUncompletedPhaseFromSnapshot() {
         AtomicLong time = new AtomicLong(0);
-        Clock wallClock = MockClock.mock(time);
+        Clock wallClock = Clock.mock(time);
         Reservoir reservoir = new HdrBuilder(wallClock)
                 .resetReservoirByChunks(Duration.ofMillis(1000), 3, false)
                 .buildReservoir();

@@ -17,8 +17,7 @@
 
 package com.github.metricscore.hdr.hitratio;
 
-import com.codahale.metrics.Clock;
-import com.github.metricscore.hdr.MockClock;
+import com.github.metricscore.hdr.Clock;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -33,7 +32,7 @@ public class SmoothlyDecayingRollingHitRatioTest {
     private static int CHUNK_COUNT = 5;
 
     AtomicLong currentTimeMillis = new AtomicLong(0);
-    Clock clock = MockClock.mock(currentTimeMillis);
+    Clock clock = Clock.mock(currentTimeMillis);
     HitRatio hitRatio = new SmoothlyDecayingRollingHitRatio(Duration.ofMillis(ROLLING_TIME_WINDOW_MILLIS), CHUNK_COUNT, clock);
 
     @Test

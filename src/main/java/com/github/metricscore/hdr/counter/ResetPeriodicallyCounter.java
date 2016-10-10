@@ -17,7 +17,7 @@
 
 package com.github.metricscore.hdr.counter;
 
-import com.codahale.metrics.Clock;
+import com.github.metricscore.hdr.Clock;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
@@ -60,20 +60,20 @@ public class ResetPeriodicallyCounter implements WindowCounter {
         this(resetInterval, Clock.defaultClock());
     }
 
-    ResetPeriodicallyCounter(Duration resetInterval, Clock clock) {
+    public ResetPeriodicallyCounter(Duration resetInterval, Clock clock) {
         if (resetInterval.isNegative() || resetInterval.isZero()) {
             throw new IllegalArgumentException("intervalBetweenChunkResetting must be a positive duration");
         }
         this.resetIntervalMillis = resetInterval.toMillis();
         this.clock = clock;
-        this.nextResetTimeMillisRef = new AtomicLong(clock.getTime() + resetIntervalMillis);
+        this.nextResetTimeMillisRef = new AtomicLong(clock.currentTimeMillis() + resetIntervalMillis);
     }
 
     @Override
     public void add(long delta) {
         while (true) {
             long nextResetTimeMillis = nextResetTimeMillisRef.get();
-            long currentTimeMillis = clock.getTime();
+            long currentTimeMillis = clock.currentTimeMillis();
             if (currentTimeMillis < nextResetTimeMillis) {
                 value.addAndGet(delta);
                 return;
@@ -92,7 +92,7 @@ public class ResetPeriodicallyCounter implements WindowCounter {
         while (true) {
             long nextResetTimeMillis = nextResetTimeMillisRef.get();
             long currentValue = value.get();
-            long currentTimeMillis = clock.getTime();
+            long currentTimeMillis = clock.currentTimeMillis();
             if (currentTimeMillis < nextResetTimeMillis) {
                 return currentValue;
             }

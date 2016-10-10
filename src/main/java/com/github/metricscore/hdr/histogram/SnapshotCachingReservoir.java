@@ -17,7 +17,7 @@
 
 package com.github.metricscore.hdr.histogram;
 
-import com.codahale.metrics.Clock;
+import com.github.metricscore.hdr.Clock;
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
 
@@ -55,7 +55,7 @@ class SnapshotCachingReservoir implements Reservoir {
     public Snapshot getSnapshot() {
         lock.lock();
         try {
-            long nowMillis = clock.getTime();
+            long nowMillis = clock.currentTimeMillis();
             if (cachedSnapshot == null
                     || nowMillis - lastSnapshotTakeTimeMillis >= cachingDurationMillis) {
                 cachedSnapshot = target.getSnapshot();

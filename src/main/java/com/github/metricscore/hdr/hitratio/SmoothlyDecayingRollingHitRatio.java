@@ -16,7 +16,7 @@
 
 package com.github.metricscore.hdr.hitratio;
 
-import com.codahale.metrics.Clock;
+import com.github.metricscore.hdr.Clock;
 import com.github.metricscore.hdr.histogram.util.Printer;
 
 import java.time.Duration;
@@ -103,7 +103,7 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
         return chunks.length - 1;
     }
 
-    SmoothlyDecayingRollingHitRatio(Duration rollingWindow, int numberChunks, Clock clock) {
+    public SmoothlyDecayingRollingHitRatio(Duration rollingWindow, int numberChunks, Clock clock) {
         if (numberChunks < 2) {
             throw new IllegalArgumentException("numberChunks should be >= 2");
         }
@@ -119,7 +119,7 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
         this.intervalBetweenResettingMillis = rollingWindowMillis / numberChunks;
 
         this.clock = clock;
-        this.creationTimestamp = clock.getTime();
+        this.creationTimestamp = clock.currentTimeMillis();
 
         this.chunks = new Chunk[numberChunks + 1];
         for (int i = 0; i < chunks.length; i++) {
@@ -129,7 +129,7 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
     @Override
     public void update(int hitCount, int totalCount) {
-        long nowMillis = clock.getTime();
+        long nowMillis = clock.currentTimeMillis();
         long millisSinceCreation = nowMillis - creationTimestamp;
         long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
         int chunkIndex = (int) intervalsSinceCreation % chunks.length;
@@ -138,7 +138,7 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
     @Override
     public double getHitRatio() {
-        long currentTimeMillis = clock.getTime();
+        long currentTimeMillis = clock.currentTimeMillis();
 
         // To get as fresh value as possible we need to calculate ratio in order from oldest to newest
         long millisSinceCreation = currentTimeMillis - creationTimestamp;

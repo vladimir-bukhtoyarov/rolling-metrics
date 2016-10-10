@@ -17,8 +17,7 @@
 
 package com.github.metricscore.hdr.counter;
 
-import com.codahale.metrics.Clock;
-import com.github.metricscore.hdr.MockClock;
+import com.github.metricscore.hdr.Clock;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -41,7 +40,7 @@ public class ResetPeriodicallyCounterTest {
     @Test
     public void testRotation() {
         AtomicLong timeMillis = new AtomicLong();
-        Clock clock = MockClock.mock(timeMillis);
+        Clock clock = Clock.mock(timeMillis);
         WindowCounter counter = new ResetPeriodicallyCounter(Duration.ofMillis(1000), clock);
 
         counter.add(100);

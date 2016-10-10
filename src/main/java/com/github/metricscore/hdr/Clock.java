@@ -17,25 +17,28 @@
 
 package com.github.metricscore.hdr;
 
-import com.codahale.metrics.Clock;
-
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class MockClock {
+/**
+ * The wrapper around time measurement which useful for unit testing purposes.
+ */
+public interface Clock {
 
-    public static Clock mock(AtomicLong currentTimeProvider) {
-        return new Clock() {
-            @Override
-            public long getTime() {
-                return currentTimeProvider.get();
-            }
+    /**
+     * Returns the current time in milliseconds.
+     *
+     * @return the difference, measured in milliseconds, between the current time and midnight, January 1, 1970 UTC.
+     */
+    long currentTimeMillis();
 
-            @Override
-            public long getTick() {
-                return TimeUnit.MILLISECONDS.toNanos(getTime());
-            }
-        };
+    static Clock defaultClock() {
+        return DEFAULT_CLOCK;
     }
+
+    static Clock mock(AtomicLong currentTime) {
+        return currentTime::get;
+    }
+
+    Clock DEFAULT_CLOCK = System::currentTimeMillis;
 
 }

@@ -17,7 +17,7 @@
 
 package com.github.metricscore.hdr.counter;
 
-import com.codahale.metrics.Clock;
+import com.github.metricscore.hdr.Clock;
 import com.github.metricscore.hdr.histogram.util.Printer;
 
 import java.time.Duration;
@@ -115,7 +115,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
         return chunks.length - 1;
     }
 
-    SmoothlyDecayingRollingCounter(Duration rollingWindow, int numberChunks, Clock clock) {
+    public SmoothlyDecayingRollingCounter(Duration rollingWindow, int numberChunks, Clock clock) {
         if (numberChunks < 2) {
             throw new IllegalArgumentException("numberChunks should be >= 2");
         }
@@ -131,7 +131,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
         }
 
         this.clock = clock;
-        this.creationTimestamp = clock.getTime();
+        this.creationTimestamp = clock.currentTimeMillis();
 
         this.chunks = new Chunk[numberChunks + 1];
         for (int i = 0; i < chunks.length; i++) {
@@ -141,7 +141,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
 
     @Override
     public void add(long delta) {
-        long nowMillis = clock.getTime();
+        long nowMillis = clock.currentTimeMillis();
         long millisSinceCreation = nowMillis - creationTimestamp;
         long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
         int chunkIndex = (int) intervalsSinceCreation % chunks.length;
@@ -150,7 +150,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
 
     @Override
     public long getSum() {
-        long currentTimeMillis = clock.getTime();
+        long currentTimeMillis = clock.currentTimeMillis();
 
         // To get as fresh value as possible we need to calculate sum in order from oldest to newest
         long millisSinceCreation = currentTimeMillis - creationTimestamp;

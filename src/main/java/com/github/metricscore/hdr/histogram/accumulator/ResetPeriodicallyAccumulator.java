@@ -17,7 +17,7 @@
 
 package com.github.metricscore.hdr.histogram.accumulator;
 
-import com.codahale.metrics.Clock;
+import com.github.metricscore.hdr.Clock;
 import com.codahale.metrics.Snapshot;
 import com.github.metricscore.hdr.histogram.util.EmptySnapshot;
 import com.github.metricscore.hdr.histogram.util.Printer;
@@ -52,13 +52,13 @@ public class ResetPeriodicallyAccumulator implements Accumulator {
             this.intervalHistogram = recorder.getIntervalHistogram();
         }
         this.uniformHistogram = intervalHistogram.copy();
-        this.nextResetTimeMillisRef = new AtomicLong(clock.getTime() + resetIntervalMillis);
+        this.nextResetTimeMillisRef = new AtomicLong(clock.currentTimeMillis() + resetIntervalMillis);
     }
 
     @Override
     public void recordSingleValueWithExpectedInterval(long value, long expectedIntervalBetweenValueSamples) {
         long nextResetTimeMillis = nextResetTimeMillisRef.get();
-        long currentTimeMillis = clock.getTime();
+        long currentTimeMillis = clock.currentTimeMillis();
         if (nextResetTimeMillis != RESETTING_IN_PROGRESS_HAZARD && currentTimeMillis >= nextResetTimeMillis
                 && nextResetTimeMillisRef.compareAndSet(nextResetTimeMillis, RESETTING_IN_PROGRESS_HAZARD)) {
             // Current thread is responsible to rotate phases.
@@ -93,7 +93,7 @@ public class ResetPeriodicallyAccumulator implements Accumulator {
         }
 
         try {
-            long currentTimeMillis = clock.getTime();
+            long currentTimeMillis = clock.currentTimeMillis();
             long nextResetTimeMillis = nextResetTimeMillisRef.get();
             if (currentTimeMillis >= nextResetTimeMillis) {
                 // pay nothing when reservoir is unused(by writers) for a long time

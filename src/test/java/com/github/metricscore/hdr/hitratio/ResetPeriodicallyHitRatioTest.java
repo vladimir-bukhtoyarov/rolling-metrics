@@ -16,8 +16,7 @@
 
 package com.github.metricscore.hdr.hitratio;
 
-import com.codahale.metrics.Clock;
-import com.github.metricscore.hdr.MockClock;
+import com.github.metricscore.hdr.Clock;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -30,7 +29,7 @@ public class ResetPeriodicallyHitRatioTest {
     private static int RESET_PERIOD = 1000;
 
     AtomicLong currentTimeMillis = new AtomicLong(0);
-    Clock clock = MockClock.mock(currentTimeMillis);
+    Clock clock = Clock.mock(currentTimeMillis);
     HitRatio hitRatio = new ResetPeriodicallyHitRatio(Duration.ofMillis(RESET_PERIOD), clock);
 
     @Test

@@ -17,7 +17,7 @@
 
 package com.github.metricscore.hdr.counter;
 
-import com.codahale.metrics.Clock;
+import com.github.metricscore.hdr.Clock;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -44,7 +44,7 @@ public class SmoothlyDecayingRollingCounterPerOperationBenchmark {
             // this timer implementation will lead to invalidate each chunk after each increment
             final AtomicLong timeMillis = new AtomicLong();
             @Override
-            public long getTick() {
+            public long currentTimeMillis() {
                 return timeMillis.addAndGet(1000L);
             }
         };

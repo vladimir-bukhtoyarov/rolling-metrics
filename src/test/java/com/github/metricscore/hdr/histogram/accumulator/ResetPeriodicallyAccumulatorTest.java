@@ -18,10 +18,9 @@
 package com.github.metricscore.hdr.histogram.accumulator;
 
 
-import com.codahale.metrics.Clock;
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
-import com.github.metricscore.hdr.MockClock;
+import com.github.metricscore.hdr.Clock;
 import com.github.metricscore.hdr.histogram.HdrBuilder;
 import org.junit.Test;
 
@@ -35,7 +34,7 @@ public class ResetPeriodicallyAccumulatorTest {
     @Test
     public void test() {
         AtomicLong time = new AtomicLong(System.currentTimeMillis());
-        Clock wallClock = MockClock.mock(time);
+        Clock wallClock = Clock.mock(time);
         Reservoir reservoir = new HdrBuilder(wallClock)
                 .resetReservoirPeriodically(Duration.ofMillis(1000))
                 .buildReservoir();

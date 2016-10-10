@@ -17,10 +17,7 @@
 
 package com.github.metricscore.hdr.hitratio;
 
-import com.codahale.metrics.Clock;
-import com.github.metricscore.hdr.counter.MetricsCounter;
-import com.github.metricscore.hdr.counter.MetricsGauge;
-import com.github.metricscore.hdr.counter.SmoothlyDecayingRollingCounter;
+import com.github.metricscore.hdr.Clock;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
@@ -63,19 +60,19 @@ public class ResetPeriodicallyHitRatio implements HitRatio {
         this(resetInterval, Clock.defaultClock());
     }
 
-    ResetPeriodicallyHitRatio(Duration resetInterval, Clock clock) {
+    public ResetPeriodicallyHitRatio(Duration resetInterval, Clock clock) {
         if (resetInterval.isNegative() || resetInterval.isZero()) {
             throw new IllegalArgumentException("intervalBetweenChunkResetting must be a positive duration");
         }
         this.resetIntervalMillis = resetInterval.toMillis();
         this.clock = clock;
-        this.nextResetTimeMillisRef = new AtomicLong(clock.getTime() + resetIntervalMillis);
+        this.nextResetTimeMillisRef = new AtomicLong(clock.currentTimeMillis() + resetIntervalMillis);
     }
 
     @Override
     public void update(int hitCount, int totalCount) {
         long nextResetTimeMillis = nextResetTimeMillisRef.get();
-        long currentTimeMillis = clock.getTime();
+        long currentTimeMillis = clock.currentTimeMillis();
         if (currentTimeMillis >= nextResetTimeMillis) {
             if (nextResetTimeMillisRef.compareAndSet(nextResetTimeMillis, Long.MAX_VALUE)) {
                 ratio.set(0L);
@@ -88,7 +85,7 @@ public class ResetPeriodicallyHitRatio implements HitRatio {
     @Override
     public double getHitRatio() {
         long nextResetTimeMillis = nextResetTimeMillisRef.get();
-        long currentTimeMillis = clock.getTime();
+        long currentTimeMillis = clock.currentTimeMillis();
         if (currentTimeMillis >= nextResetTimeMillis) {
             if (nextResetTimeMillisRef.compareAndSet(nextResetTimeMillis, Long.MAX_VALUE)) {
                 ratio.set(0L);

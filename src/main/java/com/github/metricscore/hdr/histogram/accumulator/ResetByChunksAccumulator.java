@@ -17,7 +17,7 @@
 
 package com.github.metricscore.hdr.histogram.accumulator;
 
-import com.codahale.metrics.Clock;
+import com.github.metricscore.hdr.Clock;
 import com.codahale.metrics.Snapshot;
 import com.github.metricscore.hdr.histogram.util.Printer;
 import org.HdrHistogram.Histogram;
@@ -41,7 +41,7 @@ public final class ResetByChunksAccumulator implements Accumulator {
     public ResetByChunksAccumulator(Supplier<Recorder> recorderSupplier, int numberChunks, long intervalBetweenResettingMillis, boolean reportUncompletedChunkToSnapshot, Clock clock) {
         this.intervalBetweenResettingMillis = intervalBetweenResettingMillis;
         this.clock = clock;
-        this.creationTimestamp = clock.getTime();
+        this.creationTimestamp = clock.currentTimeMillis();
         this.reportUncompletedChunkToSnapshot = reportUncompletedChunkToSnapshot;
 
         this.chunks = new LeftRightChunk[numberChunks];
@@ -53,7 +53,7 @@ public final class ResetByChunksAccumulator implements Accumulator {
 
     @Override
     public void recordSingleValueWithExpectedInterval(long value, long expectedIntervalBetweenValueSamples) {
-        long nowMillis = clock.getTime();
+        long nowMillis = clock.currentTimeMillis();
         long millisSinceCreation = nowMillis - creationTimestamp;
         long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
         int chunkIndex = (int) intervalsSinceCreation % chunks.length;
@@ -62,7 +62,7 @@ public final class ResetByChunksAccumulator implements Accumulator {
 
     @Override
     public synchronized Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
-        long currentTimeMillis = clock.getTime();
+        long currentTimeMillis = clock.currentTimeMillis();
         temporarySnapshotHistogram.reset();
         boolean wasInterrupted = false;
         for (LeftRightChunk chunk : chunks) {
