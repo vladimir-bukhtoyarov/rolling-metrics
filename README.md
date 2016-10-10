@@ -14,7 +14,7 @@ The library contains collection of advanced metrics which missed in the original
 ## Get Metrics-Core-HDR library
 
 #### By direct link
-[Download compiled jar, sources, javadocs](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/releases/tag/1.4.0)
+[Download compiled jar, sources, javadocs](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/releases/tag/1.5.0)
 
 #### You can build Metrics-Core-HDR from sources
 
@@ -43,7 +43,7 @@ Then include Metrics-Core-HDR as dependency to your `pom.xml`
 <dependency>
     <groupId>com.github.metrics-core-addons</groupId>
     <artifactId>metrics-core-hdr</artifactId>
-    <version>1.4.0</version>
+    <version>1.5.0</version>
 </dependency>
 ```
 
