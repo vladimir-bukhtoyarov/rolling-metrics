@@ -27,14 +27,14 @@ import java.util.function.Supplier;
 public interface QueryTop {
 
     /**
-     * Registers latency of query.
+     * Registers latency of query. To avoid unnecessary memory allocation for Strings the descriptionSupplier will be called only if latency is greater then "SlowQueryThreshold"
+     * and latency is greater than any other query in the top.
      *
-     * @param latencyTime duration
-     * @param latencyUnit duration unit
-     * @param lazySupplierForUserFriendlyQueryRepresentation supplier of query description which called if latency is greater then "SlowQueryThreshold"
-     *                                                       and latency is greater than any other query in the top.
+     * @param latencyTime query duration
+     * @param latencyUnit resolution of latency time
+     * @param descriptionSupplier lazy supplier for query description
      */
-    void update(long latencyTime, TimeUnit latencyUnit, Supplier<String> lazySupplierForUserFriendlyQueryRepresentation);
+    void update(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier);
 
     /**
      * Return the top of slow queries. The key - is duration, the value is a query(for example SQL or URL)
@@ -53,21 +53,5 @@ public interface QueryTop {
      * @return slow queries threshold
      */
     long getSlowQueryThresholdNanos();
-
-    interface DescriptionSupplier {
-
-        String getDescription(long latencyTime, TimeUnit latencyUnit);
-
-    }
-
-    interface LatencyWithDescription {
-
-        String getQueryDescription();
-
-        long getLatencyTime();
-
-        TimeUnit getLatencyUnit();
-
-    }
 
 }
