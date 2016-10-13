@@ -54,13 +54,11 @@ class ConcurrentQueryTop implements QueryTop {
         }
         this.slowQueryThresholdNanos = slowQueryThreshold.toNanos();
 
-        sequence = new AtomicLong();
+        this.sequence = new AtomicLong();
 
-        top = new ConcurrentSkipListMap<>();
-        for (int i = 0; i < size; i++) {
-            PositionKey key = new PositionKey(-1, sequence.incrementAndGet());
-            top.put(key, FAKE_QUERY);
-        }
+        this.top = new ConcurrentSkipListMap<>();
+
+        initByFakeValues();
     }
 
     @Override
@@ -105,12 +103,24 @@ class ConcurrentQueryTop implements QueryTop {
         return slowQueryThresholdNanos;
     }
 
+    void reset() {
+        top.clear();
+        initByFakeValues();
+    }
+
     private static String combineDescriptionWithLatency(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
         String queryDescription = descriptionSupplier.get();
         if (queryDescription == null) {
             throw new NullPointerException("Query queryDescription should not be null");
         }
         return "" + latencyTime + " " + latencyUnit.toString() + " was spent to execute: " + queryDescription;
+    }
+
+    private void initByFakeValues() {
+        for (int i = 0; i < size; i++) {
+            PositionKey key = new PositionKey(-1, sequence.incrementAndGet());
+            top.put(key, FAKE_QUERY);
+        }
     }
 
     private static class PositionKey implements Comparable<PositionKey> {
