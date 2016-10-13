@@ -16,6 +16,7 @@
 
 package com.github.metricscore.hdr.top;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -25,6 +26,8 @@ import java.util.function.Supplier;
  *
  */
 public interface QueryTop {
+
+    LatencyWithDescription FAKE_QUERY = new LatencyWithDescription(0, TimeUnit.SECONDS, "Fake query");
 
     /**
      * Registers latency of query. To avoid unnecessary memory allocation for Strings the descriptionSupplier will be called only if latency is greater then "SlowQueryThreshold"
@@ -37,9 +40,14 @@ public interface QueryTop {
     void update(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier);
 
     /**
-     * Return the top of slow queries. The key - is duration, the value is a query(for example SQL or URL)
+     * Return the top of queries in descend order, slowest query will be at first place.
+     * The resulted list has always size which equals to {@link #getSize()},
+     * if count of tracked queries is less than {@link #getSize()} then tail of resulted list will be populated by {@link #FAKE_QUERY}
+     *
+     * descending order
+     * ascending order
      */
-    List<LatencyWithDescription> getTop();
+    List<LatencyWithDescription> getDescendingRaiting();
 
     /**
      * @return the maximum count of queries in the top.
@@ -53,5 +61,24 @@ public interface QueryTop {
      * @return slow queries threshold
      */
     long getSlowQueryThresholdNanos();
+
+    static QueryTop createUniformTop(int size, Duration slowQueryThreshold) {
+        return new ConcurrentQueryTop(size, slowQueryThreshold);
+    }
+
+    static QueryTop createResetAtSnapshotTop(int size, Duration slowQueryThreshold) {
+        // TODO
+        throw new UnsupportedOperationException();
+    }
+
+    static QueryTop createResetPeriodicallyTop(int size, Duration slowQueryThreshold, Duration resetInterval) {
+        // TODO
+        throw new UnsupportedOperationException();
+    }
+
+    static QueryTop createResetByChunkTop(int size, Duration slowQueryThreshold, Duration rollingWindow, int numberChunks) {
+        // TODO
+        throw new UnsupportedOperationException();
+    }
 
 }
