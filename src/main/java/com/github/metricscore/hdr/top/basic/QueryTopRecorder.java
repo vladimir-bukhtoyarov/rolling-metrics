@@ -28,8 +28,8 @@ public class QueryTopRecorder {
 
     private final WriterReaderPhaser recordingPhaser = new WriterReaderPhaser();
 
-    private volatile ConcurrentQueryTop active;
-    private ConcurrentQueryTop inactive;
+    private volatile ComposableQueryTop active;
+    private ComposableQueryTop inactive;
 
     public QueryTopRecorder(int size, Duration slowQueryThreshold) {
         active = new ConcurrentQueryTop(size, slowQueryThreshold);
@@ -45,21 +45,18 @@ public class QueryTopRecorder {
         }
     }
 
-    public synchronized ConcurrentQueryTop getIntervalQueryTop() {
+    public synchronized ComposableQueryTop getIntervalQueryTop() {
         return getIntervalQueryTop(null);
     }
 
-    public synchronized ConcurrentQueryTop getIntervalQueryTop(ConcurrentQueryTop queryTopToRecycle) {
+    public synchronized ComposableQueryTop getIntervalQueryTop(ComposableQueryTop queryTopToRecycle) {
         inactive = queryTopToRecycle;
         performIntervalSample();
-        ConcurrentQueryTop sampledQueryTop = inactive;
+        ComposableQueryTop sampledQueryTop = inactive;
         inactive = null; // Once we expose the sample, we can't reuse it internally until it is recycled
         return sampledQueryTop;
     }
 
-    /**
-     * Reset any value counts accumulated thus far.
-     */
     public synchronized void reset() {
         // the currently inactive query-top is reset each time we flip. So flipping twice resets both:
         performIntervalSample();
@@ -72,13 +69,13 @@ public class QueryTopRecorder {
 
             // Make sure we have an inactive version to flip in:
             if (inactive == null) {
-                inactive = new ConcurrentQueryTop(active.getSize(), Duration.ofNanos(active.getSlowQueryThresholdNanos()));
+                inactive = ComposableQueryTop.create(active.getSize(), Duration.ofNanos(active.getSlowQueryThresholdNanos()));
             } else {
                 inactive.reset();
             }
 
             // Swap active and inactive top:
-            final ConcurrentQueryTop temp = inactive;
+            final ComposableQueryTop temp = inactive;
             inactive = active;
             active = temp;
 

@@ -16,7 +16,9 @@
 
 package com.github.metricscore.hdr.top;
 
+import com.github.metricscore.hdr.Clock;
 import com.github.metricscore.hdr.top.basic.BasicQueryTop;
+import com.github.metricscore.hdr.top.basic.ComposableQueryTop;
 
 import java.time.Duration;
 import java.util.List;
@@ -29,7 +31,7 @@ import java.util.function.Supplier;
  */
 public interface QueryTop {
 
-    LatencyWithDescription FAKE_QUERY = new LatencyWithDescription(0, TimeUnit.SECONDS, "Fake query");
+    LatencyWithDescription FAKE_QUERY = new LatencyWithDescription(0, TimeUnit.SECONDS, "");
 
     /**
      * Registers latency of query. To avoid unnecessary memory allocation for Strings the descriptionSupplier will be called only if latency is greater then "SlowQueryThreshold"
@@ -65,17 +67,15 @@ public interface QueryTop {
     long getSlowQueryThresholdNanos();
 
     static QueryTop createUniformTop(int size, Duration slowQueryThreshold) {
-        return BasicQueryTop.create(size, slowQueryThreshold);
+        return ComposableQueryTop.create(size, slowQueryThreshold);
     }
 
-    static QueryTop createResetAtSnapshotTop(int size, Duration slowQueryThreshold) {
-        // TODO
-        throw new UnsupportedOperationException();
+    static QueryTop createResetOnSnapshotTop(int size, Duration slowQueryThreshold) {
+        return new ResetOnSnapshotQueryTop(size, slowQueryThreshold);
     }
 
     static QueryTop createResetPeriodicallyTop(int size, Duration slowQueryThreshold, Duration resetInterval) {
-        // TODO
-        throw new UnsupportedOperationException();
+        return new ResetPeriodicalyQueryTop(size, slowQueryThreshold, resetInterval, Clock.defaultClock());
     }
 
     static QueryTop createResetByChunkTop(int size, Duration slowQueryThreshold, Duration rollingWindow, int numberChunks) {

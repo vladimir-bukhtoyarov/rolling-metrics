@@ -32,7 +32,7 @@ import java.util.function.Supplier;
  * so if weakly consistency is not enough then clients of this class should provide synchronization between reader and writers by itself.
  *
  */
-class ConcurrentQueryTop extends BasicQueryTop {
+class ConcurrentQueryTop extends BasicQueryTop implements ComposableQueryTop<ConcurrentQueryTop> {
 
     private final ConcurrentSkipListMap<Long, LatencyWithDescription> top;
 
@@ -50,9 +50,7 @@ class ConcurrentQueryTop extends BasicQueryTop {
         }
         String queryDescription = combineDescriptionWithLatency(latencyTime, latencyUnit, descriptionSupplier);
         LatencyWithDescription position = new LatencyWithDescription(latencyTime, latencyUnit, queryDescription);
-        top.put(latencyTime, position);
-
-        top.pollFirstEntry();
+        addLatency(latencyTime, position);
     }
 
     @Override
@@ -71,6 +69,22 @@ class ConcurrentQueryTop extends BasicQueryTop {
     public void reset() {
         top.clear();
         initByFakeValues();
+    }
+
+    @Override
+    public void add(ConcurrentQueryTop other) {
+        for (LatencyWithDescription otherLatency : other.top.values()) {
+            long latencyInNanoseconds = otherLatency.getLatencyInNanoseconds();
+            if (top.firstKey() >= latencyInNanoseconds) {
+                continue;
+            }
+            addLatency(latencyInNanoseconds, otherLatency);
+        }
+    }
+
+    private void addLatency(long latencyTime, LatencyWithDescription position) {
+        top.put(latencyTime, position);
+        top.pollFirstEntry();
     }
 
     private void initByFakeValues() {

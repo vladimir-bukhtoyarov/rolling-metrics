@@ -61,13 +61,6 @@ public abstract class BasicQueryTop implements QueryTop {
         return slowQueryThresholdNanos;
     }
 
-    public static QueryTop create(int size, Duration slowQueryThreshold) {
-        if (size == 1) {
-            return new SingletonTop(slowQueryThreshold);
-        }
-        return new ConcurrentQueryTop(size, slowQueryThreshold);
-    }
-
     protected abstract void updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos);
 
     static String combineDescriptionWithLatency(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
@@ -78,5 +71,4 @@ public abstract class BasicQueryTop implements QueryTop {
         return "" + latencyTime + " " + latencyUnit.toString() + " was spent to execute: " + queryDescription;
     }
 
-    public abstract void reset();
 }

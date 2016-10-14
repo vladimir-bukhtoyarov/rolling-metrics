@@ -18,6 +18,7 @@ package com.github.metricscore.hdr.top;
 
 
 import com.github.metricscore.hdr.top.basic.BasicQueryTop;
+import com.github.metricscore.hdr.top.basic.ComposableQueryTop;
 import com.github.metricscore.hdr.top.basic.QueryTopRecorder;
 
 import java.time.Duration;
@@ -31,7 +32,7 @@ import java.util.function.Supplier;
 public class ResetOnSnapshotQueryTop extends BasicQueryTop {
 
     private final QueryTopRecorder recorder;
-    private QueryTop intervalQueryTop;
+    private ComposableQueryTop intervalQueryTop;
 
     ResetOnSnapshotQueryTop(int size, Duration slowQueryThreshold) {
         super(size, slowQueryThreshold);
@@ -40,18 +41,13 @@ public class ResetOnSnapshotQueryTop extends BasicQueryTop {
 
     @Override
     synchronized public List<LatencyWithDescription> getDescendingRaiting() {
-        intervalQueryTop = recorder.getIntervalQueryTop();
+        intervalQueryTop = recorder.getIntervalQueryTop(intervalQueryTop);
         return intervalQueryTop.getDescendingRaiting();
     }
 
     @Override
     protected void updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos) {
         recorder.update(latencyTime, latencyUnit, descriptionSupplier);
-    }
-
-    @Override
-    public void reset() {
-        recorder.reset();
     }
 
 }
