@@ -48,9 +48,7 @@ public class ResetPeriodicallyAccumulator implements Accumulator {
         this.resetIntervalMillis = resetIntervalMillis;
         this.clock = clock;
         this.recorder = recorder;
-        synchronized (this) {
-            this.intervalHistogram = recorder.getIntervalHistogram();
-        }
+        this.intervalHistogram = recorder.getIntervalHistogram();
         this.uniformHistogram = intervalHistogram.copy();
         this.nextResetTimeMillisRef = new AtomicLong(clock.currentTimeMillis() + resetIntervalMillis);
     }

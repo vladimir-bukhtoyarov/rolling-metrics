@@ -33,9 +33,7 @@ public class UniformAccumulator implements Accumulator {
 
     public UniformAccumulator(Recorder recorder) {
         this.recorder = recorder;
-        synchronized (this) {
-            this.intervalHistogram = recorder.getIntervalHistogram();
-        }
+        this.intervalHistogram = recorder.getIntervalHistogram();
         this.uniformHistogram = intervalHistogram.copy();
     }
 

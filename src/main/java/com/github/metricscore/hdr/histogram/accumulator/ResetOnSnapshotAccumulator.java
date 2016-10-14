@@ -31,9 +31,7 @@ public class ResetOnSnapshotAccumulator implements Accumulator {
 
     public ResetOnSnapshotAccumulator(Recorder recorder) {
         this.recorder = recorder;
-        synchronized (this) {
-            this.intervalHistogram = recorder.getIntervalHistogram();
-        }
+        this.intervalHistogram = recorder.getIntervalHistogram();
     }
 
     @Override
