@@ -14,7 +14,8 @@
  *     limitations under the License.
  */
 
-package com.github.metricscore.hdr.top;
+package com.github.metricscore.hdr.top.basic;
+import com.github.metricscore.hdr.top.LatencyWithDescription;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -31,7 +32,7 @@ import java.util.function.Supplier;
  * so if weakly consistency is not enough then clients of this class should provide synchronization between reader and writers by itself.
  *
  */
-class ConcurrentQueryTop extends AbstractSizeQueryTop {
+class ConcurrentQueryTop extends BasicQueryTop {
 
     private final ConcurrentSkipListMap<Long, LatencyWithDescription> top;
 
@@ -66,7 +67,8 @@ class ConcurrentQueryTop extends AbstractSizeQueryTop {
         return descendingTop;
     }
 
-    void reset() {
+    @Override
+    public void reset() {
         top.clear();
         initByFakeValues();
     }

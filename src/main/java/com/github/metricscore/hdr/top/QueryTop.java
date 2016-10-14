@@ -16,6 +16,8 @@
 
 package com.github.metricscore.hdr.top;
 
+import com.github.metricscore.hdr.top.basic.BasicQueryTop;
+
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -63,10 +65,7 @@ public interface QueryTop {
     long getSlowQueryThresholdNanos();
 
     static QueryTop createUniformTop(int size, Duration slowQueryThreshold) {
-        if (size == 1) {
-            return new SingletonTop(slowQueryThreshold);
-        }
-        return new ConcurrentQueryTop(size, slowQueryThreshold);
+        return BasicQueryTop.create(size, slowQueryThreshold);
     }
 
     static QueryTop createResetAtSnapshotTop(int size, Duration slowQueryThreshold) {

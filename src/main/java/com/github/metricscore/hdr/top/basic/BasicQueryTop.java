@@ -14,7 +14,9 @@
  *     limitations under the License.
  */
 
-package com.github.metricscore.hdr.top;
+package com.github.metricscore.hdr.top.basic;
+
+import com.github.metricscore.hdr.top.QueryTop;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -23,12 +25,12 @@ import java.util.function.Supplier;
 /**
  *  Is not a part of public API, this class just used as building block for other QueryTop implementations.
  */
-abstract class AbstractSizeQueryTop implements QueryTop {
+public abstract class BasicQueryTop implements QueryTop {
 
     protected final int size;
     protected final long slowQueryThresholdNanos;
 
-    AbstractSizeQueryTop(int size, Duration slowQueryThreshold) {
+    protected BasicQueryTop(int size, Duration slowQueryThreshold) {
         if (size <= 0) {
             throw new IllegalArgumentException("size should be >0");
         }
@@ -59,6 +61,13 @@ abstract class AbstractSizeQueryTop implements QueryTop {
         return slowQueryThresholdNanos;
     }
 
+    public static QueryTop create(int size, Duration slowQueryThreshold) {
+        if (size == 1) {
+            return new SingletonTop(slowQueryThreshold);
+        }
+        return new ConcurrentQueryTop(size, slowQueryThreshold);
+    }
+
     protected abstract void updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos);
 
     static String combineDescriptionWithLatency(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
@@ -69,4 +78,5 @@ abstract class AbstractSizeQueryTop implements QueryTop {
         return "" + latencyTime + " " + latencyUnit.toString() + " was spent to execute: " + queryDescription;
     }
 
+    public abstract void reset();
 }

@@ -54,7 +54,10 @@ public class LatencyWithDescription {
         return latencyUnit;
     }
 
-    long getLatencyInNanoseconds() {
+    /**
+     * @return latency of query in nanoseconds
+     */
+    public long getLatencyInNanoseconds() {
         return latencyUnit.toNanos(latencyTime);
     }
 

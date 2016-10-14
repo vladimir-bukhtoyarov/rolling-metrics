@@ -14,14 +14,13 @@
  *     limitations under the License.
  */
 
-package com.github.metricscore.hdr.top;
+package com.github.metricscore.hdr.top.basic;
+
+import com.github.metricscore.hdr.top.LatencyWithDescription;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -32,7 +31,7 @@ import java.util.function.Supplier;
  * Special implementation for top with size 1
  *
  */
-class SingletonTop extends AbstractSizeQueryTop {
+class SingletonTop extends BasicQueryTop {
 
     private final AtomicReference<LatencyWithDescription> max;
 
@@ -64,7 +63,8 @@ class SingletonTop extends AbstractSizeQueryTop {
         return Collections.singletonList(max.get());
     }
 
-    void reset() {
+    @Override
+    public void reset() {
         max.set(FAKE_QUERY);
     }
 

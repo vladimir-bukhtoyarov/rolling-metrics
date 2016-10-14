@@ -14,8 +14,7 @@
  *     limitations under the License.
  */
 
-package com.github.metricscore.hdr.top;
-
+package com.github.metricscore.hdr.top.basic;
 import org.HdrHistogram.WriterReaderPhaser;
 
 import java.time.Duration;
@@ -25,14 +24,14 @@ import java.util.function.Supplier;
 /**
  * Is not a part of public API, this class just used as building block for different QueryTop implementations.
  */
-class QueryTopRecorder {
+public class QueryTopRecorder {
 
     private final WriterReaderPhaser recordingPhaser = new WriterReaderPhaser();
 
     private volatile ConcurrentQueryTop active;
     private ConcurrentQueryTop inactive;
 
-    QueryTopRecorder(int size, Duration slowQueryThreshold) {
+    public QueryTopRecorder(int size, Duration slowQueryThreshold) {
         active = new ConcurrentQueryTop(size, slowQueryThreshold);
         inactive = new ConcurrentQueryTop(size, slowQueryThreshold);
     }
@@ -46,11 +45,11 @@ class QueryTopRecorder {
         }
     }
 
-    public synchronized ConcurrentQueryTop getIntervalTop() {
-        return getIntervalTop(null);
+    public synchronized ConcurrentQueryTop getIntervalQueryTop() {
+        return getIntervalQueryTop(null);
     }
 
-    public synchronized ConcurrentQueryTop getIntervalTop(ConcurrentQueryTop queryTopToRecycle) {
+    public synchronized ConcurrentQueryTop getIntervalQueryTop(ConcurrentQueryTop queryTopToRecycle) {
         inactive = queryTopToRecycle;
         performIntervalSample();
         ConcurrentQueryTop sampledQueryTop = inactive;
