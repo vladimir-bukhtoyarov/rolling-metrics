@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 /**
@@ -32,51 +31,25 @@ import java.util.function.Supplier;
  * so if weakly consistency is not enough then clients of this class should provide synchronization between reader and writers by itself.
  *
  */
-class ConcurrentQueryTop implements QueryTop {
+class ConcurrentQueryTop extends AbstractSizeQueryTop {
 
-    private final int size;
-    private final long slowQueryThresholdNanos;
-    private final ConcurrentSkipListMap<PositionKey, LatencyWithDescription> top;
-
-    /*
-      Auxiliary sequence used in comparision of PositionKey
-      which provide guarantee that in case of equal latency fresh measures will have greater weight than older measures.
-     */
-    private final AtomicLong sequence;
+    private final ConcurrentSkipListMap<Long, LatencyWithDescription> top;
 
     ConcurrentQueryTop(int size, Duration slowQueryThreshold) {
-        if (size <= 0) {
-            throw new IllegalArgumentException("size should be >0");
-        }
-        this.size = size;
-        if (slowQueryThreshold.isNegative()) {
-            throw new IllegalArgumentException("slowQueryThreshold should be positive");
-        }
-        this.slowQueryThresholdNanos = slowQueryThreshold.toNanos();
-
-        this.sequence = new AtomicLong();
-
+        super(size, slowQueryThreshold);
         this.top = new ConcurrentSkipListMap<>();
-
         initByFakeValues();
     }
 
     @Override
-    public void update(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
-        long latencyNanos = latencyUnit.toNanos(latencyTime);
-        if (latencyNanos < slowQueryThresholdNanos) {
-            // the measure should be skipped because it is lesser then threshold
-            return;
-        }
-        if (top.firstKey().nanoseconds > latencyTime) {
+    protected void updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos) {
+        if (top.firstKey() >= latencyTime) {
             // the measure should be skipped because it is lesser then smallest which already tracked in the top.
             return;
         }
-
         String queryDescription = combineDescriptionWithLatency(latencyTime, latencyUnit, descriptionSupplier);
-        PositionKey positionKey = new PositionKey(latencyNanos, sequence.incrementAndGet());
         LatencyWithDescription position = new LatencyWithDescription(latencyTime, latencyUnit, queryDescription);
-        top.put(positionKey, position);
+        top.put(latencyTime, position);
 
         top.pollFirstEntry();
     }
@@ -84,7 +57,7 @@ class ConcurrentQueryTop implements QueryTop {
     @Override
     public List<LatencyWithDescription> getDescendingRaiting() {
         List<LatencyWithDescription> descendingTop = new ArrayList<>(size);
-        for (Map.Entry<PositionKey, LatencyWithDescription> entry : top.descendingMap().entrySet()) {
+        for (Map.Entry<Long, LatencyWithDescription> entry : top.descendingMap().entrySet()) {
             descendingTop.add(entry.getValue());
             if (descendingTop.size() == size) {
                 return descendingTop;
@@ -93,52 +66,14 @@ class ConcurrentQueryTop implements QueryTop {
         return descendingTop;
     }
 
-    @Override
-    public int getSize() {
-        return size;
-    }
-
-    @Override
-    public long getSlowQueryThresholdNanos() {
-        return slowQueryThresholdNanos;
-    }
-
     void reset() {
         top.clear();
         initByFakeValues();
     }
 
-    private static String combineDescriptionWithLatency(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
-        String queryDescription = descriptionSupplier.get();
-        if (queryDescription == null) {
-            throw new NullPointerException("Query queryDescription should not be null");
-        }
-        return "" + latencyTime + " " + latencyUnit.toString() + " was spent to execute: " + queryDescription;
-    }
-
     private void initByFakeValues() {
-        for (int i = 0; i < size; i++) {
-            PositionKey key = new PositionKey(-1, sequence.incrementAndGet());
-            top.put(key, FAKE_QUERY);
-        }
-    }
-
-    private static class PositionKey implements Comparable<PositionKey> {
-
-        private final long nanoseconds;
-        private final long sequence;
-
-        PositionKey(long nanoseconds, long sequence) {
-            this.nanoseconds = nanoseconds;
-            this.sequence = sequence;
-        }
-
-        @Override
-        public int compareTo(PositionKey other) {
-            if (nanoseconds != other.nanoseconds) {
-                return Long.compare(nanoseconds, other.nanoseconds);
-            }
-            return Long.compare(sequence, other.sequence);
+        for (int i = 1; i <= size; i++) {
+            top.put((long) -i, FAKE_QUERY);
         }
     }
 

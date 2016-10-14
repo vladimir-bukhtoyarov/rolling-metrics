@@ -63,6 +63,9 @@ public interface QueryTop {
     long getSlowQueryThresholdNanos();
 
     static QueryTop createUniformTop(int size, Duration slowQueryThreshold) {
+        if (size == 1) {
+            return new SingletonTop(slowQueryThreshold);
+        }
         return new ConcurrentQueryTop(size, slowQueryThreshold);
     }
 
