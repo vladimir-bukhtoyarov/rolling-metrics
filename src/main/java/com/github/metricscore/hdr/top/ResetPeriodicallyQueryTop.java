@@ -18,12 +18,9 @@ package com.github.metricscore.hdr.top;
 
 
 import com.github.metricscore.hdr.Clock;
-import com.github.metricscore.hdr.histogram.util.EmptySnapshot;
-import com.github.metricscore.hdr.hitratio.HitRatioUtil;
 import com.github.metricscore.hdr.top.basic.BasicQueryTop;
 import com.github.metricscore.hdr.top.basic.ComposableQueryTop;
 import com.github.metricscore.hdr.top.basic.QueryTopRecorder;
-import org.HdrHistogram.Histogram;
 
 import java.time.Duration;
 import java.util.List;
@@ -33,7 +30,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 
-public class ResetPeriodicalyQueryTop extends BasicQueryTop {
+class ResetPeriodicallyQueryTop extends BasicQueryTop {
 
     static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
 
@@ -45,7 +42,7 @@ public class ResetPeriodicalyQueryTop extends BasicQueryTop {
 
     private ComposableQueryTop intervalQueryTop;
 
-    public ResetPeriodicalyQueryTop(int size, Duration slowQueryThreshold, Duration resetInterval, Clock clock) {
+    ResetPeriodicallyQueryTop(int size, Duration slowQueryThreshold, Duration resetInterval, Clock clock) {
         super(size, slowQueryThreshold);
         this.resetIntervalMillis = resetInterval.toMillis();
         if (resetInterval.toMillis() < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
@@ -60,11 +57,11 @@ public class ResetPeriodicalyQueryTop extends BasicQueryTop {
     }
 
     @Override
-    synchronized public List<LatencyWithDescription> getDescendingRaiting() {
+    synchronized public List<LatencyWithDescription> getDescendingRating() {
         resetIfNeeded();
         intervalQueryTop = recorder.getIntervalQueryTop();
         uniformQueryTop.add(intervalQueryTop);
-        return uniformQueryTop.getDescendingRaiting();
+        return uniformQueryTop.getDescendingRating();
     }
 
     @Override

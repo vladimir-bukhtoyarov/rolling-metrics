@@ -100,3 +100,4 @@ local.properties
 .texlipse
 
 
+/src/main/benchmark/com/github/metricscore/hdr/histogram/accumulator/OtherHistogramsBenchmarks.java

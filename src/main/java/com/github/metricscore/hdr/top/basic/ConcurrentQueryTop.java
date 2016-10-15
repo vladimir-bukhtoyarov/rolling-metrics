@@ -54,7 +54,7 @@ class ConcurrentQueryTop extends BasicQueryTop implements ComposableQueryTop<Con
     }
 
     @Override
-    public List<LatencyWithDescription> getDescendingRaiting() {
+    public List<LatencyWithDescription> getDescendingRating() {
         List<LatencyWithDescription> descendingTop = new ArrayList<>(size);
         for (Map.Entry<Long, LatencyWithDescription> entry : top.descendingMap().entrySet()) {
             descendingTop.add(entry.getValue());

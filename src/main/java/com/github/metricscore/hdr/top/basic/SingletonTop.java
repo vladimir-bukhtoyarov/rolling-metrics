@@ -31,13 +31,14 @@ import java.util.function.Supplier;
  * Special implementation for top with size 1
  *
  */
-class SingletonTop extends BasicQueryTop implements ComposableQueryTop<SingletonTop> {
+public class SingletonTop extends BasicQueryTop implements ComposableQueryTop<SingletonTop> {
 
     private final AtomicReference<LatencyWithDescription> max;
 
-    SingletonTop(Duration slowQueryThreshold) {
+    public SingletonTop(Duration slowQueryThreshold) {
         super(1, slowQueryThreshold);
         this.max = new AtomicReference<>();
+        reset();
     }
 
     @Override
@@ -59,7 +60,7 @@ class SingletonTop extends BasicQueryTop implements ComposableQueryTop<Singleton
     }
 
     @Override
-    public List<LatencyWithDescription> getDescendingRaiting() {
+    public List<LatencyWithDescription> getDescendingRating() {
         return Collections.singletonList(max.get());
     }
 

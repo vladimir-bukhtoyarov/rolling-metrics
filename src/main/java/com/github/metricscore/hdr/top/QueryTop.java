@@ -17,8 +17,7 @@
 package com.github.metricscore.hdr.top;
 
 import com.github.metricscore.hdr.Clock;
-import com.github.metricscore.hdr.top.basic.BasicQueryTop;
-import com.github.metricscore.hdr.top.basic.ComposableQueryTop;
+import com.github.metricscore.hdr.top.basic.SingletonTop;
 
 import java.time.Duration;
 import java.util.List;
@@ -51,7 +50,7 @@ public interface QueryTop {
      * descending order
      * ascending order
      */
-    List<LatencyWithDescription> getDescendingRaiting();
+    List<LatencyWithDescription> getDescendingRating();
 
     /**
      * @return the maximum count of queries in the top.
@@ -67,7 +66,10 @@ public interface QueryTop {
     long getSlowQueryThresholdNanos();
 
     static QueryTop createUniformTop(int size, Duration slowQueryThreshold) {
-        return ComposableQueryTop.create(size, slowQueryThreshold);
+        if (size == 1) {
+            return new SingletonTop(slowQueryThreshold);
+        }
+        return new UniformQueryTop(size, slowQueryThreshold);
     }
 
     static QueryTop createResetOnSnapshotTop(int size, Duration slowQueryThreshold) {
@@ -75,7 +77,7 @@ public interface QueryTop {
     }
 
     static QueryTop createResetPeriodicallyTop(int size, Duration slowQueryThreshold, Duration resetInterval) {
-        return new ResetPeriodicalyQueryTop(size, slowQueryThreshold, resetInterval, Clock.defaultClock());
+        return new ResetPeriodicallyQueryTop(size, slowQueryThreshold, resetInterval, Clock.defaultClock());
     }
 
     static QueryTop createResetByChunkTop(int size, Duration slowQueryThreshold, Duration rollingWindow, int numberChunks) {
