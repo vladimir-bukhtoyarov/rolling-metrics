@@ -17,7 +17,7 @@
 
 package com.github.metricscore.hdr.counter;
 
-import com.github.metricscore.hdr.Clock;
+import com.github.metricscore.hdr.util.Clock;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;

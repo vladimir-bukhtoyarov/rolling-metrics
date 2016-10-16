@@ -17,7 +17,7 @@
 
 package com.github.metricscore.hdr.histogram;
 
-import com.github.metricscore.hdr.Clock;
+import com.github.metricscore.hdr.util.Clock;
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
 

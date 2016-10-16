@@ -17,7 +17,7 @@
 
 package com.github.metricscore.hdr.counter;
 
-import com.github.metricscore.hdr.Clock;
+import com.github.metricscore.hdr.util.Clock;
 import com.github.metricscore.hdr.histogram.util.Printer;
 
 import java.time.Duration;

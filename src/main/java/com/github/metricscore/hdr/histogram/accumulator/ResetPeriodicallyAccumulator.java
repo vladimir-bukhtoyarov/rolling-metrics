@@ -17,10 +17,11 @@
 
 package com.github.metricscore.hdr.histogram.accumulator;
 
-import com.github.metricscore.hdr.Clock;
+
 import com.codahale.metrics.Snapshot;
 import com.github.metricscore.hdr.histogram.util.EmptySnapshot;
 import com.github.metricscore.hdr.histogram.util.Printer;
+import com.github.metricscore.hdr.util.Clock;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 

@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-package com.github.metricscore.hdr;
+package com.github.metricscore.hdr.util;
 
 import java.util.concurrent.atomic.AtomicLong;
 

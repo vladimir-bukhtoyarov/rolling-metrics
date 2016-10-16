@@ -20,7 +20,7 @@ package com.github.metricscore.hdr.histogram.accumulator;
 
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
-import com.github.metricscore.hdr.Clock;
+import com.github.metricscore.hdr.util.Clock;
 import com.github.metricscore.hdr.histogram.HdrBuilder;
 import org.junit.Test;
 

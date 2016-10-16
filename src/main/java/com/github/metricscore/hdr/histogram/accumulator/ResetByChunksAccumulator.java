@@ -17,7 +17,7 @@
 
 package com.github.metricscore.hdr.histogram.accumulator;
 
-import com.github.metricscore.hdr.Clock;
+import com.github.metricscore.hdr.util.Clock;
 import com.codahale.metrics.Snapshot;
 import com.github.metricscore.hdr.histogram.util.Printer;
 import org.HdrHistogram.Histogram;

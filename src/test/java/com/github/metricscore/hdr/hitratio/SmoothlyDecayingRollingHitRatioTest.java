@@ -17,7 +17,7 @@
 
 package com.github.metricscore.hdr.hitratio;
 
-import com.github.metricscore.hdr.Clock;
+import com.github.metricscore.hdr.util.Clock;
 import org.junit.Test;
 
 import java.time.Duration;
