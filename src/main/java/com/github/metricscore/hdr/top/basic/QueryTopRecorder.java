@@ -16,8 +16,6 @@
 
 package com.github.metricscore.hdr.top.basic;
 import org.HdrHistogram.WriterReaderPhaser;
-
-import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -31,9 +29,9 @@ public class QueryTopRecorder {
     private volatile ComposableQueryTop active;
     private ComposableQueryTop inactive;
 
-    public QueryTopRecorder(int size, Duration slowQueryThreshold) {
-        active = new ConcurrentQueryTop(size, slowQueryThreshold);
-        inactive = new ConcurrentQueryTop(size, slowQueryThreshold);
+    public QueryTopRecorder(ComposableQueryTop active) {
+        this.active = active;
+        this.inactive = active.createEmptyCopy();
     }
 
     public void update(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
@@ -69,7 +67,7 @@ public class QueryTopRecorder {
 
             // Make sure we have an inactive version to flip in:
             if (inactive == null) {
-                inactive = ComposableQueryTop.create(active.getSize(), Duration.ofNanos(active.getSlowQueryThresholdNanos()));
+                inactive = active.createEmptyCopy();
             } else {
                 inactive.reset();
             }

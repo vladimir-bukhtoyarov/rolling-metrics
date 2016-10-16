@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 /**
@@ -32,64 +33,110 @@ import java.util.function.Supplier;
  * so if weakly consistency is not enough then clients of this class should provide synchronization between reader and writers by itself.
  *
  */
-class ConcurrentQueryTop extends BasicQueryTop implements ComposableQueryTop<ConcurrentQueryTop> {
+public class ConcurrentQueryTop extends BasicQueryTop implements ComposableQueryTop<ConcurrentQueryTop> {
 
-    private final ConcurrentSkipListMap<Long, LatencyWithDescription> top;
+    private final ConcurrentSkipListMap<PositionKey, LatencyWithDescription> top;
 
-    ConcurrentQueryTop(int size, Duration slowQueryThreshold) {
-        super(size, slowQueryThreshold);
+    private final AtomicLong phaseSequence = new AtomicLong();
+
+    public ConcurrentQueryTop(int size, Duration slowQueryThreshold) {
+        this(size, slowQueryThreshold.toNanos());
+    }
+
+    public ConcurrentQueryTop(int size, long slowQueryThresholdNanos) {
+        super(size, slowQueryThresholdNanos);
         this.top = new ConcurrentSkipListMap<>();
         initByFakeValues();
     }
 
     @Override
     protected void updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos) {
-        if (top.firstKey() >= latencyTime) {
+        PositionKey firstKey = top.firstKey();
+        long currentPhase = phaseSequence.get();
+        if (firstKey.latencyNanos >= latencyTime && firstKey.phase == currentPhase) {
             // the measure should be skipped because it is lesser then smallest which already tracked in the top.
             return;
         }
         String queryDescription = combineDescriptionWithLatency(latencyTime, latencyUnit, descriptionSupplier);
         LatencyWithDescription position = new LatencyWithDescription(latencyTime, latencyUnit, queryDescription);
-        addLatency(latencyTime, position);
+        addLatency(currentPhase, latencyTime, position);
     }
 
     @Override
     public List<LatencyWithDescription> getDescendingRating() {
         List<LatencyWithDescription> descendingTop = new ArrayList<>(size);
-        for (Map.Entry<Long, LatencyWithDescription> entry : top.descendingMap().entrySet()) {
-            descendingTop.add(entry.getValue());
-            if (descendingTop.size() == size) {
-                return descendingTop;
-            }
+        long currentPhase = phaseSequence.get();
+        for (Map.Entry<PositionKey, LatencyWithDescription> entry : top.descendingMap().entrySet()) {
+            PositionKey key = entry.getKey();
+            LatencyWithDescription position = key.phase < currentPhase? FAKE_QUERY: entry.getValue();
+            descendingTop.add(position);
         }
         return descendingTop;
     }
 
     @Override
     public void reset() {
-        top.clear();
-        initByFakeValues();
+        // increasing phase will invalidate all recorded values for rating calculation,
+        // so touching ConcurrentSkipListMap is not needed
+        long phase = phaseSequence.incrementAndGet();
+
+        if (phase < 0) {
+            // but if case of overflow it is need to hardly reset sequence and ConcurrentSkipListMap
+            phaseSequence.set(0);
+            top.clear();
+            initByFakeValues();
+        }
     }
 
     @Override
     public void add(ConcurrentQueryTop other) {
-        for (LatencyWithDescription otherLatency : other.top.values()) {
-            long latencyInNanoseconds = otherLatency.getLatencyInNanoseconds();
-            if (top.firstKey() >= latencyInNanoseconds) {
-                continue;
+        long otherPhase = other.phaseSequence.get();
+        long currentPhase = this.phaseSequence.get();
+        for(Map.Entry<PositionKey, LatencyWithDescription> otherEntry: other.top.descendingMap().entrySet()) {
+            PositionKey otherKey = otherEntry.getKey();
+            if (otherKey.phase < otherPhase) {
+                return;
             }
-            addLatency(latencyInNanoseconds, otherLatency);
+            PositionKey firstKey = top.firstKey();
+            if (firstKey.latencyNanos >= otherKey.latencyNanos && firstKey.phase == currentPhase) {
+                return;
+            }
+            addLatency(currentPhase, otherKey.latencyNanos, otherEntry.getValue());
         }
     }
 
-    private void addLatency(long latencyTime, LatencyWithDescription position) {
-        top.put(latencyTime, position);
+    @Override
+    public ConcurrentQueryTop createEmptyCopy() {
+        return new ConcurrentQueryTop(size, slowQueryThresholdNanos);
+    }
+
+    private void addLatency(long phase, long latencyTime, LatencyWithDescription position) {
+        top.put(new PositionKey(phase, latencyTime), position);
         top.pollFirstEntry();
     }
 
     private void initByFakeValues() {
+        long phase = phaseSequence.get();
         for (int i = 1; i <= size; i++) {
-            top.put((long) -i, FAKE_QUERY);
+            top.put(new PositionKey(phase, -i), FAKE_QUERY);
+        }
+    }
+
+    private static final class PositionKey implements Comparable<PositionKey> {
+        final long phase;
+        final long latencyNanos;
+
+        public PositionKey(long phase, long latencyNanos) {
+            this.phase = phase;
+            this.latencyNanos = latencyNanos;
+        }
+
+        @Override
+        public int compareTo(PositionKey other) {
+            if (phase != other.phase) {
+                return Long.compare(phase, other.phase);
+            }
+            return Long.compare(latencyNanos, other.latencyNanos);
         }
     }
 

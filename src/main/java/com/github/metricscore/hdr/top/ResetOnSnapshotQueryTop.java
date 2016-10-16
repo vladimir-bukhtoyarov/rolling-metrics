@@ -17,9 +17,7 @@
 package com.github.metricscore.hdr.top;
 
 
-import com.github.metricscore.hdr.top.basic.BasicQueryTop;
-import com.github.metricscore.hdr.top.basic.ComposableQueryTop;
-import com.github.metricscore.hdr.top.basic.QueryTopRecorder;
+import com.github.metricscore.hdr.top.basic.*;
 
 import java.time.Duration;
 import java.util.List;
@@ -33,7 +31,9 @@ class ResetOnSnapshotQueryTop extends BasicQueryTop {
 
     ResetOnSnapshotQueryTop(int size, Duration slowQueryThreshold) {
         super(size, slowQueryThreshold);
-        this.recorder = new QueryTopRecorder(size, slowQueryThreshold);
+        ComposableQueryTop active = size == 1? new SingletonTop(slowQueryThreshold): new ConcurrentQueryTop(size, slowQueryThreshold);
+        this.recorder = new QueryTopRecorder(active);
+        this.intervalQueryTop = recorder.getIntervalQueryTop();
     }
 
     @Override

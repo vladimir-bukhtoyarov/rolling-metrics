@@ -17,7 +17,7 @@
 package com.github.metricscore.hdr.top;
 
 
-import com.github.metricscore.hdr.Clock;
+import com.github.metricscore.hdr.util.Clock;
 import com.github.metricscore.hdr.top.basic.BasicQueryTop;
 import com.github.metricscore.hdr.top.basic.ComposableQueryTop;
 import com.github.metricscore.hdr.top.basic.QueryTopRecorder;
@@ -30,29 +30,38 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 
-class ResetPeriodicallyQueryTop extends BasicQueryTop {
+class ResetByChunksQueryTop extends BasicQueryTop {
 
     static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
+    static final int MAX_CHUNKS = 25;
 
     private final QueryTopRecorder recorder;
-    private final long resetIntervalMillis;
+    private final long intervalBetweenResettingMillis;
     private final Clock clock;
     private final AtomicLong nextResetTimeMillisRef;
     private final ComposableQueryTop uniformQueryTop;
 
     private ComposableQueryTop intervalQueryTop;
 
-    ResetPeriodicallyQueryTop(int size, Duration slowQueryThreshold, Duration resetInterval, Clock clock) {
+    ResetByChunksQueryTop(int size, Duration slowQueryThreshold, Duration rollingWindow, int numberChunks, Clock clock) {
         super(size, slowQueryThreshold);
-        this.resetIntervalMillis = resetInterval.toMillis();
-        if (resetInterval.toMillis() < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
-            throw new IllegalArgumentException("resetInterval should be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis");
+        if (numberChunks > MAX_CHUNKS) {
+            throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
+        }
+        if (numberChunks < 1) {
+            throw new IllegalArgumentException("numberChunks should be >= 1");
+        }
+
+        this.intervalBetweenResettingMillis = rollingWindow.toMillis();
+        if (intervalBetweenResettingMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
+            String msg = "interval between resetting one chunk should be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis";
+            throw new IllegalArgumentException(msg);
         }
 
         this.clock = Objects.requireNonNull(clock);
         this.recorder = new QueryTopRecorder(size, slowQueryThreshold);
         this.intervalQueryTop = recorder.getIntervalQueryTop();
-        this.nextResetTimeMillisRef = new AtomicLong(clock.currentTimeMillis() + resetIntervalMillis);
+        this.nextResetTimeMillisRef = new AtomicLong(clock.currentTimeMillis() + intervalBetweenResettingMillis);
         this.uniformQueryTop = ComposableQueryTop.create(size, slowQueryThreshold);
     }
 
@@ -76,7 +85,7 @@ class ResetPeriodicallyQueryTop extends BasicQueryTop {
             if (nextResetTimeMillisRef.compareAndSet(nextResetTimeMillis, Long.MAX_VALUE)) {
                 recorder.reset();
                 uniformQueryTop.reset();
-                nextResetTimeMillisRef.set(currentTimeMillis + resetIntervalMillis);
+                nextResetTimeMillisRef.set(currentTimeMillis + intervalBetweenResettingMillis);
             }
         }
     }

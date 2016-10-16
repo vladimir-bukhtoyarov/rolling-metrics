@@ -36,9 +36,12 @@ public class SingletonTop extends BasicQueryTop implements ComposableQueryTop<Si
     private final AtomicReference<LatencyWithDescription> max;
 
     public SingletonTop(Duration slowQueryThreshold) {
-        super(1, slowQueryThreshold);
-        this.max = new AtomicReference<>();
-        reset();
+        this(slowQueryThreshold.toNanos());
+    }
+
+    public SingletonTop(long slowQueryThresholdNanos) {
+        super(1, slowQueryThresholdNanos);
+        this.max = new AtomicReference<>(FAKE_QUERY);
     }
 
     @Override
@@ -75,6 +78,11 @@ public class SingletonTop extends BasicQueryTop implements ComposableQueryTop<Si
         if (max.get().getLatencyInNanoseconds() < otherLatency.getLatencyInNanoseconds()) {
             max.set(otherLatency);
         }
+    }
+
+    @Override
+    public SingletonTop createEmptyCopy() {
+        return new SingletonTop(super.slowQueryThresholdNanos);
     }
 
 }

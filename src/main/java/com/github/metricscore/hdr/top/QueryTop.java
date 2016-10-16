@@ -16,7 +16,7 @@
 
 package com.github.metricscore.hdr.top;
 
-import com.github.metricscore.hdr.Clock;
+import com.github.metricscore.hdr.util.Clock;
 import com.github.metricscore.hdr.top.basic.SingletonTop;
 
 import java.time.Duration;
@@ -77,12 +77,11 @@ public interface QueryTop {
     }
 
     static QueryTop createResetPeriodicallyTop(int size, Duration slowQueryThreshold, Duration resetInterval) {
-        return new ResetPeriodicallyQueryTop(size, slowQueryThreshold, resetInterval, Clock.defaultClock());
+        return new ResetByChunksQueryTop(size, slowQueryThreshold, resetInterval, 1, Clock.defaultClock());
     }
 
     static QueryTop createResetByChunkTop(int size, Duration slowQueryThreshold, Duration rollingWindow, int numberChunks) {
-        // TODO
-        throw new UnsupportedOperationException();
+        return new ResetByChunksQueryTop(size, slowQueryThreshold, rollingWindow, numberChunks, Clock.defaultClock());
     }
 
 }

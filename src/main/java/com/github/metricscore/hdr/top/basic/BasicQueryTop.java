@@ -27,18 +27,28 @@ import java.util.function.Supplier;
  */
 public abstract class BasicQueryTop implements QueryTop {
 
+    // limit to prevent user to kill performance by mistake
+    private static final int MAX_SIZE = 1000;
+
     protected final int size;
     protected final long slowQueryThresholdNanos;
 
     protected BasicQueryTop(int size, Duration slowQueryThreshold) {
+        this(size, slowQueryThreshold.toNanos());
+    }
+
+    protected BasicQueryTop(int size, long slowQueryThresholdNanos) {
+        if (size > MAX_SIZE) {
+            throw new IllegalArgumentException("size should be <= " + MAX_SIZE);
+        }
+        if (slowQueryThresholdNanos < 0) {
+            throw new IllegalArgumentException("slowQueryThreshold should be positive");
+        }
+        this.slowQueryThresholdNanos = slowQueryThresholdNanos;
         if (size <= 0) {
             throw new IllegalArgumentException("size should be >0");
         }
         this.size = size;
-        if (slowQueryThreshold.isNegative()) {
-            throw new IllegalArgumentException("slowQueryThreshold should be positive");
-        }
-        this.slowQueryThresholdNanos = slowQueryThreshold.toNanos();
     }
 
     @Override

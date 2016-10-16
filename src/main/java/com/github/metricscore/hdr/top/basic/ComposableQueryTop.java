@@ -22,15 +22,10 @@ import java.time.Duration;
 
 public interface ComposableQueryTop<T extends ComposableQueryTop> extends QueryTop {
 
-    static ComposableQueryTop create(int size, Duration slowQueryThreshold) {
-        if (size == 1) {
-            return new SingletonTop(slowQueryThreshold);
-        }
-        return new ConcurrentQueryTop(size, slowQueryThreshold);
-    }
-
     void reset();
 
     void add(T other);
+
+    T createEmptyCopy();
 
 }
