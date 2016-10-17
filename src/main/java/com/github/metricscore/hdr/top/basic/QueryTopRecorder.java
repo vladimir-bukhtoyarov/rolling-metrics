@@ -22,16 +22,16 @@ import java.util.function.Supplier;
 /**
  * Is not a part of public API, this class just used as building block for different QueryTop implementations.
  */
-public class QueryTopRecorder {
+public class QueryTopRecorder<T extends ComposableQueryTop<T>> {
 
     private final WriterReaderPhaser recordingPhaser = new WriterReaderPhaser();
 
-    private volatile ComposableQueryTop active;
-    private ComposableQueryTop inactive;
+    private volatile T active;
+    private T inactive;
 
-    public QueryTopRecorder(ComposableQueryTop active) {
+    public QueryTopRecorder(T active) {
         this.active = active;
-        this.inactive = active.createEmptyCopy();
+        this.inactive = null;
     }
 
     public void update(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
@@ -47,7 +47,7 @@ public class QueryTopRecorder {
         return getIntervalQueryTop(null);
     }
 
-    public synchronized ComposableQueryTop getIntervalQueryTop(ComposableQueryTop queryTopToRecycle) {
+    public synchronized ComposableQueryTop getIntervalQueryTop(T queryTopToRecycle) {
         inactive = queryTopToRecycle;
         performIntervalSample();
         ComposableQueryTop sampledQueryTop = inactive;
@@ -73,7 +73,7 @@ public class QueryTopRecorder {
             }
 
             // Swap active and inactive top:
-            final ComposableQueryTop temp = inactive;
+            final T temp = inactive;
             inactive = active;
             active = temp;
 

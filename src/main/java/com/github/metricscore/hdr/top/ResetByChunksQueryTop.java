@@ -21,6 +21,8 @@ import com.github.metricscore.hdr.util.Clock;
 import com.github.metricscore.hdr.top.basic.BasicQueryTop;
 import com.github.metricscore.hdr.top.basic.ComposableQueryTop;
 import com.github.metricscore.hdr.top.basic.QueryTopRecorder;
+import org.HdrHistogram.Histogram;
+import org.HdrHistogram.Recorder;
 
 import java.time.Duration;
 import java.util.List;
@@ -59,10 +61,10 @@ class ResetByChunksQueryTop extends BasicQueryTop {
         }
 
         this.clock = Objects.requireNonNull(clock);
-        this.recorder = new QueryTopRecorder(size, slowQueryThreshold);
+        this.recorder = null;//new QueryTopRecorder(size, slowQueryThreshold);
         this.intervalQueryTop = recorder.getIntervalQueryTop();
         this.nextResetTimeMillisRef = new AtomicLong(clock.currentTimeMillis() + intervalBetweenResettingMillis);
-        this.uniformQueryTop = ComposableQueryTop.create(size, slowQueryThreshold);
+        this.uniformQueryTop = null;//ComposableQueryTop.create(size, slowQueryThreshold);
     }
 
     @Override
@@ -88,6 +90,11 @@ class ResetByChunksQueryTop extends BasicQueryTop {
                 nextResetTimeMillisRef.set(currentTimeMillis + intervalBetweenResettingMillis);
             }
         }
+    }
+
+    public static void main(String[] args) {
+        Recorder recorder = new Recorder(1000000000L, 2);
+        Histogram histo = recorder.getIntervalHistogram();
     }
 
 }

@@ -19,6 +19,7 @@ import com.github.metricscore.hdr.top.LatencyWithDescription;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -78,14 +79,7 @@ public class ConcurrentQueryTop extends BasicQueryTop implements ComposableQuery
     public void reset() {
         // increasing phase will invalidate all recorded values for rating calculation,
         // so touching ConcurrentSkipListMap is not needed
-        long phase = phaseSequence.incrementAndGet();
-
-        if (phase < 0) {
-            // but if case of overflow it is need to hardly reset sequence and ConcurrentSkipListMap
-            phaseSequence.set(0);
-            top.clear();
-            initByFakeValues();
-        }
+        phaseSequence.incrementAndGet();
     }
 
     @Override
@@ -94,7 +88,7 @@ public class ConcurrentQueryTop extends BasicQueryTop implements ComposableQuery
         long currentPhase = this.phaseSequence.get();
         for(Map.Entry<PositionKey, LatencyWithDescription> otherEntry: other.top.descendingMap().entrySet()) {
             PositionKey otherKey = otherEntry.getKey();
-            if (otherKey.phase < otherPhase) {
+            if (otherKey.phase != otherPhase) {
                 return;
             }
             PositionKey firstKey = top.firstKey();
@@ -133,10 +127,16 @@ public class ConcurrentQueryTop extends BasicQueryTop implements ComposableQuery
 
         @Override
         public int compareTo(PositionKey other) {
-            if (phase != other.phase) {
-                return Long.compare(phase, other.phase);
+            if (phase == other.phase) {
+                return Long.compare(latencyNanos, other.latencyNanos);
             }
-            return Long.compare(latencyNanos, other.latencyNanos);
+            // To compare two phase values f1 and f2 we should use f2 - f1 > 0, not f2 > f1,
+            // because of the possibility of numerical overflow of AtomicLong.
+            if (phase - other.phase > 0) {
+                return 1;
+            } else {
+                return -1;
+            }
         }
     }
 
