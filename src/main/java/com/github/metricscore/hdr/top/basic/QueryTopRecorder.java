@@ -43,6 +43,18 @@ public class QueryTopRecorder<T extends ComposableQueryTop<T>> {
         }
     }
 
+    public synchronized void reset() {
+        long criticalValueAtEnter = recordingPhaser.writerCriticalSectionEnter();
+        try {
+            active.reset();
+            if (inactive != null) {
+                inactive.reset();
+            }
+        } finally {
+            recordingPhaser.writerCriticalSectionExit(criticalValueAtEnter);
+        }
+    }
+
     public synchronized ComposableQueryTop getIntervalQueryTop() {
         return getIntervalQueryTop(null);
     }
@@ -53,12 +65,6 @@ public class QueryTopRecorder<T extends ComposableQueryTop<T>> {
         ComposableQueryTop sampledQueryTop = inactive;
         inactive = null; // Once we expose the sample, we can't reuse it internally until it is recycled
         return sampledQueryTop;
-    }
-
-    public synchronized void reset() {
-        // the currently inactive query-top is reset each time we flip. So flipping twice resets both:
-        performIntervalSample();
-        performIntervalSample();
     }
 
     private void performIntervalSample() {

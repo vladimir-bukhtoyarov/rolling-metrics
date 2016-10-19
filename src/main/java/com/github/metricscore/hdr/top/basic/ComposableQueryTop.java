@@ -18,8 +18,6 @@ package com.github.metricscore.hdr.top.basic;
 
 import com.github.metricscore.hdr.top.QueryTop;
 
-import java.time.Duration;
-
 public interface ComposableQueryTop<T extends ComposableQueryTop> extends QueryTop {
 
     void reset();

@@ -47,7 +47,12 @@ public class ConcurrentQueryTop extends BasicQueryTop implements ComposableQuery
     public ConcurrentQueryTop(int size, long slowQueryThresholdNanos) {
         super(size, slowQueryThresholdNanos);
         this.top = new ConcurrentSkipListMap<>();
-        initByFakeValues();
+
+        // init by fake values
+        long phase = phaseSequence.get();
+        for (int i = 1; i <= size; i++) {
+            top.put(new PositionKey(phase, -i), FAKE_QUERY);
+        }
     }
 
     @Override
@@ -67,12 +72,20 @@ public class ConcurrentQueryTop extends BasicQueryTop implements ComposableQuery
     public List<LatencyWithDescription> getDescendingRating() {
         List<LatencyWithDescription> descendingTop = new ArrayList<>(size);
         long currentPhase = phaseSequence.get();
-        for (Map.Entry<PositionKey, LatencyWithDescription> entry : top.descendingMap().entrySet()) {
-            PositionKey key = entry.getKey();
-            LatencyWithDescription position = key.phase < currentPhase? FAKE_QUERY: entry.getValue();
-            descendingTop.add(position);
+        while (true) {
+            for (Map.Entry<PositionKey, LatencyWithDescription> entry : top.descendingMap().entrySet()) {
+                PositionKey key = entry.getKey();
+                LatencyWithDescription position = key.phase < currentPhase? FAKE_QUERY: entry.getValue();
+                descendingTop.add(position);
+            }
+            long phaseOnComplete = phaseSequence.get();
+            if (phaseOnComplete == currentPhase) {
+                return descendingTop;
+            } else {
+                currentPhase = phaseOnComplete;
+                descendingTop.clear();
+            }
         }
-        return descendingTop;
     }
 
     @Override
@@ -107,13 +120,6 @@ public class ConcurrentQueryTop extends BasicQueryTop implements ComposableQuery
     private void addLatency(long phase, long latencyTime, LatencyWithDescription position) {
         top.put(new PositionKey(phase, latencyTime), position);
         top.pollFirstEntry();
-    }
-
-    private void initByFakeValues() {
-        long phase = phaseSequence.get();
-        for (int i = 1; i <= size; i++) {
-            top.put(new PositionKey(phase, -i), FAKE_QUERY);
-        }
     }
 
     private static final class PositionKey implements Comparable<PositionKey> {
