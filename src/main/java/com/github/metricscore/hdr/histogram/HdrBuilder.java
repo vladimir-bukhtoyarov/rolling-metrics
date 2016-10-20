@@ -18,6 +18,7 @@
 package com.github.metricscore.hdr.histogram;
 
 import com.codahale.metrics.*;
+import com.github.metricscore.hdr.util.BackgroundExecutionUtil;
 import com.github.metricscore.hdr.util.Clock;
 import com.github.metricscore.hdr.histogram.accumulator.*;
 import org.HdrHistogram.Recorder;
@@ -26,6 +27,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 /**
@@ -99,12 +101,7 @@ public class HdrBuilder {
      * @see #resetReservoirByChunks(Duration, int)
      */
     public HdrBuilder resetReservoirPeriodically(Duration resettingPeriod) {
-        long resettingPeriodMillis = resettingPeriod.toMillis();
-        if (resettingPeriodMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
-            throw new IllegalArgumentException("resettingPeriod must be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis");
-        }
-        accumulationFactory = (recorder, clock) -> new ResetPeriodicallyAccumulator(recorder.get(), resettingPeriodMillis, clock);
-        return this;
+        return resetReservoirByChunks(resettingPeriod, 1, true);
     }
 
     /**
@@ -157,7 +154,7 @@ public class HdrBuilder {
         if (resettingPeriod.isNegative() || resettingPeriod.isZero()) {
             throw new IllegalArgumentException("resettingPeriod must be a positive duration");
         }
-        if (numberChunks < 2) {
+        if (numberChunks < 1) {
             throw new IllegalArgumentException("numberChunks should be >= 2");
         }
 
@@ -169,7 +166,8 @@ public class HdrBuilder {
             throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
         }
 
-        accumulationFactory = (recorder, clock) -> new ResetByChunksAccumulator(recorder, numberChunks, resettingPeriodMillis, reportUncompletedChunkToSnapshot, clock);
+        Executor executor = backgroundExecutor.orElse(BackgroundExecutionUtil.getBackgroundExecutor());
+        accumulationFactory = (recorder, clock) -> new ResetByChunksAccumulator(recorder, numberChunks, resettingPeriodMillis, reportUncompletedChunkToSnapshot, clock, executor);
         return this;
     }
 
@@ -337,6 +335,16 @@ public class HdrBuilder {
     }
 
     /**
+     * TODO
+     *
+     * @return this builder instance
+     */
+    public HdrBuilder withBackgroundExecutor(Executor backgroundExecutor) {
+        this.backgroundExecutor = Optional.of(backgroundExecutor);
+        return this;
+    }
+
+    /**
      * Builds reservoir which can be useful for building monitoring primitives with higher level of abstraction.
      *
      * @return an instance of {@link com.codahale.metrics.Reservoir}
@@ -412,7 +420,7 @@ public class HdrBuilder {
      */
     public HdrBuilder deepCopy() {
         return new HdrBuilder(clock, accumulationFactory, numberOfSignificantValueDigits, predefinedPercentiles, lowestDiscernibleValue,
-                highestTrackableValue, overflowResolver, snapshotCachingDurationMillis, expectedIntervalBetweenValueSamples);
+                highestTrackableValue, overflowResolver, snapshotCachingDurationMillis, expectedIntervalBetweenValueSamples, backgroundExecutor);
     }
 
     @Override
@@ -436,11 +444,12 @@ public class HdrBuilder {
     private Optional<Long> snapshotCachingDurationMillis;
     private Optional<double[]> predefinedPercentiles;
     private Optional<Long> expectedIntervalBetweenValueSamples;
+    private Optional<Executor> backgroundExecutor;
 
     private Clock clock;
 
     public HdrBuilder(Clock clock) {
-        this(clock, DEFAULT_ACCUMULATION_STRATEGY, DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS, Optional.of(DEFAULT_PERCENTILES), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+        this(clock, DEFAULT_ACCUMULATION_STRATEGY, DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS, Optional.of(DEFAULT_PERCENTILES), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
     private HdrBuilder(Clock clock,
@@ -451,7 +460,8 @@ public class HdrBuilder {
                        Optional<Long> highestTrackableValue,
                        Optional<OverflowResolver> overflowResolver,
                        Optional<Long> snapshotCachingDurationMillis,
-                       Optional<Long> expectedIntervalBetweenValueSamples) {
+                       Optional<Long> expectedIntervalBetweenValueSamples,
+                       Optional<Executor> backgroundExecutor) {
         this.clock = clock;
         this.accumulationFactory = accumulationFactory;
         this.numberOfSignificantValueDigits = numberOfSignificantValueDigits;
@@ -461,6 +471,7 @@ public class HdrBuilder {
         this.snapshotCachingDurationMillis = snapshotCachingDurationMillis;
         this.predefinedPercentiles = predefinedPercentiles;
         this.expectedIntervalBetweenValueSamples = expectedIntervalBetweenValueSamples;
+        this.backgroundExecutor = backgroundExecutor;
     }
 
     private HdrReservoir buildHdrReservoir() {
