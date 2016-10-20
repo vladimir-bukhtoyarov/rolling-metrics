@@ -24,29 +24,64 @@ import java.util.concurrent.locks.StampedLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ExecutionUtil {
+public class BackgroundExecutionUtil implements Executor {
 
     private static final Runnable POISON = () -> {};
     private static final Runnable PARK = () -> {};
 
-    private static final Logger logger = Logger.getLogger(ExecutionUtil.class.getName());
+    private static final Logger logger = Logger.getLogger(BackgroundExecutionUtil.class.getName());
     private static ThreadFactory factory = createDefaultThreadFactory();
     private static ExecutionUtilHolder holder;
 
     private final StampedLock stampedLock = new StampedLock();
-    private ConcurrentLinkedQueue<Runnable> taskQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<Runnable> taskQueue = new ConcurrentLinkedQueue<>();
     private final Thread workerThread;
 
-    private ExecutionUtil() {
+    /**
+     * {@inheritDoc}
+     *
+     * TODO
+     *
+     * @param task
+     */
+    @Override
+    public void execute(Runnable task) {
+        long stamp = stampedLock.tryReadLock();
+        if (stamp == 0) {
+            task.run();
+            return;
+        }
+        try {
+            taskQueue.add(task);
+            LockSupport.unpark(workerThread);
+        } finally {
+            stampedLock.unlockRead(stamp);
+        }
+    }
+
+    /**
+     *
+     * TODO
+     */
+    public static void shutdownBackgroundExecutor() {
+        getInstance().stop();
+    }
+
+    /**
+     * TODO
+     *
+     * @param factory
+     */
+    synchronized public static void setThreadFactory(ThreadFactory factory) {
+        BackgroundExecutionUtil.factory = Objects.requireNonNull(factory);
+    }
+
+    private BackgroundExecutionUtil() {
         this.workerThread = factory.newThread(lifecycle);
     }
 
     private void start() {
         workerThread.start();
-    }
-
-    public static void shutdown() {
-        getInstance().stop();
     }
 
     private void stop() {
@@ -66,29 +101,17 @@ public class ExecutionUtil {
         LockSupport.unpark(workerThread);
     }
 
-    public void execute(Runnable task) {
-        long stamp = stampedLock.tryReadLock();
-        if (stamp == 0) {
-            task.run();
-            return;
-        }
-        try {
-            taskQueue.add(task);
-            LockSupport.unpark(workerThread);
-        } finally {
-            stampedLock.unlockRead(stamp);
-        }
+    public static Executor getBackgroundExecutor() {
+        return getInstance();
     }
 
-    synchronized public static void setThreadFactory(ThreadFactory factory) {
-        ExecutionUtil.factory = Objects.requireNonNull(factory);
-    }
-
-    public static ExecutionUtil getInstance() {
+    public static BackgroundExecutionUtil getInstance() {
         if (holder == null) {
-            synchronized (ExecutionUtil.class) {
+            synchronized (BackgroundExecutionUtil.class) {
                 if (holder == null) {
-                    holder = new ExecutionUtilHolder(new ExecutionUtil());
+                    BackgroundExecutionUtil instance = new BackgroundExecutionUtil();
+                    holder = new ExecutionUtilHolder(instance);
+                    instance.start();
                 }
             }
         }
@@ -105,7 +128,7 @@ public class ExecutionUtil {
             if (task == PARK) {
                 task = taskQueue.poll();
                 if (task == null) {
-                    LockSupport.park(ExecutionUtil.this);
+                    LockSupport.park(BackgroundExecutionUtil.this);
                     continue;
                 }
             }
@@ -136,9 +159,9 @@ public class ExecutionUtil {
 
     private static class ExecutionUtilHolder {
 
-        private final ExecutionUtil instance;
+        private final BackgroundExecutionUtil instance;
 
-        public ExecutionUtilHolder(ExecutionUtil instance) {
+        ExecutionUtilHolder(BackgroundExecutionUtil instance) {
             this.instance = instance;
         }
     }
