@@ -14,8 +14,9 @@
  *     limitations under the License.
  */
 
-package com.github.metricscore.hdr.counter;
+package com.github.metricscore.hdr.adapter;
 
+import com.github.metricscore.hdr.adapter.GaugeToCounterAdapter;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
