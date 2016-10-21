@@ -61,18 +61,8 @@ Example of usage:
 ## How to add counters to MetricRegistry?
 The all three types of counter mentioned above do not implement of any MetricCore interface, 
 this decision was taken in order to provide ability to use counters without dependency from metrics-core library.
-So you need in adapters for counters to register it in **MetricRegistry**. There are two type of adapters:
-* [MetricsCounter](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/1.3/src/main/java/com/github/metricscore/hdr/counter/MetricsCounter.java) This is adapter for any implementation of WindowCounter which convert it to Counter.
-* [MetricsGauge](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/1.3/src/main/java/com/github/metricscore/hdr/counter/MetricsGauge.java) This is adapter for any implementation of WindowCounter which convert it to Gauge. 
-
-### MetricsCounter usage example
+So you need to register counter as Gauge in **MetricRegistry**, for example:
 ```java
-   WindowCounter counter = new ResetAtSnapshotCounter();
-   registry.register("my-counter", new MetricsCounter(counter));
-```
-
-### MetricsGauge example of usage
-```java
-   WindowCounter counter = new ResetAtSnapshotCounter();
-   registry.register("my-gauge", new MetricsGauge(counter));
+   WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(60), 10);
+   registry.register("my-counter", (Gauge<Long>) counter::getSum);
 ```
