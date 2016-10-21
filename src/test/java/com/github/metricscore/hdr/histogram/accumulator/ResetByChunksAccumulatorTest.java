@@ -35,7 +35,7 @@ public class ResetByChunksAccumulatorTest {
         AtomicLong time = new AtomicLong(0);
         Clock wallClock = Clock.mock(time);
         Reservoir reservoir = new HdrBuilder(wallClock)
-                .resetReservoirByChunks(Duration.ofMillis(1000), 3)
+                .resetReservoirByChunksWithRollingTimeWindow(Duration.ofMillis(1000), 3)
                 .buildReservoir();
 
         reservoir.update(10);
@@ -112,7 +112,7 @@ public class ResetByChunksAccumulatorTest {
         AtomicLong time = new AtomicLong(0);
         Clock wallClock = Clock.mock(time);
         Reservoir reservoir = new HdrBuilder(wallClock)
-                .resetReservoirByChunks(Duration.ofMillis(1000), 3, false)
+                .resetReservoirByChunksWithRollingTimeWindow(Duration.ofMillis(1000), 3, false)
                 .buildReservoir();
 
         reservoir.update(10);
@@ -180,17 +180,17 @@ public class ResetByChunksAccumulatorTest {
 
     @Test
     public void testToString() {
-        new HdrBuilder().resetReservoirByChunks(Duration.ofSeconds(1), 3, false)
+        new HdrBuilder().resetReservoirByChunksWithRollingTimeWindow(Duration.ofSeconds(1), 3, false)
                 .buildReservoir().toString();
 
-        new HdrBuilder().resetReservoirByChunks(Duration.ofSeconds(1), 3, true)
+        new HdrBuilder().resetReservoirByChunksWithRollingTimeWindow(Duration.ofSeconds(1), 3, true)
                 .buildReservoir().toString();
     }
 
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHungWithThreeChunks() throws InterruptedException {
         Reservoir reservoir = new HdrBuilder()
-                .resetReservoirByChunks(Duration.ofSeconds(1), 3, false)
+                .resetReservoirByChunksWithRollingTimeWindow(Duration.ofSeconds(1), 3, false)
                 .buildReservoir();
 
         HistogramUtil.runInParallel(reservoir, Duration.ofSeconds(30));

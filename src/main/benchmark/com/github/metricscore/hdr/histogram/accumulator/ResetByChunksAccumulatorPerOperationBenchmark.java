@@ -40,14 +40,14 @@ public class ResetByChunksAccumulatorPerOperationBenchmark {
     @State(Scope.Benchmark)
     public static class ChunkedHistogramState {
         public final Histogram chunkedHistogram = new HdrBuilder()
-                .resetReservoirByChunks(Duration.ofSeconds(10), 7)
+                .resetReservoirByChunksWithRollingTimeWindow(Duration.ofSeconds(10), 7)
                 .buildHistogram();
     }
 
     @State(Scope.Benchmark)
     public static class ChunkedUpperLimitedHistogramState {
         public final Histogram chunkedHistogram = new HdrBuilder()
-                .resetReservoirByChunks(Duration.ofSeconds(10), 7)
+                .resetReservoirByChunksWithRollingTimeWindow(Duration.ofSeconds(10), 7)
                 .withHighestTrackableValue(5000, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .buildHistogram();
     }
@@ -69,7 +69,7 @@ public class ResetByChunksAccumulatorPerOperationBenchmark {
     @State(Scope.Benchmark)
     public static class GetChunkedSnapshotState {
         public final Histogram chunkedHistogram = new HdrBuilder()
-                .resetReservoirByChunks(Duration.ofSeconds(10), 7)
+                .resetReservoirByChunksWithRollingTimeWindow(Duration.ofSeconds(10), 7)
                 .buildHistogram();
 
         @Setup
@@ -93,7 +93,7 @@ public class ResetByChunksAccumulatorPerOperationBenchmark {
     @State(Scope.Benchmark)
     public static class GetChunkedUpperLimitedSnapshotState {
         public final Histogram chunkedHistogram = new HdrBuilder()
-                .resetReservoirByChunks(Duration.ofSeconds(10), 7)
+                .resetReservoirByChunksWithRollingTimeWindow(Duration.ofSeconds(10), 7)
                 .withHighestTrackableValue(5000, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .buildHistogram();
 

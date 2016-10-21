@@ -33,8 +33,8 @@ public class ResetByChunksAccumulator implements Accumulator {
     private final Executor backgroundExecutor;
     private final long intervalBetweenResettingMillis;
     private final long creationTimestamp;
-    private final boolean reportUncompletedChunkToSnapshot;
     private final ArchivedHistogram[] archive;
+    private final boolean historySupported;
     private final Clock clock;
     private final Histogram temporarySnapshotHistogram;
 
@@ -43,11 +43,10 @@ public class ResetByChunksAccumulator implements Accumulator {
     private final Phase[] phases;
     private final AtomicReference<Phase> currentPhaseRef;
 
-    public ResetByChunksAccumulator(Supplier<Recorder> recorderSupplier, int numberChunks, long intervalBetweenResettingMillis, boolean reportUncompletedChunkToSnapshot, Clock clock, Executor backgroundExecutor) {
+    public ResetByChunksAccumulator(Supplier<Recorder> recorderSupplier, int numberHistoryChunks, long intervalBetweenResettingMillis, Clock clock, Executor backgroundExecutor) {
         this.intervalBetweenResettingMillis = intervalBetweenResettingMillis;
         this.clock = clock;
         this.creationTimestamp = clock.currentTimeMillis();
-        this.reportUncompletedChunkToSnapshot = reportUncompletedChunkToSnapshot;
         this.backgroundExecutor = backgroundExecutor;
 
         this.left = new Phase(recorderSupplier, creationTimestamp + intervalBetweenResettingMillis);
@@ -55,11 +54,15 @@ public class ResetByChunksAccumulator implements Accumulator {
         this.phases = new Phase[] {left, right};
         this.currentPhaseRef = new AtomicReference<>(left);
 
-        this.archive = new ArchivedHistogram[numberChunks];
-        for (int i = 0; i < numberChunks; i++) {
-            Histogram archivedHistogram = left.intervalHistogram.copy();
-            this.archive[i] = new ArchivedHistogram(archivedHistogram, Long.MIN_VALUE);
+        this.archive = new ArchivedHistogram[numberHistoryChunks];
+        this.historySupported = numberHistoryChunks > 0;
+        if (historySupported) {
+            for (int i = 0; i < numberHistoryChunks; i++) {
+                Histogram archivedHistogram = left.intervalHistogram.copy();
+                this.archive[i] = new ArchivedHistogram(archivedHistogram, Long.MIN_VALUE);
+            }
         }
+
         this.temporarySnapshotHistogram = archive[0].histogram.copy();
     }
 
@@ -90,16 +93,18 @@ public class ResetByChunksAccumulator implements Accumulator {
         Phase currentPhase = currentPhaseRef.get();
         Phase nextPhase = currentPhase == left ? right : left;
         try {
-            // move values from recorder to correspondent archived histogram
-            long currentPhaseNumber = (currentPhase.proposedInvalidationTimestamp - creationTimestamp) / intervalBetweenResettingMillis;
-            int correspondentArchiveIndex = (int) (currentPhaseNumber - 1) % archive.length;
             currentPhase.intervalHistogram = currentPhase.recorder.getIntervalHistogram(currentPhase.intervalHistogram);
-            ArchivedHistogram correspondentArchivedHistogram = archive[correspondentArchiveIndex];
-            correspondentArchivedHistogram.histogram.reset();
             currentPhase.totalsHistogram.add(currentPhase.intervalHistogram);
-            correspondentArchivedHistogram.histogram.add(currentPhase.totalsHistogram);
+            if (historySupported) {
+                // move values from recorder to correspondent archived histogram
+                long currentPhaseNumber = (currentPhase.proposedInvalidationTimestamp - creationTimestamp) / intervalBetweenResettingMillis;
+                int correspondentArchiveIndex = (int) (currentPhaseNumber - 1) % archive.length;
+                ArchivedHistogram correspondentArchivedHistogram = archive[correspondentArchiveIndex];
+                correspondentArchivedHistogram.histogram.reset();
+                correspondentArchivedHistogram.histogram.add(currentPhase.totalsHistogram);
+                correspondentArchivedHistogram.proposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp + (archive.length - 1) * intervalBetweenResettingMillis;
+            }
             currentPhase.totalsHistogram.reset();
-            correspondentArchivedHistogram.proposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp + (archive.length - 1) * intervalBetweenResettingMillis;
         } finally {
             long millisSinceCreation = currentTimeMillis - creationTimestamp;
             long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
@@ -183,10 +188,11 @@ public class ResetByChunksAccumulator implements Accumulator {
         }
 
         boolean isNeedToBeReportedToSnapshot(long currentTimeMillis) {
-            if (proposedInvalidationTimestamp > currentTimeMillis) {
-                return reportUncompletedChunkToSnapshot;
+            long proposedInvalidationTimestampLocal = proposedInvalidationTimestamp;
+            if (proposedInvalidationTimestampLocal > currentTimeMillis) {
+                return true;
             }
-            long correspondentChunkProposedInvalidationTimestamp = proposedInvalidationTimestamp + (archive.length - 1) * intervalBetweenResettingMillis;
+            long correspondentChunkProposedInvalidationTimestamp = proposedInvalidationTimestampLocal + (archive.length - 1) * intervalBetweenResettingMillis;
             return correspondentChunkProposedInvalidationTimestamp > currentTimeMillis;
         }
     }
@@ -196,7 +202,6 @@ public class ResetByChunksAccumulator implements Accumulator {
         return "ResetByChunksAccumulator{" +
                 "\nintervalBetweenResettingMillis=" + intervalBetweenResettingMillis +
                 ",\n creationTimestamp=" + creationTimestamp +
-                ",\n reportUncompletedChunkToSnapshot=" + reportUncompletedChunkToSnapshot +
                 ",\n archive=" + Printer.printArray(archive, "chunk") +
                 ",\n clock=" + clock +
                 ",\n left=" + left +
