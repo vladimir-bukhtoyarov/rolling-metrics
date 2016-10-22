@@ -133,26 +133,31 @@ public class HdrBuilderArgumentCheckingTest {
         new HdrBuilder().resetReservoirPeriodically(Duration.ZERO);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void nullExecutorShouldBeDeprecated() {
+        new HdrBuilder().withBackgroundExecutor(null);
+    }
+
     @Test
     public void validateResetByChunksParametersTest() {
-        new HdrBuilder().resetReservoirByChunksWithRollingTimeWindow(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS), MAX_CHUNKS);
+        new HdrBuilder().resetReservoirPeriodicallyByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS * MAX_CHUNKS), MAX_CHUNKS);
         try {
-            new HdrBuilder().resetReservoirByChunksWithRollingTimeWindow(Duration.ofMillis(-1), 2);
+            new HdrBuilder().resetReservoirPeriodicallyByChunks(Duration.ofMillis(-1), 2);
             fail("should disallow negative duration");
         } catch (IllegalArgumentException e) {}
 
         try {
-            new HdrBuilder().resetReservoirByChunksWithRollingTimeWindow(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS - 1), MAX_CHUNKS);
+            new HdrBuilder().resetReservoirPeriodicallyByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS - 1), MAX_CHUNKS);
             fail("should disallow too short duration");
         } catch (IllegalArgumentException e) {}
 
         try {
-            new HdrBuilder().resetReservoirByChunksWithRollingTimeWindow(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS), MAX_CHUNKS + 1);
+            new HdrBuilder().resetReservoirPeriodicallyByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS), MAX_CHUNKS + 1);
             fail("should too many chunks");
         } catch (IllegalArgumentException e) {}
 
         try {
-            new HdrBuilder().resetReservoirByChunksWithRollingTimeWindow(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS), 0);
+            new HdrBuilder().resetReservoirPeriodicallyByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS), 0);
             fail("should check that chunks >= 1");
         } catch (IllegalArgumentException e) {}
     }

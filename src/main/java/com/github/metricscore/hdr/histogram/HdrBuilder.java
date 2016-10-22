@@ -18,7 +18,7 @@
 package com.github.metricscore.hdr.histogram;
 
 import com.codahale.metrics.*;
-import com.github.metricscore.hdr.util.BackgroundExecutionUtil;
+import com.github.metricscore.hdr.util.ResilientExecutionUtil;
 import com.github.metricscore.hdr.util.Clock;
 import com.github.metricscore.hdr.histogram.accumulator.*;
 import org.HdrHistogram.Recorder;
@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
 /**
@@ -65,7 +66,7 @@ import java.util.function.Supplier;
 public class HdrBuilder {
 
     // meaningful limits to disallow user to kill performance(or memory footprint) by mistake
-    static final int MAX_CHUNKS = 25;
+    static final int MAX_CHUNKS = 60;
     static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
 
     static int DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS = 2;
@@ -91,59 +92,60 @@ public class HdrBuilder {
     /**
      * Reservoir configured with this strategy will be cleared fully after each <tt>resettingPeriod</tt>.
      * <p>
-     * The value written to reservoir will take affect at most <tt>resettingPeriod</tt> time.
+     * The value recorded to reservoir will take affect at most <tt>resettingPeriod</tt> time.
+     * </p>
+     *
+     * <p>
+     *     If You use this strategy inside JEE environment,
+     *     then it would be better to call {@code ResilientExecutionUtil.getInstance().shutdownBackgroundExecutor()}
+     *     once in application shutdown listener,
+     *     in order to avoid leaking reference to classloader through the thread which this library creates for histogram rotation in background.
      * </p>
      *
      * @param resettingPeriod specifies how often need to reset reservoir
      * @return this builder instance
      * @see #neverResetReservoir()
      * @see #resetReservoirOnSnapshot()
-     * @see #resetReservoirByChunksWithRollingTimeWindow(Duration, int)
+     * @see #resetReservoirPeriodicallyByChunks(Duration, int)
      */
     public HdrBuilder resetReservoirPeriodically(Duration resettingPeriod) {
         int numberOfHistoryChunks = 0;
-        return resetReservoirByChunksWithRollingTimeWindow(resettingPeriod.toMillis(), numberOfHistoryChunks);
+        return resetReservoirPeriodicallyByChunks(resettingPeriod.toMillis(), numberOfHistoryChunks);
     }
 
     /**
      * Reservoir configured with this strategy will be divided to <tt>numberChunks</tt> parts,
-     * and one chunk will be cleared after each <tt>rollingTimeWindow / numberChunks</tt>.
+     * and one chunk will be cleared after each <tt>rollingTimeWindow / numberChunks</tt> elapsed.
      * This strategy is more smoothly then <tt>resetReservoirPeriodically</tt> because reservoir never zeroed at whole,
-     * so user experience provided by <tt>resetReservoirByChunksWithRollingTimeWindow</tt> should look more pretty.
+     * so user experience provided by <tt>resetReservoirPeriodicallyByChunks</tt> should look more pretty.
      * <p>
-     * The value written to reservoir will take affect at least <tt>rollingTimeWindow</tt> and at most <tt>rollingTimeWindow  + rollingTimeWindow/numberChunks</tt> time,
-     * for example when you configure <tt>rollingTimeWindow=60 seconds and numberChunks=6</tt> then each value written to reservoir will be stored at <tt>60-70 seconds</tt>
+     * The value recorded to reservoir will take affect at least <tt>rollingTimeWindow</tt> and at most <tt>rollingTimeWindow *(1 + 1/numberChunks)</tt> time,
+     * for example when you configure <tt>rollingTimeWindow=60 seconds and numberChunks=6</tt> then each value recorded to reservoir will be stored at <tt>60-70 seconds</tt>
      * </p>
      *
-     * @param rollingTimeWindow specifies interval between chunk resetting
+     * <p>
+     *     If You use this strategy inside JEE environment,
+     *     then it would be better to call {@code ResilientExecutionUtil.getInstance().shutdownBackgroundExecutor()}
+     *     once in application shutdown listener,
+     *     in order to avoid leaking reference to classloader through the thread which this library creates for histogram rotation in background.
+     * </p>
+     *
+     * @param rollingTimeWindow the total rolling time window, any value recorded to reservoir will not be evicted from it at least <tt>rollingTimeWindow</tt>
      * @param numberChunks    specifies number of chunks by which reservoir will be slitted
      * @return this builder instance
      * @see #neverResetReservoir()
      * @see #resetReservoirOnSnapshot()
      * @see #resetReservoirPeriodically(Duration)
      */
-    public HdrBuilder resetReservoirByChunksWithRollingTimeWindow(Duration rollingTimeWindow, int numberChunks) {
-        if (numberChunks < 1) {
+    public HdrBuilder resetReservoirPeriodicallyByChunks(Duration rollingTimeWindow, int numberChunks) {
+        if (numberChunks < 2) {
             throw new IllegalArgumentException("numberHistoryChunks should be >= 2");
         }
         if (numberChunks > MAX_CHUNKS) {
             throw new IllegalArgumentException("numberHistoryChunks should be <= " + MAX_CHUNKS);
         }
         long resettingPeriodMillis = rollingTimeWindow.toMillis() / numberChunks;
-        return resetReservoirByChunksWithRollingTimeWindow(resettingPeriodMillis, numberChunks);
-    }
-
-    private HdrBuilder resetReservoirByChunksWithRollingTimeWindow(long resettingPeriodMillis, int numberHistoryChunks) {
-        if (resettingPeriodMillis <= 0) {
-            throw new IllegalArgumentException("resettingPeriod must be a positive duration");
-        }
-        if (resettingPeriodMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
-            throw new IllegalArgumentException("resettingPeriod must be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis");
-        }
-
-        Executor executor = backgroundExecutor.orElse(BackgroundExecutionUtil.getBackgroundExecutor());
-        accumulationFactory = (recorder, clock) -> new ResetByChunksAccumulator(recorder, numberHistoryChunks, resettingPeriodMillis, clock, executor);
-        return this;
+        return resetReservoirPeriodicallyByChunks(resettingPeriodMillis, numberChunks);
     }
 
     /**
@@ -154,7 +156,7 @@ public class HdrBuilder {
      * @return this builder instance
      * @see #resetReservoirPeriodically(Duration)
      * @see #resetReservoirOnSnapshot()
-     * @see #resetReservoirByChunksWithRollingTimeWindow(Duration, int)
+     * @see #resetReservoirPeriodicallyByChunks(Duration, int)
      */
     public HdrBuilder neverResetReservoir() {
         accumulationFactory = AccumulationFactory.UNIFORM;
@@ -310,11 +312,23 @@ public class HdrBuilder {
     }
 
     /**
-     * TODO
+     * Configures the executor which will be used if any of {@link #resetReservoirPeriodically(Duration)} or {@link #resetReservoirPeriodicallyByChunks(Duration, int)} (Duration)}.
+     *
+     * <p>
+     * Normally you should not use this method because of default executor provided by {@link ResilientExecutionUtil#getBackgroundExecutor()} is quietly enough for mostly use cases.
+     * </p>
+     *
+     * <p>
+     * You can use this method for example inside JEE environments with enabled SecurityManager,
+     * in case of {@link ResilientExecutionUtil#setThreadFactory(ThreadFactory)} is not enough to meat security rules.
+     * </p>
      *
      * @return this builder instance
      */
     public HdrBuilder withBackgroundExecutor(Executor backgroundExecutor) {
+        if (backgroundExecutor == null) {
+            throw new IllegalArgumentException("backgroundExecutor must not be null");
+        }
         this.backgroundExecutor = Optional.of(backgroundExecutor);
         return this;
     }
@@ -447,6 +461,22 @@ public class HdrBuilder {
         this.predefinedPercentiles = predefinedPercentiles;
         this.expectedIntervalBetweenValueSamples = expectedIntervalBetweenValueSamples;
         this.backgroundExecutor = backgroundExecutor;
+    }
+
+    private HdrBuilder resetReservoirPeriodicallyByChunks(long resettingPeriodMillis, int numberHistoryChunks) {
+        if (resettingPeriodMillis <= 0) {
+            throw new IllegalArgumentException("resettingPeriod must be a positive duration");
+        }
+        if (resettingPeriodMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
+            throw new IllegalArgumentException("Interval between resetting must be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis");
+        }
+
+        accumulationFactory = (recorder, clock) -> new ResetByChunksAccumulator(recorder, numberHistoryChunks, resettingPeriodMillis, clock, getExecutor());
+        return this;
+    }
+
+    private Executor getExecutor() {
+        return backgroundExecutor.orElseGet(ResilientExecutionUtil.getInstance()::getBackgroundExecutor);
     }
 
     private HdrReservoir buildHdrReservoir() {

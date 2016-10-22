@@ -17,6 +17,7 @@
 
 package com.github.metricscore.hdr.histogram.accumulator;
 
+import com.github.metricscore.hdr.util.ResilientExecutionUtil;
 import com.github.metricscore.hdr.util.Clock;
 import com.codahale.metrics.Snapshot;
 import com.github.metricscore.hdr.histogram.util.Printer;
@@ -63,7 +64,7 @@ public class ResetByChunksAccumulator implements Accumulator {
             }
         }
 
-        this.temporarySnapshotHistogram = archive[0].histogram.copy();
+        this.temporarySnapshotHistogram = left.intervalHistogram.copy();
     }
 
     @Override
@@ -84,14 +85,11 @@ public class ResetByChunksAccumulator implements Accumulator {
         }
 
         // Current thread is responsible to rotate phases.
-        Runnable phaseRotation = this::rotate;
-        backgroundExecutor.execute(phaseRotation);
+        Runnable phaseRotation = () -> rotate(currentTimeMillis, currentPhase, nextPhase);
+        ResilientExecutionUtil.getInstance().execute(backgroundExecutor, phaseRotation);
     }
 
-    private synchronized void rotate() {
-        long currentTimeMillis = clock.currentTimeMillis();
-        Phase currentPhase = currentPhaseRef.get();
-        Phase nextPhase = currentPhase == left ? right : left;
+    private synchronized void rotate(long currentTimeMillis, Phase currentPhase, Phase nextPhase) {
         try {
             currentPhase.intervalHistogram = currentPhase.recorder.getIntervalHistogram(currentPhase.intervalHistogram);
             currentPhase.totalsHistogram.add(currentPhase.intervalHistogram);
@@ -202,7 +200,7 @@ public class ResetByChunksAccumulator implements Accumulator {
         return "ResetByChunksAccumulator{" +
                 "\nintervalBetweenResettingMillis=" + intervalBetweenResettingMillis +
                 ",\n creationTimestamp=" + creationTimestamp +
-                ",\n archive=" + Printer.printArray(archive, "chunk") +
+                (!historySupported ? "" : ",\n archive=" + Printer.printArray(archive, "chunk")) +
                 ",\n clock=" + clock +
                 ",\n left=" + left +
                 ",\n right=" + right +

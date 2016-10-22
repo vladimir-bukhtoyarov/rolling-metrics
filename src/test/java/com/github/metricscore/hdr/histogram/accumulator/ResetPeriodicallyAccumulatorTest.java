@@ -22,6 +22,7 @@ import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
 import com.github.metricscore.hdr.util.Clock;
 import com.github.metricscore.hdr.histogram.HdrBuilder;
+import com.github.metricscore.hdr.util.MockExecutor;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -33,10 +34,11 @@ public class ResetPeriodicallyAccumulatorTest {
 
     @Test
     public void test() {
-        AtomicLong time = new AtomicLong(System.currentTimeMillis());
+        AtomicLong time = new AtomicLong(0);
         Clock wallClock = Clock.mock(time);
         Reservoir reservoir = new HdrBuilder(wallClock)
                 .resetReservoirPeriodically(Duration.ofMillis(1000))
+                .withBackgroundExecutor(MockExecutor.INSTANCE)
                 .buildReservoir();
 
         reservoir.update(10);
@@ -45,46 +47,46 @@ public class ResetPeriodicallyAccumulatorTest {
         assertEquals(10, snapshot.getMin());
         assertEquals(20, snapshot.getMax());
 
-        time.getAndAdd(900);
+        time.getAndAdd(900); // 900
         reservoir.update(30);
         reservoir.update(40);
         snapshot = reservoir.getSnapshot();
         assertEquals(10, snapshot.getMin());
         assertEquals(40, snapshot.getMax());
 
-        time.getAndAdd(99);
+        time.getAndAdd(99); // 999
         reservoir.update(8);
         reservoir.update(60);
         snapshot = reservoir.getSnapshot();
         assertEquals(8, snapshot.getMin());
         assertEquals(60, snapshot.getMax());
 
-        time.getAndAdd(1);
+        time.getAndAdd(1); // 1000
         reservoir.update(70);
         reservoir.update(80);
         snapshot = reservoir.getSnapshot();
         assertEquals(70, snapshot.getMin());
         assertEquals(80, snapshot.getMax());
 
-        time.getAndAdd(1001);
+        time.getAndAdd(1001); // 2001
         reservoir.update(90);
         reservoir.update(100);
         snapshot = reservoir.getSnapshot();
         assertEquals(90, snapshot.getMin());
         assertEquals(100, snapshot.getMax());
 
-        time.getAndAdd(1000);
+        time.getAndAdd(1000); // 3001
         snapshot = reservoir.getSnapshot();
         assertEquals(0, snapshot.getMin());
         assertEquals(0, snapshot.getMax());
 
-        time.getAndAdd(1);
+        time.getAndAdd(1); // 3002
         reservoir.update(42);
         snapshot = reservoir.getSnapshot();
         assertEquals(42, snapshot.getMin());
         assertEquals(42, snapshot.getMax());
 
-        time.getAndAdd(2000);
+        time.getAndAdd(2000); // 5002
         snapshot = reservoir.getSnapshot();
         assertEquals(0, snapshot.getMin());
         assertEquals(0, snapshot.getMax());
@@ -95,13 +97,13 @@ public class ResetPeriodicallyAccumulatorTest {
         new HdrBuilder().resetReservoirPeriodically(Duration.ofSeconds(1)).buildReservoir().toString();
     }
 
-    @Test(timeout = 12000)
+    @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
         Reservoir reservoir = new HdrBuilder()
                 .resetReservoirPeriodically(Duration.ofSeconds(1))
                 .buildReservoir();
 
-        HistogramUtil.runInParallel(reservoir, Duration.ofSeconds(10));
+        HistogramUtil.runInParallel(reservoir, Duration.ofSeconds(30));
     }
 
 }

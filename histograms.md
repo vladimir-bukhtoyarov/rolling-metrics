@@ -137,23 +137,23 @@ Reservoir configured with this strategy will be cleared fully after each `resett
 ```
 This strategy is compatible with case of multiple reporters, but in same time it is not provides guaranties that any value written to reservoir will not be reported twice,
 also at least once reporting semantic also does not supported, because you can miss something value when resetting reservoir immediately after the value was written.
+If You use this strategy inside JEE environment,  then it would be better to call ```ResilientExecutionUtil.getInstance().shutdownBackgroundExecutor()``` once in application shutdown listener, 
+in order to avoid leaking reference to classloader through the thread which this library creates for histogram rotation in background.
 
-#### Reset reservoir by chunks
-Reservoir configured with this strategy will be divided to <tt>numberChunks</tt> parts, and one chunk will be cleared after each <tt>resettingPeriod</tt>.
-The measure written to reservoir will take affect to the snapshot at least <tt>resettingPeriod * (numberChunks - 1)</tt> and at most <tt>resettingPeriod * numberChunks</tt> time.
+#### Reset reservoir periodically by chunks
+Reservoir configured with this strategy will be divided to <tt>numberChunks</tt> parts and one chunk will be cleared in background after each <tt>resettingPeriod</tt>,
+where <tt>resettingPeriod = rollingTimeWindow/numberChunks</tt>.
+
+The value recorded to reservoir will take affect at least <tt>rollingTimeWindow</tt> and at most <tt>rollingTimeWindow *(1 + 1/numberChunks)</tt> time,
+for example when you configure <tt>rollingTimeWindow=60 seconds and numberChunks=6</tt> then each value recorded to reservoir will be stored at <tt>60-70 seconds</tt>
 ```java
-  // Split reservoir by 7 chunks, each measure written to reservoir will take affect to the snapshot approximately 60-70 seconds
-  builder.resetReservoirByChunks(Duration.ofSeconds(10), 7);  
+  // Split reservoir by 6 chunks, each value recorded to reservoir will take affect to the snapshot approximately 60-70 seconds
+  builder.resetReservoirPeriodicallyByChunks(Duration.ofSeconds(60), 6);  
 ```
 This strategy is more smoothly then <tt>resetReservoirPeriodically</tt> because reservoir never zeroyed at whole, so user experience provided by <tt>resetReservoirByChunks</tt> should look more pretty.
-But remember about memory footprint and do not split reservoir to big amount of chunks. The maximum possible value for <tt>numberChunks</tt> is 100.
-
-If you do not want to include values from uncompleted chunk to snapshot, then use overloaded version:
-```java
-  // Split reservoir by 61 chunks, each value written to reservoir will take affect to the snapshot 60 seconds,
-  // but snapshot will not include values up to the past 1 second 
-  builder.resetReservoirByChunks(Duration.ofSeconds(1), 61, false);  
-```
+But remember about memory footprint and do not split reservoir to big amount of chunks.
+If You use this strategy inside JEE environment,  then it would be better to call ```ResilientExecutionUtil.getInstance().shutdownBackgroundExecutor()``` once in application shutdown listener, 
+in order to avoid leaking reference to classloader through the thread which this library creates for histogram rotation in background.
 
 #### Never reset
 This strategy should be used if you want to store in reservoir all values since reservoir creation, in other words eviction is not needed.

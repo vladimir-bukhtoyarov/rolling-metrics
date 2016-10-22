@@ -23,8 +23,7 @@ import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @BenchmarkMode({Mode.Throughput, Mode.AverageTime})
@@ -33,7 +32,11 @@ public class BackgroundExecutionUtilBenchmark {
 
     @org.openjdk.jmh.annotations.State(Scope.Benchmark)
     public static class State {
-        public final Executor executor = BackgroundExecutionUtil.getBackgroundExecutor();
+        public final Executor executor = ResilientExecutionUtil.getInstance().getBackgroundExecutor();
+        public final Executor jdkExecutor = new ThreadPoolExecutor(1, 1,
+                                      0L,TimeUnit.MILLISECONDS,
+                                      new LinkedBlockingQueue<>(),
+                                      new DaemonThreadFactory(""));
     }
 
     @Benchmark
@@ -48,9 +51,22 @@ public class BackgroundExecutionUtilBenchmark {
     }
 
     @Benchmark
+    public void costOfSchedulingOnJdkExecutor(State state) {
+        state.jdkExecutor.execute(() -> {});
+        Blackhole.consumeCPU(1000);
+    }
+
+    @Benchmark
     public void fullCycle(State state) {
         AtomicBoolean executed = new AtomicBoolean(false);
         state.executor.execute(() -> executed.set(true));
+        while (!executed.get());
+    }
+
+    @Benchmark
+    public void fullCycleOnJdkExecutor(State state) {
+        AtomicBoolean executed = new AtomicBoolean(false);
+        state.jdkExecutor.execute(() -> executed.set(true));
         while (!executed.get());
     }
 
