@@ -18,6 +18,7 @@
 package com.github.metricscore.hdr.histogram.accumulator;
 
 import com.codahale.metrics.Snapshot;
+import com.github.metricscore.hdr.histogram.util.EmptySnapshot;
 import com.github.metricscore.hdr.histogram.util.Printer;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
@@ -45,8 +46,14 @@ public class UniformAccumulator implements Accumulator {
     @Override
     public final synchronized Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
         intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
-        uniformHistogram.add(intervalHistogram);
-        return snapshotTaker.apply(uniformHistogram);
+        if (intervalHistogram.getTotalCount() > 0) {
+            uniformHistogram.add(intervalHistogram);
+        }
+        if (uniformHistogram.getTotalCount() > 0) {
+            return snapshotTaker.apply(uniformHistogram);
+        } else {
+            return EmptySnapshot.INSTANCE;
+        }
     }
 
     @Override
