@@ -40,8 +40,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * </ul>
  *
  * @see SmoothlyDecayingRollingCounter
- * @see MetricsCounter
- * @see MetricsGauge
  */
 public class ResetAtSnapshotCounter implements WindowCounter {
 

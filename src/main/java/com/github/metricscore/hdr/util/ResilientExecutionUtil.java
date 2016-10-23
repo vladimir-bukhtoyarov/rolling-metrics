@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Util class which should be used for execution tasks(like histogram rotation) in background.
- * Known clients {@link com.github.metricscore.hdr.top.ResetByChunksQueryTop}, (@link {@link com.github.metricscore.hdr.histogram.accumulator.ResetByChunksAccumulator}).
+ * Known clients: {@link com.github.metricscore.hdr.histogram.accumulator.ResetByChunksAccumulator}.
  *
  * For background execution this class maintains own implementation of executor {@link SingleThreadExecutor}
  * which extremely fast and has no blocking on task queueing.
