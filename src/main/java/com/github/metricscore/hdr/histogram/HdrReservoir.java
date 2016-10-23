@@ -91,7 +91,7 @@ class HdrReservoir implements Reservoir {
         return accumulator.getEstimatedFootprintInBytes();
     }
 
-    private static Snapshot takeSmartSnapshot(final double[] predefinedQuantiles, Histogram histogram) {
+    static Snapshot takeSmartSnapshot(final double[] predefinedQuantiles, Histogram histogram) {
         final long max = histogram.getMaxValue();
         final long min = histogram.getMinValue();
         final double mean = histogram.getMean();
@@ -108,7 +108,7 @@ class HdrReservoir implements Reservoir {
         return createSmartSnapshot(predefinedQuantiles, max, min, mean, median, stdDeviation, values);
     }
 
-    private static Snapshot createSmartSnapshot(final double[] predefinedQuantiles, final long max, final long min, final double mean, final double median, final double stdDeviation, final double[] values) {
+    static Snapshot createSmartSnapshot(final double[] predefinedQuantiles, final long max, final long min, final double mean, final double median, final double stdDeviation, final double[] values) {
         return new Snapshot() {
             @Override
             public double getValue(double quantile) {

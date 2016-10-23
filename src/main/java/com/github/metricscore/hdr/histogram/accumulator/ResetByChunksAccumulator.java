@@ -18,6 +18,7 @@
 package com.github.metricscore.hdr.histogram.accumulator;
 
 import com.github.metricscore.hdr.histogram.util.EmptySnapshot;
+import com.github.metricscore.hdr.histogram.util.HistogramUtil;
 import com.github.metricscore.hdr.util.ResilientExecutionUtil;
 import com.github.metricscore.hdr.util.Clock;
 import com.codahale.metrics.Snapshot;
@@ -60,12 +61,12 @@ public class ResetByChunksAccumulator implements Accumulator {
         this.historySupported = numberHistoryChunks > 0;
         if (historySupported) {
             for (int i = 0; i < numberHistoryChunks; i++) {
-                Histogram archivedHistogram = left.intervalHistogram.copy();
+                Histogram archivedHistogram = HistogramUtil.createNonConcurrentCopy(left.intervalHistogram);
                 this.archive[i] = new ArchivedHistogram(archivedHistogram, Long.MIN_VALUE);
             }
         }
 
-        this.temporarySnapshotHistogram = left.intervalHistogram.copy();
+        this.temporarySnapshotHistogram = HistogramUtil.createNonConcurrentCopy(left.intervalHistogram);
     }
 
     @Override
@@ -93,20 +94,14 @@ public class ResetByChunksAccumulator implements Accumulator {
     private synchronized void rotate(long currentTimeMillis, Phase currentPhase, Phase nextPhase) {
         try {
             currentPhase.intervalHistogram = currentPhase.recorder.getIntervalHistogram(currentPhase.intervalHistogram);
-            if (currentPhase.intervalHistogram.getTotalCount() > 0) {
-                currentPhase.totalsHistogram.add(currentPhase.intervalHistogram);
-            }
+            HistogramUtil.addSecondToFirst(currentPhase.totalsHistogram, currentPhase.intervalHistogram);
             if (historySupported) {
                 // move values from recorder to correspondent archived histogram
                 long currentPhaseNumber = (currentPhase.proposedInvalidationTimestamp - creationTimestamp) / intervalBetweenResettingMillis;
                 int correspondentArchiveIndex = (int) (currentPhaseNumber - 1) % archive.length;
                 ArchivedHistogram correspondentArchivedHistogram = archive[correspondentArchiveIndex];
-                if (correspondentArchivedHistogram.histogram.getTotalCount() > 0) {
-                    correspondentArchivedHistogram.histogram.reset();
-                }
-                if (currentPhase.totalsHistogram.getTotalCount() > 0) {
-                    correspondentArchivedHistogram.histogram.add(currentPhase.totalsHistogram);
-                }
+                HistogramUtil.reset(correspondentArchivedHistogram.histogram);
+                HistogramUtil.addSecondToFirst(correspondentArchivedHistogram.histogram, currentPhase.totalsHistogram);
                 correspondentArchivedHistogram.proposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp + (archive.length - 1) * intervalBetweenResettingMillis;
             }
             if (currentPhase.totalsHistogram.getTotalCount() > 0) {
@@ -130,25 +125,17 @@ public class ResetByChunksAccumulator implements Accumulator {
         for (Phase phase : phases) {
             if (phase.isNeedToBeReportedToSnapshot(currentTimeMillis)) {
                 phase.intervalHistogram = phase.recorder.getIntervalHistogram(phase.intervalHistogram);
-                if (phase.intervalHistogram.getTotalCount() > 0) {
-                    phase.totalsHistogram.add(phase.intervalHistogram);
-                }
-                if (phase.totalsHistogram.getTotalCount() > 0) {
-                    temporarySnapshotHistogram.add(phase.totalsHistogram);
-                }
+                HistogramUtil.addSecondToFirst(phase.totalsHistogram, phase.intervalHistogram);
+                HistogramUtil.addSecondToFirst(temporarySnapshotHistogram, phase.totalsHistogram);
             }
         }
         for (ArchivedHistogram archivedHistogram : archive) {
-            if (archivedHistogram.proposedInvalidationTimestamp > currentTimeMillis && archivedHistogram.histogram.getTotalCount() > 0) {
-                temporarySnapshotHistogram.add(archivedHistogram.histogram);
+            if (archivedHistogram.proposedInvalidationTimestamp > currentTimeMillis) {
+                HistogramUtil.addSecondToFirst(temporarySnapshotHistogram, archivedHistogram.histogram);
             }
         }
 
-        if (temporarySnapshotHistogram.getTotalCount() > 0) {
-            return snapshotTaker.apply(temporarySnapshotHistogram);
-        } else {
-            return EmptySnapshot.INSTANCE;
-        }
+        return HistogramUtil.getSnapshot(temporarySnapshotHistogram, snapshotTaker);
     }
 
     @Override

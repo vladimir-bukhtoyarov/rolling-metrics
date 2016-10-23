@@ -18,7 +18,7 @@
 package com.github.metricscore.hdr.histogram.accumulator;
 
 import com.codahale.metrics.Snapshot;
-import com.github.metricscore.hdr.histogram.util.EmptySnapshot;
+import com.github.metricscore.hdr.histogram.util.HistogramUtil;
 import com.github.metricscore.hdr.histogram.util.Printer;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
@@ -43,11 +43,7 @@ public class ResetOnSnapshotAccumulator implements Accumulator {
     @Override
     synchronized public final Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
         intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
-        if (intervalHistogram.getTotalCount() > 0) {
-            return snapshotTaker.apply(intervalHistogram);
-        } else {
-            return EmptySnapshot.INSTANCE;
-        }
+        return HistogramUtil.getSnapshot(intervalHistogram, snapshotTaker);
     }
 
     @Override
