@@ -31,7 +31,7 @@ import java.util.function.Supplier;
  * Special implementation for top with size 1
  *
  */
-public class SingletonTop extends BasicQueryTop implements ComposableQueryTop<SingletonTop> {
+public class SingletonTop extends BasicTop implements ComposableTop<SingletonTop> {
 
     private final AtomicReference<LatencyWithDescription> max;
 

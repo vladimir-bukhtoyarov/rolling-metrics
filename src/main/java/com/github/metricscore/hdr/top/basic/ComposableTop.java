@@ -16,9 +16,10 @@
 
 package com.github.metricscore.hdr.top.basic;
 
-import com.github.metricscore.hdr.top.QueryTop;
+import com.github.metricscore.hdr.top.Top;
 
-public interface ComposableQueryTop<T extends ComposableQueryTop> extends QueryTop {
+
+public interface ComposableTop<T extends ComposableTop> extends Top {
 
     void reset();
 

@@ -16,7 +16,7 @@
 
 package com.github.metricscore.hdr.top.basic;
 
-import com.github.metricscore.hdr.top.QueryTop;
+import com.github.metricscore.hdr.top.Top;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -25,7 +25,7 @@ import java.util.function.Supplier;
 /**
  *  Is not a part of public API, this class just used as building block for other QueryTop implementations.
  */
-public abstract class BasicQueryTop implements QueryTop {
+public abstract class BasicTop implements Top {
 
     // limit to prevent user to kill performance by mistake
     private static final int MAX_SIZE = 1000;
@@ -33,11 +33,11 @@ public abstract class BasicQueryTop implements QueryTop {
     protected final int size;
     protected final long slowQueryThresholdNanos;
 
-    protected BasicQueryTop(int size, Duration slowQueryThreshold) {
+    protected BasicTop(int size, Duration slowQueryThreshold) {
         this(size, slowQueryThreshold.toNanos());
     }
 
-    protected BasicQueryTop(int size, long slowQueryThresholdNanos) {
+    protected BasicTop(int size, long slowQueryThresholdNanos) {
         if (size > MAX_SIZE) {
             throw new IllegalArgumentException("size should be <= " + MAX_SIZE);
         }

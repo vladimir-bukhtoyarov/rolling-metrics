@@ -26,16 +26,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 
-public class UniformQueryTop extends BasicQueryTop {
+public class UniformTop extends BasicTop {
 
-    private final QueryTopRecorder recorder;
-    private final ComposableQueryTop uniformQueryTop;
-    private ComposableQueryTop intervalQueryTop;
+    private final TopRecorder recorder;
+    private final ComposableTop uniformQueryTop;
+    private ComposableTop intervalQueryTop;
 
-    UniformQueryTop(int size, Duration slowQueryThreshold) {
+    UniformTop(int size, Duration slowQueryThreshold) {
         super(size, slowQueryThreshold);
-        this.uniformQueryTop = size == 1? new SingletonTop(slowQueryThreshold): new ConcurrentQueryTop(size, slowQueryThreshold);
-        this.recorder = new QueryTopRecorder(uniformQueryTop.createEmptyCopy());
+        this.uniformQueryTop = size == 1? new SingletonTop(slowQueryThreshold): new ConcurrentTop(size, slowQueryThreshold);
+        this.recorder = new TopRecorder(uniformQueryTop.createEmptyCopy());
         intervalQueryTop = recorder.getIntervalQueryTop();
     }
 

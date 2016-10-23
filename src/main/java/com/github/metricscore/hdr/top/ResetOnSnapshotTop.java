@@ -24,15 +24,15 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-class ResetOnSnapshotQueryTop extends BasicQueryTop {
+class ResetOnSnapshotTop extends BasicTop {
 
-    private final QueryTopRecorder recorder;
-    private ComposableQueryTop intervalQueryTop;
+    private final TopRecorder recorder;
+    private ComposableTop intervalQueryTop;
 
-    ResetOnSnapshotQueryTop(int size, Duration slowQueryThreshold) {
+    ResetOnSnapshotTop(int size, Duration slowQueryThreshold) {
         super(size, slowQueryThreshold);
-        ComposableQueryTop active = size == 1? new SingletonTop(slowQueryThreshold): new ConcurrentQueryTop(size, slowQueryThreshold);
-        this.recorder = new QueryTopRecorder(active);
+        ComposableTop active = size == 1? new SingletonTop(slowQueryThreshold): new ConcurrentTop(size, slowQueryThreshold);
+        this.recorder = new TopRecorder(active);
         this.intervalQueryTop = recorder.getIntervalQueryTop();
     }
 

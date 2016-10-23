@@ -28,7 +28,7 @@ import java.util.function.Supplier;
  *
  *
  */
-public interface QueryTop {
+public interface Top {
 
     LatencyWithDescription FAKE_QUERY = new LatencyWithDescription(0, TimeUnit.SECONDS, "");
 
@@ -65,23 +65,23 @@ public interface QueryTop {
      */
     long getSlowQueryThresholdNanos();
 
-    static QueryTop createUniformTop(int size, Duration slowQueryThreshold) {
+    static Top createUniformTop(int size, Duration slowQueryThreshold) {
         if (size == 1) {
             return new SingletonTop(slowQueryThreshold);
         }
-        return new UniformQueryTop(size, slowQueryThreshold);
+        return new UniformTop(size, slowQueryThreshold);
     }
 
-    static QueryTop createResetOnSnapshotTop(int size, Duration slowQueryThreshold) {
-        return new ResetOnSnapshotQueryTop(size, slowQueryThreshold);
+    static Top createResetOnSnapshotTop(int size, Duration slowQueryThreshold) {
+        return new ResetOnSnapshotTop(size, slowQueryThreshold);
     }
 
-    static QueryTop createResetPeriodicallyTop(int size, Duration slowQueryThreshold, Duration resetInterval) {
-        return new ResetByChunksQueryTop(size, slowQueryThreshold, resetInterval, 1, Clock.defaultClock());
+    static Top createResetPeriodicallyTop(int size, Duration slowQueryThreshold, Duration resetInterval) {
+        return new ResetByChunksTop(size, slowQueryThreshold, resetInterval, 1, Clock.defaultClock());
     }
 
-    static QueryTop createResetByChunkTop(int size, Duration slowQueryThreshold, Duration rollingWindow, int numberChunks) {
-        return new ResetByChunksQueryTop(size, slowQueryThreshold, rollingWindow, numberChunks, Clock.defaultClock());
+    static Top createResetByChunkTop(int size, Duration slowQueryThreshold, Duration rollingWindow, int numberChunks) {
+        return new ResetByChunksTop(size, slowQueryThreshold, rollingWindow, numberChunks, Clock.defaultClock());
     }
 
 }

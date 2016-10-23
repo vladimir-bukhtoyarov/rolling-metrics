@@ -19,7 +19,6 @@ import com.github.metricscore.hdr.top.LatencyWithDescription;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentSkipListMap;
@@ -34,17 +33,17 @@ import java.util.function.Supplier;
  * so if weakly consistency is not enough then clients of this class should provide synchronization between reader and writers by itself.
  *
  */
-public class ConcurrentQueryTop extends BasicQueryTop implements ComposableQueryTop<ConcurrentQueryTop> {
+public class ConcurrentTop extends BasicTop implements ComposableTop<ConcurrentTop> {
 
     private final ConcurrentSkipListMap<PositionKey, LatencyWithDescription> top;
 
     private final AtomicLong phaseSequence = new AtomicLong();
 
-    public ConcurrentQueryTop(int size, Duration slowQueryThreshold) {
+    public ConcurrentTop(int size, Duration slowQueryThreshold) {
         this(size, slowQueryThreshold.toNanos());
     }
 
-    public ConcurrentQueryTop(int size, long slowQueryThresholdNanos) {
+    public ConcurrentTop(int size, long slowQueryThresholdNanos) {
         super(size, slowQueryThresholdNanos);
         this.top = new ConcurrentSkipListMap<>();
 
@@ -96,7 +95,7 @@ public class ConcurrentQueryTop extends BasicQueryTop implements ComposableQuery
     }
 
     @Override
-    public void add(ConcurrentQueryTop other) {
+    public void add(ConcurrentTop other) {
         long otherPhase = other.phaseSequence.get();
         long currentPhase = this.phaseSequence.get();
         for(Map.Entry<PositionKey, LatencyWithDescription> otherEntry: other.top.descendingMap().entrySet()) {
@@ -113,8 +112,8 @@ public class ConcurrentQueryTop extends BasicQueryTop implements ComposableQuery
     }
 
     @Override
-    public ConcurrentQueryTop createEmptyCopy() {
-        return new ConcurrentQueryTop(size, slowQueryThresholdNanos);
+    public ConcurrentTop createEmptyCopy() {
+        return new ConcurrentTop(size, slowQueryThresholdNanos);
     }
 
     private void addLatency(long phase, long latencyTime, LatencyWithDescription position) {

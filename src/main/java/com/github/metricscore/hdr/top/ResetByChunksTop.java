@@ -18,9 +18,9 @@ package com.github.metricscore.hdr.top;
 
 
 import com.github.metricscore.hdr.util.Clock;
-import com.github.metricscore.hdr.top.basic.BasicQueryTop;
-import com.github.metricscore.hdr.top.basic.ComposableQueryTop;
-import com.github.metricscore.hdr.top.basic.QueryTopRecorder;
+import com.github.metricscore.hdr.top.basic.BasicTop;
+import com.github.metricscore.hdr.top.basic.ComposableTop;
+import com.github.metricscore.hdr.top.basic.TopRecorder;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
@@ -32,20 +32,20 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 
-class ResetByChunksQueryTop extends BasicQueryTop {
+class ResetByChunksTop extends BasicTop {
 
     static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
     static final int MAX_CHUNKS = 25;
 
-    private final QueryTopRecorder recorder;
+    private final TopRecorder recorder;
     private final long intervalBetweenResettingMillis;
     private final Clock clock;
     private final AtomicLong nextResetTimeMillisRef;
-    private final ComposableQueryTop uniformQueryTop;
+    private final ComposableTop uniformQueryTop;
 
-    private ComposableQueryTop intervalQueryTop;
+    private ComposableTop intervalQueryTop;
 
-    ResetByChunksQueryTop(int size, Duration slowQueryThreshold, Duration rollingWindow, int numberChunks, Clock clock) {
+    ResetByChunksTop(int size, Duration slowQueryThreshold, Duration rollingWindow, int numberChunks, Clock clock) {
         super(size, slowQueryThreshold);
         if (numberChunks > MAX_CHUNKS) {
             throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
