@@ -37,9 +37,9 @@ class ResetOnSnapshotTop extends BasicTop {
     }
 
     @Override
-    synchronized public List<LatencyWithDescription> getDescendingRating() {
+    synchronized public List<LatencyWithDescription> getPositionsInDescendingOrder() {
         intervalQueryTop = recorder.getIntervalQueryTop(intervalQueryTop);
-        return intervalQueryTop.getDescendingRating();
+        return intervalQueryTop.getPositionsInDescendingOrder();
     }
 
     @Override

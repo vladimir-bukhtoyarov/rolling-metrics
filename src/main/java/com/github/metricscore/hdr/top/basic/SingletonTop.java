@@ -63,7 +63,7 @@ public class SingletonTop extends BasicTop implements ComposableTop<SingletonTop
     }
 
     @Override
-    public List<LatencyWithDescription> getDescendingRating() {
+    public List<LatencyWithDescription> getPositionsInDescendingOrder() {
         return Collections.singletonList(max.get());
     }
 

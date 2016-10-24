@@ -40,10 +40,10 @@ public class UniformTop extends BasicTop {
     }
 
     @Override
-    synchronized public List<LatencyWithDescription> getDescendingRating() {
+    synchronized public List<LatencyWithDescription> getPositionsInDescendingOrder() {
         intervalQueryTop = recorder.getIntervalQueryTop(intervalQueryTop);
         uniformQueryTop.add(intervalQueryTop);
-        return uniformQueryTop.getDescendingRating();
+        return uniformQueryTop.getPositionsInDescendingOrder();
     }
 
     @Override

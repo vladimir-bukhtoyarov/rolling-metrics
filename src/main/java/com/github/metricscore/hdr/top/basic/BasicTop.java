@@ -62,7 +62,7 @@ public abstract class BasicTop implements Top {
     }
 
     @Override
-    public int getSize() {
+    public int getPositionCount() {
         return size;
     }
 

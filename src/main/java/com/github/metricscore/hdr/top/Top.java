@@ -16,17 +16,15 @@
 
 package com.github.metricscore.hdr.top;
 
-import com.github.metricscore.hdr.util.Clock;
-import com.github.metricscore.hdr.top.basic.SingletonTop;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 /**
- *
- *
+ * The top of queries sorted by its latency.
+ * The top is sized, independent of count of recorded queries, the top always stores no more than {@link #getPositionCount} positions,
+ * the longer queries displace shorter queries when top reaches it max size.
  */
 public interface Top {
 
@@ -44,44 +42,22 @@ public interface Top {
 
     /**
      * Return the top of queries in descend order, slowest query will be at first place.
-     * The resulted list has always size which equals to {@link #getSize()},
-     * if count of tracked queries is less than {@link #getSize()} then tail of resulted list will be populated by {@link #FAKE_QUERY}
-     *
-     * descending order
-     * ascending order
+     * The resulted list has always size which equals to {@link #getPositionCount()},
+     * if count of tracked queries is less than {@link #getPositionCount()} then tail of resulted list will be populated by {@link #FAKE_QUERY}
      */
-    List<LatencyWithDescription> getDescendingRating();
+    List<LatencyWithDescription> getPositionsInDescendingOrder();
 
     /**
-     * @return the maximum count of queries in the top.
+     * @return the maximum count of positions in the top.
      */
-    int getSize();
+    int getPositionCount();
 
     /**
      * Returns slow queries threshold.
-     * The queries which shorter than threshold will not be tracked in the top, as result we pay nothing when all going well.
+     * The queries with latency which shorter than threshold, will not be tracked in the top.
      *
      * @return slow queries threshold
      */
     long getSlowQueryThresholdNanos();
-
-    static Top createUniformTop(int size, Duration slowQueryThreshold) {
-        if (size == 1) {
-            return new SingletonTop(slowQueryThreshold);
-        }
-        return new UniformTop(size, slowQueryThreshold);
-    }
-
-    static Top createResetOnSnapshotTop(int size, Duration slowQueryThreshold) {
-        return new ResetOnSnapshotTop(size, slowQueryThreshold);
-    }
-
-    static Top createResetPeriodicallyTop(int size, Duration slowQueryThreshold, Duration resetInterval) {
-        return new ResetByChunksTop(size, slowQueryThreshold, resetInterval, 1, Clock.defaultClock());
-    }
-
-    static Top createResetByChunkTop(int size, Duration slowQueryThreshold, Duration rollingWindow, int numberChunks) {
-        return new ResetByChunksTop(size, slowQueryThreshold, rollingWindow, numberChunks, Clock.defaultClock());
-    }
 
 }

@@ -27,15 +27,13 @@ import org.HdrHistogram.Recorder;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 
 class ResetByChunksTop extends BasicTop {
-
-    static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
-    static final int MAX_CHUNKS = 25;
 
     private final TopRecorder recorder;
     private final long intervalBetweenResettingMillis;
@@ -45,20 +43,9 @@ class ResetByChunksTop extends BasicTop {
 
     private ComposableTop intervalQueryTop;
 
-    ResetByChunksTop(int size, Duration slowQueryThreshold, Duration rollingWindow, int numberChunks, Clock clock) {
+    ResetByChunksTop(int size, Duration slowQueryThreshold, long intervalBetweenResettingMillis, int numberChunks, Clock clock, Executor backgroundExecutor) {
         super(size, slowQueryThreshold);
-        if (numberChunks > MAX_CHUNKS) {
-            throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
-        }
-        if (numberChunks < 1) {
-            throw new IllegalArgumentException("numberChunks should be >= 1");
-        }
-
-        this.intervalBetweenResettingMillis = rollingWindow.toMillis();
-        if (intervalBetweenResettingMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
-            String msg = "interval between resetting one chunk should be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis";
-            throw new IllegalArgumentException(msg);
-        }
+        this.intervalBetweenResettingMillis = intervalBetweenResettingMillis;
 
         this.clock = Objects.requireNonNull(clock);
         this.recorder = null;//new QueryTopRecorder(size, slowQueryThreshold);
@@ -68,11 +55,11 @@ class ResetByChunksTop extends BasicTop {
     }
 
     @Override
-    synchronized public List<LatencyWithDescription> getDescendingRating() {
+    synchronized public List<LatencyWithDescription> getPositionsInDescendingOrder() {
         resetIfNeeded();
         intervalQueryTop = recorder.getIntervalQueryTop();
         uniformQueryTop.add(intervalQueryTop);
-        return uniformQueryTop.getDescendingRating();
+        return uniformQueryTop.getPositionsInDescendingOrder();
     }
 
     @Override
@@ -90,11 +77,6 @@ class ResetByChunksTop extends BasicTop {
                 nextResetTimeMillisRef.set(currentTimeMillis + intervalBetweenResettingMillis);
             }
         }
-    }
-
-    public static void main(String[] args) {
-        Recorder recorder = new Recorder(1000000000L, 2);
-        Histogram histo = recorder.getIntervalHistogram();
     }
 
 }

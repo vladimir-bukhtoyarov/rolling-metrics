@@ -22,7 +22,10 @@ import com.codahale.metrics.Gauge;
 import java.util.Objects;
 
 /**
- * Adapter for gauge which has a counter nature but is not counter by itself.
+ * Adapter for gauge which is suitable for case when the source behind the gauge has a counter semantic, but is not counter by itself.
+ *
+ * There are many reasons why source metric can behave like a counter but is not a counter,
+ * for example when metric was implemented in third-party library which known nothing about DropwizrdMetrics library.
  */
 public class GaugeToCounterAdapter extends Counter {
 

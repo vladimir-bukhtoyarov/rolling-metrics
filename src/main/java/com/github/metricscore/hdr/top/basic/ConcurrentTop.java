@@ -68,7 +68,7 @@ public class ConcurrentTop extends BasicTop implements ComposableTop<ConcurrentT
     }
 
     @Override
-    public List<LatencyWithDescription> getDescendingRating() {
+    public List<LatencyWithDescription> getPositionsInDescendingOrder() {
         List<LatencyWithDescription> descendingTop = new ArrayList<>(size);
         long currentPhase = phaseSequence.get();
         while (true) {
