@@ -239,7 +239,7 @@ public class HdrBuilder {
      * </p>
      *
      * @param expectedIntervalBetweenValueSamples If expectedIntervalBetweenValueSamples is larger than 0,
-     *                                            then each time on value writing, reservoir will add auto-generated value records as appropriate if value is larger
+     *                                            then each time on value writing, reservoir will addSelfToOther auto-generated value records as appropriate if value is larger
      *                                            than expectedIntervalBetweenValueSamples
      * @return this builder instance
      * @see org.HdrHistogram.AbstractHistogram#recordValueWithExpectedInterval(long, long)

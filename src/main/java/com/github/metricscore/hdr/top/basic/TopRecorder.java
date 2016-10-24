@@ -73,7 +73,7 @@ public class TopRecorder<T extends ComposableTop<T>> {
 
             // Make sure we have an inactive version to flip in:
             if (inactive == null) {
-                inactive = active.createEmptyCopy();
+                inactive = active.createNonConcurrentEmptyCopy();
             } else {
                 inactive.reset();
             }

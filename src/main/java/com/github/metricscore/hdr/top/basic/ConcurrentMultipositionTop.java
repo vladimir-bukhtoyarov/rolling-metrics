@@ -33,18 +33,13 @@ import java.util.function.Supplier;
  * so if weakly consistency is not enough then clients of this class should provide synchronization between reader and writers by itself.
  *
  */
-public class ConcurrentTop extends BasicTop implements ComposableTop<ConcurrentTop> {
+public class ConcurrentMultipositionTop extends BasicTop implements ComposableTop<ConcurrentMultipositionTop> {
 
     private final ConcurrentSkipListMap<PositionKey, LatencyWithDescription> top;
-
     private final AtomicLong phaseSequence = new AtomicLong();
 
-    public ConcurrentTop(int size, Duration slowQueryThreshold) {
-        this(size, slowQueryThreshold.toNanos());
-    }
-
-    public ConcurrentTop(int size, long slowQueryThresholdNanos) {
-        super(size, slowQueryThresholdNanos);
+    public ConcurrentMultipositionTop(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
+        super(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
         this.top = new ConcurrentSkipListMap<>();
 
         // init by fake values
@@ -95,7 +90,7 @@ public class ConcurrentTop extends BasicTop implements ComposableTop<ConcurrentT
     }
 
     @Override
-    public void add(ConcurrentTop other) {
+    public void addSelfToOther(ConcurrentMultipositionTop other) {
         long otherPhase = other.phaseSequence.get();
         long currentPhase = this.phaseSequence.get();
         for(Map.Entry<PositionKey, LatencyWithDescription> otherEntry: other.top.descendingMap().entrySet()) {
@@ -112,8 +107,8 @@ public class ConcurrentTop extends BasicTop implements ComposableTop<ConcurrentT
     }
 
     @Override
-    public ConcurrentTop createEmptyCopy() {
-        return new ConcurrentTop(size, slowQueryThresholdNanos);
+    public ConcurrentMultipositionTop createNonConcurrentEmptyCopy() {
+        return new ConcurrentMultipositionTop(size, slowQueryThresholdNanos);
     }
 
     private void addLatency(long phase, long latencyTime, LatencyWithDescription position) {

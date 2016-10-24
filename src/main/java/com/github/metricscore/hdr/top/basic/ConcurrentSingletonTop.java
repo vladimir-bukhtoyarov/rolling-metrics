@@ -18,7 +18,6 @@ package com.github.metricscore.hdr.top.basic;
 
 import com.github.metricscore.hdr.top.LatencyWithDescription;
 
-import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -31,16 +30,12 @@ import java.util.function.Supplier;
  * Special implementation for top with size 1
  *
  */
-public class SingletonTop extends BasicTop implements ComposableTop<SingletonTop> {
+public class ConcurrentSingletonTop extends BasicTop implements ComposableTop<ConcurrentSingletonTop> {
 
     private final AtomicReference<LatencyWithDescription> max;
 
-    public SingletonTop(Duration slowQueryThreshold) {
-        this(slowQueryThreshold.toNanos());
-    }
-
-    public SingletonTop(long slowQueryThresholdNanos) {
-        super(1, slowQueryThresholdNanos);
+    public ConcurrentSingletonTop(long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
+        super(1, slowQueryThresholdNanos, maxLengthOfQueryDescription);
         this.max = new AtomicReference<>(FAKE_QUERY);
     }
 
@@ -73,7 +68,7 @@ public class SingletonTop extends BasicTop implements ComposableTop<SingletonTop
     }
 
     @Override
-    public void add(SingletonTop other) {
+    public void addSelfToOther(ConcurrentSingletonTop other) {
         LatencyWithDescription otherLatency = other.max.get();
         if (max.get().getLatencyInNanoseconds() < otherLatency.getLatencyInNanoseconds()) {
             max.set(otherLatency);
@@ -81,8 +76,8 @@ public class SingletonTop extends BasicTop implements ComposableTop<SingletonTop
     }
 
     @Override
-    public SingletonTop createEmptyCopy() {
-        return new SingletonTop(super.slowQueryThresholdNanos);
+    public ConcurrentSingletonTop createNonConcurrentEmptyCopy() {
+        return new ConcurrentSingletonTop(super.slowQueryThresholdNanos);
     }
 
 }

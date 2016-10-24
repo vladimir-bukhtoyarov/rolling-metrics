@@ -34,15 +34,15 @@ public class UniformTop extends BasicTop {
 
     UniformTop(int size, Duration slowQueryThreshold) {
         super(size, slowQueryThreshold);
-        this.uniformQueryTop = size == 1? new SingletonTop(slowQueryThreshold): new ConcurrentTop(size, slowQueryThreshold);
-        this.recorder = new TopRecorder(uniformQueryTop.createEmptyCopy());
+        this.uniformQueryTop = size == 1? new ConcurrentSingletonTop(slowQueryThreshold): new ConcurrentMultipositionTop(size, slowQueryThreshold);
+        this.recorder = new TopRecorder(uniformQueryTop.createNonConcurrentEmptyCopy());
         intervalQueryTop = recorder.getIntervalQueryTop();
     }
 
     @Override
     synchronized public List<LatencyWithDescription> getPositionsInDescendingOrder() {
         intervalQueryTop = recorder.getIntervalQueryTop(intervalQueryTop);
-        uniformQueryTop.add(intervalQueryTop);
+        uniformQueryTop.addSelfToOther(intervalQueryTop);
         return uniformQueryTop.getPositionsInDescendingOrder();
     }
 

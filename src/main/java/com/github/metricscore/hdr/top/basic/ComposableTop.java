@@ -23,8 +23,8 @@ public interface ComposableTop<T extends ComposableTop> extends Top {
 
     void reset();
 
-    void add(T other);
+    void addSelfToOther(T other);
 
-    T createEmptyCopy();
+    T createNonConcurrentEmptyCopy();
 
 }

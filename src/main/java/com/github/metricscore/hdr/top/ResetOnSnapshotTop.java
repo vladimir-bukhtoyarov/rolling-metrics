@@ -31,7 +31,7 @@ class ResetOnSnapshotTop extends BasicTop {
 
     ResetOnSnapshotTop(int size, Duration slowQueryThreshold) {
         super(size, slowQueryThreshold);
-        ComposableTop active = size == 1? new SingletonTop(slowQueryThreshold): new ConcurrentTop(size, slowQueryThreshold);
+        ComposableTop active = size == 1? new ConcurrentSingletonTop(slowQueryThreshold): new ConcurrentMultipositionTop(size, slowQueryThreshold);
         this.recorder = new TopRecorder(active);
         this.intervalQueryTop = recorder.getIntervalQueryTop();
     }

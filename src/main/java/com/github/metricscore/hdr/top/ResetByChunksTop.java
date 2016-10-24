@@ -21,8 +21,6 @@ import com.github.metricscore.hdr.util.Clock;
 import com.github.metricscore.hdr.top.basic.BasicTop;
 import com.github.metricscore.hdr.top.basic.ComposableTop;
 import com.github.metricscore.hdr.top.basic.TopRecorder;
-import org.HdrHistogram.Histogram;
-import org.HdrHistogram.Recorder;
 
 import java.time.Duration;
 import java.util.List;
@@ -58,7 +56,7 @@ class ResetByChunksTop extends BasicTop {
     synchronized public List<LatencyWithDescription> getPositionsInDescendingOrder() {
         resetIfNeeded();
         intervalQueryTop = recorder.getIntervalQueryTop();
-        uniformQueryTop.add(intervalQueryTop);
+        uniformQueryTop.addSelfToOther(intervalQueryTop);
         return uniformQueryTop.getPositionsInDescendingOrder();
     }
 

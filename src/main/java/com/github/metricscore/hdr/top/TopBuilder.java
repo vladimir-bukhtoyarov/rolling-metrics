@@ -20,13 +20,15 @@ import com.github.metricscore.hdr.util.Clock;
 
 import java.time.Duration;
 import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 
 public class TopBuilder {
 
+    public static final int MAX_POSITION_COUNT = 1000;
     public static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
     public static final int MAX_CHUNKS = 25;
     public static final int MIN_LENGTH_OF_QUERY_DESCRIPTION = 10;
-    public static final int DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION = 1024;
+    public static final int DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION = 1000;
 
     public static final Duration DEFAULT_SLOW_QUERY_THRESHOLD = Duration.ZERO;
     public static final Duration DEFAULT_SNAPSHOT_CACHING_DURATION = Duration.ZERO;
@@ -52,16 +54,22 @@ public class TopBuilder {
         this.factory = factory;
     }
 
+    public Top build() {
+        Top top = factory.create(positionCount, slowQueryThreshold, maxLengthOfQueryDescription, clock, executorSupplier);
+        if (!snapshotCachingDuration.isZero()) {
+
+        }
+        return top;
+    }
+
     public static TopBuilder newBuilder(int positionCount) {
         if (positionCount <= 1) {
             throw new IllegalArgumentException("positionCount should be >=1");
         }
+        if (positionCount > MAX_POSITION_COUNT) {
+            throw new IllegalArgumentException("positionCount should be <= " + MAX_POSITION_COUNT);
+        }
         return new TopBuilder(positionCount, DEFAULT_SLOW_QUERY_THRESHOLD, DEFAULT_SNAPSHOT_CACHING_DURATION, DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION, Clock.defaultClock(), DEFAULT_BACKGROUND_EXECUTOR, DEFAULT_TOP_FACTORY);
-    }
-
-    @Override
-    public TopBuilder clone() {
-        return new TopBuilder(positionCount, slowQueryThreshold, snapshotCachingDuration, maxLengthOfQueryDescription, clock, backgroundExecutor, factory);
     }
 
     public TopBuilder withPositionCount(int positionCount) {
@@ -165,24 +173,29 @@ public class TopBuilder {
             String msg = "interval between resetting one chunk should be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis";
             throw new IllegalArgumentException(msg);
         }
+        this.factory = TopFactory.resetByChunks(intervalBetweenResettingMillis, numberChunks);
         return this;
     }
 
+    @Override
+    public TopBuilder clone() {
+        return new TopBuilder(positionCount, slowQueryThreshold, snapshotCachingDuration, maxLengthOfQueryDescription, clock, backgroundExecutor, factory);
+    }
 
     private interface TopFactory {
 
-        Top create(int positionCount, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock, Executor backgroundExecutor);
+        Top create(int positionCount, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock, Supplier<Executor> backgroundExecutor);
 
         TopFactory UNIFORM = new TopFactory() {
             @Override
-            public Top create(int positionCount, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock, Executor backgroundExecutor) {
+            public Top create(int positionCount, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock, Supplier<Executor> backgroundExecutor) {
                 return new UniformTop(positionCount, slowQueryThreshold);
             }
         };
 
         TopFactory RESET_ON_SNAPSHOT = new TopFactory() {
             @Override
-            public Top create(int positionCount, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock, Executor backgroundExecutor) {
+            public Top create(int positionCount, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock, Supplier<Executor> backgroundExecutor) {
                 return new ResetOnSnapshotTop(positionCount, slowQueryThreshold);
             }
         };
@@ -190,8 +203,8 @@ public class TopBuilder {
         static TopFactory resetByChunks(final long intervalBetweenResettingMillis, int numberOfHistoryChunks) {
             return new TopFactory() {
                 @Override
-                public Top create(int positionCount, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock, Executor backgroundExecutor) {
-                    return new ResetByChunksTop(positionCount, slowQueryThreshold, intervalBetweenResettingMillis, numberOfHistoryChunks, clock, backgroundExecutor);
+                public Top create(int positionCount, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock, Supplier<Executor> backgroundExecutor) {
+                    return new ResetByChunksTop(positionCount, slowQueryThreshold, intervalBetweenResettingMillis, numberOfHistoryChunks, clock, backgroundExecutor.get());
                 }
             };
         }

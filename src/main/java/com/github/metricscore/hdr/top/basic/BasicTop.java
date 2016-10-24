@@ -27,28 +27,18 @@ import java.util.function.Supplier;
  */
 public abstract class BasicTop implements Top {
 
-    // limit to prevent user to kill performance by mistake
-    private static final int MAX_SIZE = 1000;
-
     protected final int size;
     protected final long slowQueryThresholdNanos;
+    protected final int maxLengthOfQueryDescription;
 
-    protected BasicTop(int size, Duration slowQueryThreshold) {
-        this(size, slowQueryThreshold.toNanos());
+    protected BasicTop(int size, Duration slowQueryThreshold, int maxLengthOfQueryDescription) {
+        this(size, slowQueryThreshold.toNanos(), maxLengthOfQueryDescription);
     }
 
-    protected BasicTop(int size, long slowQueryThresholdNanos) {
-        if (size > MAX_SIZE) {
-            throw new IllegalArgumentException("size should be <= " + MAX_SIZE);
-        }
-        if (slowQueryThresholdNanos < 0) {
-            throw new IllegalArgumentException("slowQueryThreshold should be positive");
-        }
+    protected BasicTop(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
         this.slowQueryThresholdNanos = slowQueryThresholdNanos;
-        if (size <= 0) {
-            throw new IllegalArgumentException("size should be >0");
-        }
         this.size = size;
+        this.maxLengthOfQueryDescription = maxLengthOfQueryDescription;
     }
 
     @Override
@@ -73,10 +63,13 @@ public abstract class BasicTop implements Top {
 
     protected abstract void updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos);
 
-    static String combineDescriptionWithLatency(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
+    protected String combineDescriptionWithLatency(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
         String queryDescription = descriptionSupplier.get();
         if (queryDescription == null) {
             throw new NullPointerException("Query queryDescription should not be null");
+        }
+        if (queryDescription.length() > maxLengthOfQueryDescription) {
+            queryDescription = queryDescription.substring(0, maxLengthOfQueryDescription);
         }
         return "" + latencyTime + " " + latencyUnit.toString() + " was spent to execute: " + queryDescription;
     }
