@@ -21,13 +21,13 @@ import java.util.concurrent.TimeUnit;
 /**
  * Represents query latency with user friendly query description.
  */
-public class LatencyWithDescription {
+public class Position {
 
     private final long latencyTime;
     private final TimeUnit latencyUnit;
     private final String description;
 
-    public LatencyWithDescription(long latencyTime, TimeUnit latencyUnit, String description) {
+    public Position(long latencyTime, TimeUnit latencyUnit, String description) {
         this.latencyTime = latencyTime;
         this.latencyUnit = latencyUnit;
         this.description = description;

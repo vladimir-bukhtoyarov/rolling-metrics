@@ -15,9 +15,8 @@
  */
 
 package com.github.metricscore.hdr.top.basic;
-import com.github.metricscore.hdr.top.LatencyWithDescription;
+import com.github.metricscore.hdr.top.Position;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -33,9 +32,9 @@ import java.util.function.Supplier;
  * so if weakly consistency is not enough then clients of this class should provide synchronization between reader and writers by itself.
  *
  */
-public class ConcurrentMultipositionTop extends BasicTop implements ComposableTop<ConcurrentMultipositionTop> {
+public class ConcurrentMultipositionTop extends BaseTop implements ComposableTop<ConcurrentMultipositionTop> {
 
-    private final ConcurrentSkipListMap<PositionKey, LatencyWithDescription> top;
+    private final ConcurrentSkipListMap<PositionKey, Position> top;
     private final AtomicLong phaseSequence = new AtomicLong();
 
     public ConcurrentMultipositionTop(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
@@ -58,18 +57,18 @@ public class ConcurrentMultipositionTop extends BasicTop implements ComposableTo
             return;
         }
         String queryDescription = combineDescriptionWithLatency(latencyTime, latencyUnit, descriptionSupplier);
-        LatencyWithDescription position = new LatencyWithDescription(latencyTime, latencyUnit, queryDescription);
+        Position position = new Position(latencyTime, latencyUnit, queryDescription);
         addLatency(currentPhase, latencyTime, position);
     }
 
     @Override
-    public List<LatencyWithDescription> getPositionsInDescendingOrder() {
-        List<LatencyWithDescription> descendingTop = new ArrayList<>(size);
+    public List<Position> getPositionsInDescendingOrder() {
+        List<Position> descendingTop = new ArrayList<>(size);
         long currentPhase = phaseSequence.get();
         while (true) {
-            for (Map.Entry<PositionKey, LatencyWithDescription> entry : top.descendingMap().entrySet()) {
+            for (Map.Entry<PositionKey, Position> entry : top.descendingMap().entrySet()) {
                 PositionKey key = entry.getKey();
-                LatencyWithDescription position = key.phase < currentPhase? FAKE_QUERY: entry.getValue();
+                Position position = key.phase < currentPhase? FAKE_QUERY: entry.getValue();
                 descendingTop.add(position);
             }
             long phaseOnComplete = phaseSequence.get();
@@ -93,7 +92,7 @@ public class ConcurrentMultipositionTop extends BasicTop implements ComposableTo
     public void addSelfToOther(ConcurrentMultipositionTop other) {
         long otherPhase = other.phaseSequence.get();
         long currentPhase = this.phaseSequence.get();
-        for(Map.Entry<PositionKey, LatencyWithDescription> otherEntry: other.top.descendingMap().entrySet()) {
+        for(Map.Entry<PositionKey, Position> otherEntry: other.top.descendingMap().entrySet()) {
             PositionKey otherKey = otherEntry.getKey();
             if (otherKey.phase != otherPhase) {
                 return;
@@ -111,7 +110,7 @@ public class ConcurrentMultipositionTop extends BasicTop implements ComposableTo
         return new ConcurrentMultipositionTop(size, slowQueryThresholdNanos);
     }
 
-    private void addLatency(long phase, long latencyTime, LatencyWithDescription position) {
+    private void addLatency(long phase, long latencyTime, Position position) {
         top.put(new PositionKey(phase, latencyTime), position);
         top.pollFirstEntry();
     }

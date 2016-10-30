@@ -28,8 +28,6 @@ import java.util.function.Supplier;
  */
 public interface Top {
 
-    LatencyWithDescription FAKE_QUERY = new LatencyWithDescription(0, TimeUnit.SECONDS, "");
-
     /**
      * Registers latency of query. To avoid unnecessary memory allocation for Strings the descriptionSupplier will be called only if latency is greater then "SlowQueryThreshold"
      * and latency is greater than any other query in the top.
@@ -42,10 +40,10 @@ public interface Top {
 
     /**
      * Return the top of queries in descend order, slowest query will be at first place.
-     * The resulted list has always size which equals to {@link #getPositionCount()},
-     * if count of tracked queries is less than {@link #getPositionCount()} then tail of resulted list will be populated by {@link #FAKE_QUERY}
+     *
+     * The resulted list always has size which equals to {@link #getPositionCount()},
      */
-    List<LatencyWithDescription> getPositionsInDescendingOrder();
+    List<Position> getPositionsInDescendingOrder();
 
     /**
      * @return the maximum count of positions in the top.

@@ -16,6 +16,7 @@
 
 package com.github.metricscore.hdr.top.basic;
 
+import com.github.metricscore.hdr.top.Position;
 import com.github.metricscore.hdr.top.Top;
 
 import java.time.Duration;
@@ -25,17 +26,19 @@ import java.util.function.Supplier;
 /**
  *  Is not a part of public API, this class just used as building block for other QueryTop implementations.
  */
-public abstract class BasicTop implements Top {
+public abstract class BaseTop implements Top {
+
+    public static Position FAKE_QUERY = new Position(0, TimeUnit.SECONDS, "");
 
     protected final int size;
     protected final long slowQueryThresholdNanos;
     protected final int maxLengthOfQueryDescription;
 
-    protected BasicTop(int size, Duration slowQueryThreshold, int maxLengthOfQueryDescription) {
+    protected BaseTop(int size, Duration slowQueryThreshold, int maxLengthOfQueryDescription) {
         this(size, slowQueryThreshold.toNanos(), maxLengthOfQueryDescription);
     }
 
-    protected BasicTop(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
+    protected BaseTop(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
         this.slowQueryThresholdNanos = slowQueryThresholdNanos;
         this.size = size;
         this.maxLengthOfQueryDescription = maxLengthOfQueryDescription;

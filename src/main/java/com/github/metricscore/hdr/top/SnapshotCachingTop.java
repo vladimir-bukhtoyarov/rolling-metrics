@@ -37,7 +37,7 @@ public class SnapshotCachingTop implements Top {
     }
 
     @Override
-    public List<LatencyWithDescription> getPositionsInDescendingOrder() {
+    public List<Position> getPositionsInDescendingOrder() {
         // TODO
         return null;
     }

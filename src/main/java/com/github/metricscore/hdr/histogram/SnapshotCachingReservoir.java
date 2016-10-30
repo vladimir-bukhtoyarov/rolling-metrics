@@ -17,6 +17,7 @@
 
 package com.github.metricscore.hdr.histogram;
 
+import com.github.metricscore.hdr.util.CachingSupplier;
 import com.github.metricscore.hdr.util.Clock;
 import com.codahale.metrics.Reservoir;
 import com.codahale.metrics.Snapshot;
@@ -26,19 +27,12 @@ import java.util.concurrent.locks.ReentrantLock;
 
 class SnapshotCachingReservoir implements Reservoir {
 
-    private final Lock lock;
+    private final CachingSupplier<Snapshot> cachingSupplier;
     private final Reservoir target;
-    private final long cachingDurationMillis;
-    private final Clock clock;
-
-    private Snapshot cachedSnapshot;
-    private long lastSnapshotTakeTimeMillis;
 
     SnapshotCachingReservoir(Reservoir target, long cachingDurationMillis, Clock clock) {
+        this.cachingSupplier = new CachingSupplier<>(cachingDurationMillis, clock, target::getSnapshot);
         this.target = target;
-        this.cachingDurationMillis = cachingDurationMillis;
-        this.clock = clock;
-        this.lock = new ReentrantLock();
     }
 
     @Override
@@ -53,18 +47,7 @@ class SnapshotCachingReservoir implements Reservoir {
 
     @Override
     public Snapshot getSnapshot() {
-        lock.lock();
-        try {
-            long nowMillis = clock.currentTimeMillis();
-            if (cachedSnapshot == null
-                    || nowMillis - lastSnapshotTakeTimeMillis >= cachingDurationMillis) {
-                cachedSnapshot = target.getSnapshot();
-                lastSnapshotTakeTimeMillis = nowMillis;
-            }
-            return cachedSnapshot;
-        } finally {
-            lock.unlock();
-        }
+        return cachingSupplier.get();
     }
 
 }

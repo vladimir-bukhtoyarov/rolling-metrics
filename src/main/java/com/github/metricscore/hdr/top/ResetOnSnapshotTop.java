@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-class ResetOnSnapshotTop extends BasicTop {
+class ResetOnSnapshotTop extends BaseTop {
 
     private final TopRecorder recorder;
     private ComposableTop intervalQueryTop;
@@ -37,7 +37,7 @@ class ResetOnSnapshotTop extends BasicTop {
     }
 
     @Override
-    synchronized public List<LatencyWithDescription> getPositionsInDescendingOrder() {
+    synchronized public List<Position> getPositionsInDescendingOrder() {
         intervalQueryTop = recorder.getIntervalQueryTop(intervalQueryTop);
         return intervalQueryTop.getPositionsInDescendingOrder();
     }

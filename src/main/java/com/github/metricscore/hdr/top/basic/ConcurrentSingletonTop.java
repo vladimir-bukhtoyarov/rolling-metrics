@@ -16,7 +16,7 @@
 
 package com.github.metricscore.hdr.top.basic;
 
-import com.github.metricscore.hdr.top.LatencyWithDescription;
+import com.github.metricscore.hdr.top.Position;
 
 import java.util.Collections;
 import java.util.List;
@@ -30,9 +30,9 @@ import java.util.function.Supplier;
  * Special implementation for top with size 1
  *
  */
-public class ConcurrentSingletonTop extends BasicTop implements ComposableTop<ConcurrentSingletonTop> {
+public class ConcurrentSingletonTop extends BaseTop implements ComposableTop<ConcurrentSingletonTop> {
 
-    private final AtomicReference<LatencyWithDescription> max;
+    private final AtomicReference<Position> max;
 
     public ConcurrentSingletonTop(long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
         super(1, slowQueryThresholdNanos, maxLengthOfQueryDescription);
@@ -41,15 +41,15 @@ public class ConcurrentSingletonTop extends BasicTop implements ComposableTop<Co
 
     @Override
     protected void updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos) {
-        LatencyWithDescription newMax = null;
+        Position newMax = null;
         while (true) {
-            LatencyWithDescription previousMax = max.get();
+            Position previousMax = max.get();
             if (latencyNanos <= previousMax.getLatencyInNanoseconds()) {
                 return;
             }
             if (newMax == null) {
                 String description = combineDescriptionWithLatency(latencyTime, latencyUnit, descriptionSupplier);
-                newMax = new LatencyWithDescription(latencyTime, latencyUnit, description);
+                newMax = new Position(latencyTime, latencyUnit, description);
             }
             if (max.compareAndSet(previousMax, newMax)) {
                 return;
@@ -58,7 +58,7 @@ public class ConcurrentSingletonTop extends BasicTop implements ComposableTop<Co
     }
 
     @Override
-    public List<LatencyWithDescription> getPositionsInDescendingOrder() {
+    public List<Position> getPositionsInDescendingOrder() {
         return Collections.singletonList(max.get());
     }
 
@@ -69,7 +69,7 @@ public class ConcurrentSingletonTop extends BasicTop implements ComposableTop<Co
 
     @Override
     public void addSelfToOther(ConcurrentSingletonTop other) {
-        LatencyWithDescription otherLatency = other.max.get();
+        Position otherLatency = other.max.get();
         if (max.get().getLatencyInNanoseconds() < otherLatency.getLatencyInNanoseconds()) {
             max.set(otherLatency);
         }

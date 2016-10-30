@@ -20,27 +20,30 @@ package com.github.metricscore.hdr.top;
 
 import com.github.metricscore.hdr.top.basic.*;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 
-public class UniformTop extends BasicTop {
+public class UniformTop extends BaseTop {
 
     private final TopRecorder recorder;
     private final ComposableTop uniformQueryTop;
     private ComposableTop intervalQueryTop;
 
-    UniformTop(int size, Duration slowQueryThreshold) {
-        super(size, slowQueryThreshold);
-        this.uniformQueryTop = size == 1? new ConcurrentSingletonTop(slowQueryThreshold): new ConcurrentMultipositionTop(size, slowQueryThreshold);
+    UniformTop(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
+        super(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
+        if (size == 1) {
+            this.uniformQueryTop = new ConcurrentSingletonTop(slowQueryThresholdNanos, maxLengthOfQueryDescription);
+        } else {
+            this.uniformQueryTop = new ConcurrentMultipositionTop(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
+        }
         this.recorder = new TopRecorder(uniformQueryTop.createNonConcurrentEmptyCopy());
         intervalQueryTop = recorder.getIntervalQueryTop();
     }
 
     @Override
-    synchronized public List<LatencyWithDescription> getPositionsInDescendingOrder() {
+    synchronized public List<Position> getPositionsInDescendingOrder() {
         intervalQueryTop = recorder.getIntervalQueryTop(intervalQueryTop);
         uniformQueryTop.addSelfToOther(intervalQueryTop);
         return uniformQueryTop.getPositionsInDescendingOrder();

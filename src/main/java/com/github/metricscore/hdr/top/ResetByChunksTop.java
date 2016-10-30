@@ -18,7 +18,7 @@ package com.github.metricscore.hdr.top;
 
 
 import com.github.metricscore.hdr.util.Clock;
-import com.github.metricscore.hdr.top.basic.BasicTop;
+import com.github.metricscore.hdr.top.basic.BaseTop;
 import com.github.metricscore.hdr.top.basic.ComposableTop;
 import com.github.metricscore.hdr.top.basic.TopRecorder;
 
@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 
-class ResetByChunksTop extends BasicTop {
+class ResetByChunksTop extends BaseTop {
 
     private final TopRecorder recorder;
     private final long intervalBetweenResettingMillis;
@@ -53,7 +53,7 @@ class ResetByChunksTop extends BasicTop {
     }
 
     @Override
-    synchronized public List<LatencyWithDescription> getPositionsInDescendingOrder() {
+    synchronized public List<Position> getPositionsInDescendingOrder() {
         resetIfNeeded();
         intervalQueryTop = recorder.getIntervalQueryTop();
         uniformQueryTop.addSelfToOther(intervalQueryTop);
