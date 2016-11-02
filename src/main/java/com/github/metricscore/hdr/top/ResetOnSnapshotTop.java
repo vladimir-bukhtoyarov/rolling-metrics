@@ -29,10 +29,9 @@ class ResetOnSnapshotTop extends BaseTop {
     private final TopRecorder recorder;
     private ComposableTop intervalQueryTop;
 
-    ResetOnSnapshotTop(int size, Duration slowQueryThreshold) {
-        super(size, slowQueryThreshold);
-        ComposableTop active = size == 1? new ConcurrentSingletonTop(slowQueryThreshold): new ConcurrentMultipositionTop(size, slowQueryThreshold);
-        this.recorder = new TopRecorder(active);
+    ResetOnSnapshotTop(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
+        super(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
+        this.recorder = new TopRecorder(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
         this.intervalQueryTop = recorder.getIntervalQueryTop();
     }
 
@@ -43,8 +42,8 @@ class ResetOnSnapshotTop extends BaseTop {
     }
 
     @Override
-    protected void updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos) {
-        recorder.update(latencyTime, latencyUnit, descriptionSupplier);
+    protected boolean updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos) {
+        return recorder.update(latencyTime, latencyUnit, descriptionSupplier);
     }
 
 }

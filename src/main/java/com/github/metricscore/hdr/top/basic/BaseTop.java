@@ -16,7 +16,6 @@
 
 package com.github.metricscore.hdr.top.basic;
 
-import com.github.metricscore.hdr.top.Position;
 import com.github.metricscore.hdr.top.Top;
 
 import java.time.Duration;
@@ -28,11 +27,9 @@ import java.util.function.Supplier;
  */
 public abstract class BaseTop implements Top {
 
-    public static Position FAKE_QUERY = new Position(0, TimeUnit.SECONDS, "");
-
     protected final int size;
-    protected final long slowQueryThresholdNanos;
-    protected final int maxLengthOfQueryDescription;
+    private final long slowQueryThresholdNanos;
+    private final int maxLengthOfQueryDescription;
 
     protected BaseTop(int size, Duration slowQueryThreshold, int maxLengthOfQueryDescription) {
         this(size, slowQueryThreshold.toNanos(), maxLengthOfQueryDescription);
@@ -45,13 +42,13 @@ public abstract class BaseTop implements Top {
     }
 
     @Override
-    public void update(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
+    public boolean update(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
         long latencyNanos = latencyUnit.toNanos(latencyTime);
         if (latencyNanos < slowQueryThresholdNanos) {
             // the measure should be skipped because it is lesser then threshold
-            return;
+            return false;
         }
-        updateImpl(latencyTime, latencyUnit, descriptionSupplier, latencyNanos);
+        return updateImpl(latencyTime, latencyUnit, descriptionSupplier, latencyNanos);
     }
 
     @Override
@@ -64,7 +61,12 @@ public abstract class BaseTop implements Top {
         return slowQueryThresholdNanos;
     }
 
-    protected abstract void updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos);
+    @Override
+    public int getMaxLengthOfQueryDescription() {
+        return maxLengthOfQueryDescription;
+    }
+
+    protected abstract boolean updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos);
 
     protected String combineDescriptionWithLatency(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
         String queryDescription = descriptionSupplier.get();

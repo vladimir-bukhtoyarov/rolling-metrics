@@ -21,44 +21,26 @@ import java.util.concurrent.TimeUnit;
 /**
  * Represents query latency with user friendly query description.
  */
-public class Position {
-
-    private final long latencyTime;
-    private final TimeUnit latencyUnit;
-    private final String description;
-
-    public Position(long latencyTime, TimeUnit latencyUnit, String description) {
-        this.latencyTime = latencyTime;
-        this.latencyUnit = latencyUnit;
-        this.description = description;
-    }
+public interface Position {
 
     /**
      * @return user friendly query description. For example SQL or HTTP URL.
      */
-    public String getQueryDescription() {
-        return description;
-    }
+    String getQueryDescription();
 
     /**
      * @return the latency of query, resolution of latency time unit can be get via {@link #getLatencyUnit()}
      */
-    public long getLatencyTime() {
-        return latencyTime;
-    }
+    long getLatencyTime();
 
     /**
      * @return time units in which latency was measured.
      */
-    public TimeUnit getLatencyUnit() {
-        return latencyUnit;
-    }
+    TimeUnit getLatencyUnit();
 
     /**
      * @return latency of query in nanoseconds
      */
-    public long getLatencyInNanoseconds() {
-        return latencyUnit.toNanos(latencyTime);
-    }
+    long getLatencyInNanoseconds();
 
 }

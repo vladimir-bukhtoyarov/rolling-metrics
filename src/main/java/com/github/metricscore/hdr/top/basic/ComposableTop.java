@@ -19,12 +19,29 @@ package com.github.metricscore.hdr.top.basic;
 import com.github.metricscore.hdr.top.Top;
 
 
-public interface ComposableTop<T extends ComposableTop> extends Top {
+public interface ComposableTop extends Top {
 
     void reset();
 
-    void addSelfToOther(T other);
+    void addInto(Top other);
 
-    T createNonConcurrentEmptyCopy();
+    static ComposableTop createNonConcurrentEmptyCopy(ComposableTop top) {
+        int size = top.getPositionCount();
+        long slowQueryThresholdNanos = top.getSlowQueryThresholdNanos();
+        int maxLengthOfQueryDescription = top.getMaxLengthOfQueryDescription();
+        if (size == 1) {
+            return new SingletonTop(slowQueryThresholdNanos, maxLengthOfQueryDescription);
+        } else {
+            return new MultiPositionTop(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
+        }
+    }
+
+    static ComposableTop createConcurrentTop(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
+        if (size == 1) {
+            return new ConcurrentSingletonTop(slowQueryThresholdNanos, maxLengthOfQueryDescription);
+        } else {
+            return new ConcurrentMultiPositionTop(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
+        }
+    }
 
 }

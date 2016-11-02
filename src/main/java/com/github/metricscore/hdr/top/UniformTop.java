@@ -25,33 +25,29 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 
-public class UniformTop extends BaseTop {
+class UniformTop extends BaseTop {
 
     private final TopRecorder recorder;
     private final ComposableTop uniformQueryTop;
     private ComposableTop intervalQueryTop;
 
-    UniformTop(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
-        super(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
-        if (size == 1) {
-            this.uniformQueryTop = new ConcurrentSingletonTop(slowQueryThresholdNanos, maxLengthOfQueryDescription);
-        } else {
-            this.uniformQueryTop = new ConcurrentMultipositionTop(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
-        }
-        this.recorder = new TopRecorder(uniformQueryTop.createNonConcurrentEmptyCopy());
+    UniformTop(int positionCount, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
+        super(positionCount, slowQueryThresholdNanos, maxLengthOfQueryDescription);
+        this.recorder = new TopRecorder(positionCount, slowQueryThresholdNanos, maxLengthOfQueryDescription);
         intervalQueryTop = recorder.getIntervalQueryTop();
+        this.uniformQueryTop = ComposableTop.createNonConcurrentEmptyCopy(intervalQueryTop);
     }
 
     @Override
     synchronized public List<Position> getPositionsInDescendingOrder() {
         intervalQueryTop = recorder.getIntervalQueryTop(intervalQueryTop);
-        uniformQueryTop.addSelfToOther(intervalQueryTop);
+        intervalQueryTop.addInto(uniformQueryTop);
         return uniformQueryTop.getPositionsInDescendingOrder();
     }
 
     @Override
-    protected void updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos) {
-        recorder.update(latencyTime, latencyUnit, descriptionSupplier);
+    protected boolean updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos) {
+        return recorder.update(latencyTime, latencyUnit, descriptionSupplier);
     }
 
 }

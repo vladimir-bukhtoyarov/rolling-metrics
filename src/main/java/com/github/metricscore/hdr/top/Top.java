@@ -35,13 +35,13 @@ public interface Top {
      * @param latencyTime query duration
      * @param latencyUnit resolution of latency time
      * @param descriptionSupplier lazy supplier for query description
+     *
+     * @return true if latency inserted to any position.
      */
-    void update(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier);
+    boolean update(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier);
 
     /**
-     * Return the top of queries in descend order, slowest query will be at first place.
-     *
-     * The resulted list always has size which equals to {@link #getPositionCount()},
+     * @return the top of queries in descend order, slowest query will be at first place.
      */
     List<Position> getPositionsInDescendingOrder();
 
@@ -57,5 +57,7 @@ public interface Top {
      * @return slow queries threshold
      */
     long getSlowQueryThresholdNanos();
+
+    int getMaxLengthOfQueryDescription();
 
 }

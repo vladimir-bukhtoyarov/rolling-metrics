@@ -1,21 +1,23 @@
 /*
- *    Copyright 2016 Vladimir Bukhtoyarov
  *
- *      Licensed under the Apache License, Version 2.0 (the "License");
- *      you may not use this file except in compliance with the License.
- *      You may obtain a copy of the License at
+ *  Copyright 2016 Vladimir Bukhtoyarov
  *
- *            http://www.apache.org/licenses/LICENSE-2.0
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
  *
- *     Unless required by applicable law or agreed to in writing, software
- *     distributed under the License is distributed on an "AS IS" BASIS,
- *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *     See the License for the specific language governing permissions and
- *     limitations under the License.
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  */
 
 package com.github.metricscore.hdr.top.basic;
 import com.github.metricscore.hdr.top.Position;
+import com.github.metricscore.hdr.top.Top;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,33 +34,34 @@ import java.util.function.Supplier;
  * so if weakly consistency is not enough then clients of this class should provide synchronization between reader and writers by itself.
  *
  */
-public class ConcurrentMultipositionTop extends BaseTop implements ComposableTop<ConcurrentMultipositionTop> {
+public class MultiPositionTop extends BaseTop implements ComposableTop {
 
-    private final ConcurrentSkipListMap<PositionKey, Position> top;
+    private final ConcurrentSkipListMap<PositionKey, PositionImpl> positions;
     private final AtomicLong phaseSequence = new AtomicLong();
 
-    public ConcurrentMultipositionTop(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
+    public MultiPositionTop(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
         super(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
-        this.top = new ConcurrentSkipListMap<>();
+        this.positions = new ConcurrentSkipListMap<>();
 
         // init by fake values
         long phase = phaseSequence.get();
         for (int i = 1; i <= size; i++) {
-            top.put(new PositionKey(phase, -i), FAKE_QUERY);
+            positions.put(new PositionKey(phase, -i), FAKE_QUERY);
         }
     }
 
     @Override
-    protected void updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos) {
-        PositionKey firstKey = top.firstKey();
+    protected boolean updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos) {
+        PositionKey firstKey = positions.firstKey();
         long currentPhase = phaseSequence.get();
         if (firstKey.latencyNanos >= latencyTime && firstKey.phase == currentPhase) {
-            // the measure should be skipped because it is lesser then smallest which already tracked in the top.
-            return;
+            // the measure should be skipped because it is lesser then smallest which already tracked in the positions.
+            return false;
         }
         String queryDescription = combineDescriptionWithLatency(latencyTime, latencyUnit, descriptionSupplier);
         Position position = new Position(latencyTime, latencyUnit, queryDescription);
-        addLatency(currentPhase, latencyTime, position);
+        positions.put(new PositionKey(currentPhase, latencyTime), position);
+        return positions.pollFirstEntry() != position;
     }
 
     @Override
@@ -66,7 +69,7 @@ public class ConcurrentMultipositionTop extends BaseTop implements ComposableTop
         List<Position> descendingTop = new ArrayList<>(size);
         long currentPhase = phaseSequence.get();
         while (true) {
-            for (Map.Entry<PositionKey, Position> entry : top.descendingMap().entrySet()) {
+            for (Map.Entry<PositionKey, Position> entry : positions.descendingMap().entrySet()) {
                 PositionKey key = entry.getKey();
                 Position position = key.phase < currentPhase? FAKE_QUERY: entry.getValue();
                 descendingTop.add(position);
@@ -89,30 +92,24 @@ public class ConcurrentMultipositionTop extends BaseTop implements ComposableTop
     }
 
     @Override
-    public void addSelfToOther(ConcurrentMultipositionTop other) {
-        long otherPhase = other.phaseSequence.get();
+    public void addInto(Top other) {
         long currentPhase = this.phaseSequence.get();
-        for(Map.Entry<PositionKey, Position> otherEntry: other.top.descendingMap().entrySet()) {
-            PositionKey otherKey = otherEntry.getKey();
-            if (otherKey.phase != otherPhase) {
+        for(Map.Entry<PositionKey, Position> positionEntry: positions.descendingMap().entrySet()) {
+            PositionKey key = positionEntry.getKey();
+            if (key.phase != currentPhase) {
                 return;
             }
-            PositionKey firstKey = top.firstKey();
+            Position position = positionEntry.getValue();
+            if (!other.update(position.getLatencyTime(), position.getLatencyUnit(), )) {
+
+            }
+
+            PositionKey firstKey = positions.firstKey();
             if (firstKey.latencyNanos >= otherKey.latencyNanos && firstKey.phase == currentPhase) {
                 return;
             }
             addLatency(currentPhase, otherKey.latencyNanos, otherEntry.getValue());
         }
-    }
-
-    @Override
-    public ConcurrentMultipositionTop createNonConcurrentEmptyCopy() {
-        return new ConcurrentMultipositionTop(size, slowQueryThresholdNanos);
-    }
-
-    private void addLatency(long phase, long latencyTime, Position position) {
-        top.put(new PositionKey(phase, latencyTime), position);
-        top.pollFirstEntry();
     }
 
     private static final class PositionKey implements Comparable<PositionKey> {

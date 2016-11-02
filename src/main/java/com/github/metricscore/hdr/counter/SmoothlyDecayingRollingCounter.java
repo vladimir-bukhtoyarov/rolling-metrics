@@ -63,7 +63,7 @@ import java.util.concurrent.atomic.AtomicReference;
  *         // constructs the counter which divided by 10 chunks with 60 seconds time window.
  *         // one chunk will be reset to zero after each 6 second,
  *         WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(60), 10);
- *         counter.addSelfToOther(42);
+ *         counter.add(42);
  *     </code>
  * </pre>
  */
@@ -90,7 +90,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
      *         // constructs the counter which divided by 10 chunks with 60 seconds time window.
      *         // one chunk will be reset to zero after each 6 second,
      *         WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(60), 10);
-     *         counter.addSelfToOther(42);
+     *         counter.add(42);
      *     </code>
      * </pre>
      *

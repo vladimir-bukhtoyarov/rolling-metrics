@@ -22,44 +22,38 @@ import java.util.function.Supplier;
 /**
  * Is not a part of public API, this class just used as building block for different QueryTop implementations.
  */
-public class TopRecorder<T extends ComposableTop<T>> {
+public class TopRecorder {
 
     private final WriterReaderPhaser recordingPhaser = new WriterReaderPhaser();
 
-    private volatile T active;
-    private T inactive;
+    private volatile ComposableTop active;
+    private ComposableTop inactive;
 
-    public TopRecorder(T active) {
-        this.active = active;
+    public TopRecorder(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
+        this.active = ComposableTop.createConcurrentTop(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
         this.inactive = null;
     }
 
-    public void update(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
+    public boolean update(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
         long criticalValueAtEnter = recordingPhaser.writerCriticalSectionEnter();
         try {
-            active.update(latencyTime, latencyUnit, descriptionSupplier);
+            return active.update(latencyTime, latencyUnit, descriptionSupplier);
         } finally {
             recordingPhaser.writerCriticalSectionExit(criticalValueAtEnter);
         }
     }
 
     public synchronized void reset() {
-        long criticalValueAtEnter = recordingPhaser.writerCriticalSectionEnter();
-        try {
-            active.reset();
-            if (inactive != null) {
-                inactive.reset();
-            }
-        } finally {
-            recordingPhaser.writerCriticalSectionExit(criticalValueAtEnter);
-        }
+        // the currently inactive top is reset each time we flip. So flipping twice resets both:
+        performIntervalSample();
+        performIntervalSample();
     }
 
     public synchronized ComposableTop getIntervalQueryTop() {
         return getIntervalQueryTop(null);
     }
 
-    public synchronized ComposableTop getIntervalQueryTop(T queryTopToRecycle) {
+    public synchronized ComposableTop getIntervalQueryTop(ComposableTop queryTopToRecycle) {
         inactive = queryTopToRecycle;
         performIntervalSample();
         ComposableTop sampledQueryTop = inactive;
@@ -73,13 +67,13 @@ public class TopRecorder<T extends ComposableTop<T>> {
 
             // Make sure we have an inactive version to flip in:
             if (inactive == null) {
-                inactive = active.createNonConcurrentEmptyCopy();
+                inactive = ComposableTop.createNonConcurrentEmptyCopy(active);
             } else {
                 inactive.reset();
             }
 
             // Swap active and inactive top:
-            final T temp = inactive;
+            final ComposableTop temp = inactive;
             inactive = active;
             active = temp;
 

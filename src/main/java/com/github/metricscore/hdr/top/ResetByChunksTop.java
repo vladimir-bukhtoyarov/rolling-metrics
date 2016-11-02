@@ -22,7 +22,6 @@ import com.github.metricscore.hdr.top.basic.BaseTop;
 import com.github.metricscore.hdr.top.basic.ComposableTop;
 import com.github.metricscore.hdr.top.basic.TopRecorder;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executor;
@@ -33,48 +32,21 @@ import java.util.function.Supplier;
 
 class ResetByChunksTop extends BaseTop {
 
-    private final TopRecorder recorder;
-    private final long intervalBetweenResettingMillis;
-    private final Clock clock;
-    private final AtomicLong nextResetTimeMillisRef;
-    private final ComposableTop uniformQueryTop;
-
-    private ComposableTop intervalQueryTop;
-
-    ResetByChunksTop(int size, Duration slowQueryThreshold, long intervalBetweenResettingMillis, int numberChunks, Clock clock, Executor backgroundExecutor) {
-        super(size, slowQueryThreshold);
-        this.intervalBetweenResettingMillis = intervalBetweenResettingMillis;
-
-        this.clock = Objects.requireNonNull(clock);
-        this.recorder = null;//new QueryTopRecorder(size, slowQueryThreshold);
-        this.intervalQueryTop = recorder.getIntervalQueryTop();
-        this.nextResetTimeMillisRef = new AtomicLong(clock.currentTimeMillis() + intervalBetweenResettingMillis);
-        this.uniformQueryTop = null;//ComposableQueryTop.create(size, slowQueryThreshold);
+    ResetByChunksTop(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription, long intervalBetweenResettingMillis, int numberChunks, Clock clock, Executor backgroundExecutor) {
+        super(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
+        // TODO
     }
 
     @Override
     synchronized public List<Position> getPositionsInDescendingOrder() {
-        resetIfNeeded();
-        intervalQueryTop = recorder.getIntervalQueryTop();
-        uniformQueryTop.addSelfToOther(intervalQueryTop);
-        return uniformQueryTop.getPositionsInDescendingOrder();
+        // TODO
+        return null;
     }
 
     @Override
-    protected void updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos) {
-        recorder.update(latencyTime, latencyUnit, descriptionSupplier);
-    }
-
-    private void resetIfNeeded() {
-        long nextResetTimeMillis = nextResetTimeMillisRef.get();
-        long currentTimeMillis = clock.currentTimeMillis();
-        if (currentTimeMillis >= nextResetTimeMillis) {
-            if (nextResetTimeMillisRef.compareAndSet(nextResetTimeMillis, Long.MAX_VALUE)) {
-                recorder.reset();
-                uniformQueryTop.reset();
-                nextResetTimeMillisRef.set(currentTimeMillis + intervalBetweenResettingMillis);
-            }
-        }
+    protected boolean updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos) {
+        // TODO
+        return false;
     }
 
 }
