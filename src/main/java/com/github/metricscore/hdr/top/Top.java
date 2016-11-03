@@ -23,41 +23,44 @@ import java.util.function.Supplier;
 
 /**
  * The top of queries sorted by its latency.
- * The top is sized, independent of count of recorded queries, the top always stores no more than {@link #getPositionCount} positions,
+ * The top is sized, independent of count of recorded queries, the top always stores no more than {@link #getSize} positions,
  * the longer queries displace shorter queries when top reaches it max size.
  */
 public interface Top {
 
     /**
+     * Creates new instance of {@link TopBuilder}
+     *
+     * @param size maximum count of positions in the top
+     *
+     * @return new instance of {@link TopBuilder}
+     */
+    static TopBuilder builder(int size) {
+        return TopBuilder.newBuilder(size);
+    }
+
+    /**
      * Registers latency of query. To avoid unnecessary memory allocation for Strings the descriptionSupplier will be called only if latency is greater then "SlowQueryThreshold"
      * and latency is greater than any other query in the top.
      *
+     * @param timestamp timestamp in milliseconds when latency taken
      * @param latencyTime query duration
      * @param latencyUnit resolution of latency time
      * @param descriptionSupplier lazy supplier for query description
-     *
-     * @return true if latency inserted to any position.
      */
-    boolean update(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier);
+    void update(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier);
 
     /**
-     * @return the top of queries in descend order, slowest query will be at first place.
+     * Returns the top of queries in descend order, slowest query will be at first place.
+     * The size of returned list can be less then {@link #getSize} if not enough count of quires were recorded.
+     *
+     * @return the top of queries in descend order.
      */
     List<Position> getPositionsInDescendingOrder();
 
     /**
      * @return the maximum count of positions in the top.
      */
-    int getPositionCount();
-
-    /**
-     * Returns slow queries threshold.
-     * The queries with latency which shorter than threshold, will not be tracked in the top.
-     *
-     * @return slow queries threshold
-     */
-    long getSlowQueryThresholdNanos();
-
-    int getMaxLengthOfQueryDescription();
+    int getSize();
 
 }

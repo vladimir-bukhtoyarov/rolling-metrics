@@ -15,10 +15,10 @@
  *   limitations under the License.
  */
 
-package com.github.metricscore.hdr.top.basic;
+package com.github.metricscore.hdr.top.impl.recorder;
 
 import com.github.metricscore.hdr.top.Position;
-import com.github.metricscore.hdr.top.Top;
+import com.github.metricscore.hdr.top.impl.collector.PositionCollector;
 
 import java.util.Collections;
 import java.util.List;
@@ -32,26 +32,29 @@ import java.util.function.Supplier;
  * Special implementation for top with size 1
  *
  */
-public class SingletonTop extends BaseTop implements ComposableTop {
+class SinglePositionRecorder extends PositionRecorder {
 
-    private final AtomicReference<PositionImpl> max;
+    private final AtomicReference<Position> max;
 
-    public SingletonTop(long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
+    public SinglePositionRecorder(long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
         super(1, slowQueryThresholdNanos, maxLengthOfQueryDescription);
-        this.max = new AtomicReference<>(PositionImpl.FAKE_QUERY);
+        this.max = new AtomicReference<>(null);
     }
 
     @Override
-    protected void updateImpl(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos) {
+    protected void updateConcurrently(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos) {
         Position newMax = null;
         while (true) {
             Position previousMax = max.get();
-            if (latencyNanos <= previousMax.getLatencyInNanoseconds()) {
-                return;
+            if (previousMax != null) {
+                if (latencyNanos < previousMax.getLatencyInNanoseconds()) {
+                    return;
+                } else if (latencyNanos == previousMax.getLatencyInNanoseconds() && timestamp <= previousMax.getTimestamp()) {
+                    return;
+                }
             }
             if (newMax == null) {
-                String description = combineDescriptionWithLatency(latencyTime, latencyUnit, descriptionSupplier);
-                newMax = new Position(latencyTime, latencyUnit, description);
+                newMax = new Position(timestamp, latencyTime, latencyUnit, descriptionSupplier, super.maxLengthOfQueryDescription);
             }
             if (max.compareAndSet(previousMax, newMax)) {
                 return;
@@ -66,14 +69,14 @@ public class SingletonTop extends BaseTop implements ComposableTop {
 
     @Override
     public void reset() {
-        max.set(FAKE_QUERY);
+        max.set(null);
     }
 
     @Override
-    public boolean addSelfToOther(SingletonTop other) {
-        Position otherLatency = other.max.get();
-        if (max.get().getLatencyInNanoseconds() < otherLatency.getLatencyInNanoseconds()) {
-            max.set(otherLatency);
+    public void addInto(PositionCollector collector) {
+        Position position = max.get();
+        if (position != null) {
+            collector.add(position);
         }
     }
 

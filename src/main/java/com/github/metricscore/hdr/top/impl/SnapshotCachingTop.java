@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-package com.github.metricscore.hdr.top.basic;
+package com.github.metricscore.hdr.top.impl;
 
 
 import com.github.metricscore.hdr.top.Position;
@@ -38,8 +38,8 @@ public class SnapshotCachingTop implements Top {
     }
 
     @Override
-    public boolean update(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
-        return target.update(latencyTime, latencyUnit, descriptionSupplier);
+    public void update(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
+        target.update(timestamp, latencyTime, latencyUnit, descriptionSupplier);
     }
 
     @Override
@@ -48,18 +48,8 @@ public class SnapshotCachingTop implements Top {
     }
 
     @Override
-    public int getPositionCount() {
-        return target.getPositionCount();
-    }
-
-    @Override
-    public long getSlowQueryThresholdNanos() {
-        return target.getSlowQueryThresholdNanos();
-    }
-
-    @Override
-    public int getMaxLengthOfQueryDescription() {
-        return target.getMaxLengthOfQueryDescription();
+    public int getSize() {
+        return target.getSize();
     }
 
 }

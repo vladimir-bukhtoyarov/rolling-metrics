@@ -17,30 +17,88 @@
 package com.github.metricscore.hdr.top;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * Represents query latency with user friendly query description.
  */
-public interface Position {
+public class Position implements Comparable<Position> {
+
+    private final long latencyTime;
+    private final TimeUnit latencyUnit;
+    private final String description;
+    private final long timestamp;
+    private long latencyInNanoseconds;
+
+    public Position(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, int maxLengthOfQueryDescription) {
+        this(timestamp, latencyTime, latencyUnit, combineDescriptionWithLatency(latencyTime, latencyUnit, descriptionSupplier, maxLengthOfQueryDescription));
+    }
+
+    public Position(long timestamp, long latencyTime, TimeUnit latencyUnit, String description) {
+        this.latencyTime = latencyTime;
+        this.latencyUnit = latencyUnit;
+        this.description = description;
+        this.timestamp = timestamp;
+        this.latencyInNanoseconds = latencyUnit.toNanos(latencyTime);
+    }
 
     /**
      * @return user friendly query description. For example SQL or HTTP URL.
      */
-    String getQueryDescription();
+    public String getQueryDescription() {
+        return description;
+    }
 
     /**
      * @return the latency of query, resolution of latency time unit can be get via {@link #getLatencyUnit()}
      */
-    long getLatencyTime();
+    public long getLatencyTime() {
+        return latencyTime;
+    }
 
     /**
      * @return time units in which latency was measured.
      */
-    TimeUnit getLatencyUnit();
+    public TimeUnit getLatencyUnit() {
+        return latencyUnit;
+    }
 
     /**
      * @return latency of query in nanoseconds
      */
-    long getLatencyInNanoseconds();
+    public long getLatencyInNanoseconds() {
+        return latencyInNanoseconds;
+    }
+
+    /**
+     * Returns timestamp in milliseconds when latency taken
+     *
+     * @return timestamp in milliseconds when latency taken
+     */
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    @Override
+    public int compareTo(Position other) {
+        if (latencyInNanoseconds != other.latencyInNanoseconds) {
+            return Long.compare(latencyInNanoseconds, other.latencyInNanoseconds);
+        }
+        if (timestamp != other.timestamp) {
+            return Long.compare(timestamp, other.timestamp);
+        }
+        return description.compareTo(other.description);
+    }
+
+    private static String combineDescriptionWithLatency(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, int maxLengthOfQueryDescription) {
+        String queryDescription = descriptionSupplier.get();
+        if (queryDescription == null) {
+            throw new NullPointerException("Query queryDescription should not be null");
+        }
+        if (queryDescription.length() > maxLengthOfQueryDescription) {
+            queryDescription = queryDescription.substring(0, maxLengthOfQueryDescription);
+        }
+        return "" + latencyTime + " " + latencyUnit.toString() + " was spent to execute: " + queryDescription;
+    }
 
 }

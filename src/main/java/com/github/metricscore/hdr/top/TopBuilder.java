@@ -16,7 +16,10 @@
 
 package com.github.metricscore.hdr.top;
 
-import com.github.metricscore.hdr.top.basic.SnapshotCachingTop;
+import com.github.metricscore.hdr.top.impl.ResetByChunksTop;
+import com.github.metricscore.hdr.top.impl.ResetOnSnapshotConcurrentTop;
+import com.github.metricscore.hdr.top.impl.SnapshotCachingTop;
+import com.github.metricscore.hdr.top.impl.UniformTop;
 import com.github.metricscore.hdr.util.Clock;
 import com.github.metricscore.hdr.util.ResilientExecutionUtil;
 
@@ -37,7 +40,7 @@ public class TopBuilder {
     private static final Executor DEFAULT_BACKGROUND_EXECUTOR = null;
     private static final TopFactory DEFAULT_TOP_FACTORY = TopFactory.UNIFORM;
 
-    private int positionCount;
+    private int size;
     private Duration slowQueryThreshold;
     private Duration snapshotCachingDuration;
     private int maxLengthOfQueryDescription;
@@ -45,8 +48,8 @@ public class TopBuilder {
     private Executor backgroundExecutor;
     private TopFactory factory;
 
-    private TopBuilder(int positionCount, Duration slowQueryThreshold, Duration snapshotCachingDuration, int maxLengthOfQueryDescription, Clock clock, Executor backgroundExecutor, TopFactory factory) {
-        this.positionCount = positionCount;
+    private TopBuilder(int size, Duration slowQueryThreshold, Duration snapshotCachingDuration, int maxLengthOfQueryDescription, Clock clock, Executor backgroundExecutor, TopFactory factory) {
+        this.size = size;
         this.slowQueryThreshold = slowQueryThreshold;
         this.snapshotCachingDuration = snapshotCachingDuration;
         this.maxLengthOfQueryDescription = maxLengthOfQueryDescription;
@@ -56,28 +59,21 @@ public class TopBuilder {
     }
 
     public Top build() {
-        Top top = factory.create(positionCount, slowQueryThreshold, maxLengthOfQueryDescription, clock);
+        Top top = factory.create(size, slowQueryThreshold, maxLengthOfQueryDescription, clock);
         if (!snapshotCachingDuration.isZero()) {
             top = new SnapshotCachingTop(top, snapshotCachingDuration.toMillis(), clock);
         }
         return top;
     }
 
-    public static TopBuilder newBuilder(int positionCount) {
-        if (positionCount <= 1) {
-            throw new IllegalArgumentException("positionCount should be >=1");
-        }
-        if (positionCount > MAX_POSITION_COUNT) {
-            throw new IllegalArgumentException("positionCount should be <= " + MAX_POSITION_COUNT);
-        }
-        return new TopBuilder(positionCount, DEFAULT_SLOW_QUERY_THRESHOLD, DEFAULT_SNAPSHOT_CACHING_DURATION, DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION, Clock.defaultClock(), DEFAULT_BACKGROUND_EXECUTOR, DEFAULT_TOP_FACTORY);
+    public static TopBuilder newBuilder(int size) {
+        validateSize(size);
+        return new TopBuilder(size, DEFAULT_SLOW_QUERY_THRESHOLD, DEFAULT_SNAPSHOT_CACHING_DURATION, DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION, Clock.defaultClock(), DEFAULT_BACKGROUND_EXECUTOR, DEFAULT_TOP_FACTORY);
     }
 
-    public TopBuilder withPositionCount(int positionCount) {
-        if (positionCount <= 1) {
-            throw new IllegalArgumentException("positionCount should be >=1");
-        }
-        this.positionCount = positionCount;
+    public TopBuilder withPositionCount(int size) {
+        validateSize(size);
+        this.size = size;
         return this;
     }
 
@@ -180,34 +176,43 @@ public class TopBuilder {
 
     @Override
     public TopBuilder clone() {
-        return new TopBuilder(positionCount, slowQueryThreshold, snapshotCachingDuration, maxLengthOfQueryDescription, clock, backgroundExecutor, factory);
+        return new TopBuilder(size, slowQueryThreshold, snapshotCachingDuration, maxLengthOfQueryDescription, clock, backgroundExecutor, factory);
     }
 
     private interface TopFactory {
 
-        Top create(int positionCount, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock);
+        Top create(int size, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock);
 
         TopFactory UNIFORM = new TopFactory() {
             @Override
-            public Top create(int positionCount, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock) {
-                return new UniformTop(positionCount, slowQueryThreshold.toNanos(), maxLengthOfQueryDescription);
+            public Top create(int size, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock) {
+                return new UniformTop(size, slowQueryThreshold.toNanos(), maxLengthOfQueryDescription);
             }
         };
 
         TopFactory RESET_ON_SNAPSHOT = new TopFactory() {
             @Override
-            public Top create(int positionCount, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock) {
-                return new ResetOnSnapshotTop(positionCount, slowQueryThreshold.toNanos(), maxLengthOfQueryDescription);
+            public Top create(int size, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock) {
+                return new ResetOnSnapshotConcurrentTop(size, slowQueryThreshold.toNanos(), maxLengthOfQueryDescription);
             }
         };
 
     }
 
+    private static void validateSize(int size) {
+        if (size <= 1) {
+            throw new IllegalArgumentException("size should be >=1");
+        }
+        if (size > MAX_POSITION_COUNT) {
+            throw new IllegalArgumentException("size should be <= " + MAX_POSITION_COUNT);
+        }
+    }
+
     private TopFactory resetByChunks(final long intervalBetweenResettingMillis, int numberOfHistoryChunks) {
         return new TopFactory() {
             @Override
-            public Top create(int positionCount, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock) {
-                return new ResetByChunksTop(positionCount, slowQueryThreshold.toNanos(), maxLengthOfQueryDescription, intervalBetweenResettingMillis, numberOfHistoryChunks, clock, getExecutor());
+            public Top create(int size, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock) {
+                return new ResetByChunksTop(size, slowQueryThreshold.toNanos(), maxLengthOfQueryDescription, intervalBetweenResettingMillis, numberOfHistoryChunks, clock, getExecutor());
             }
         };
     }

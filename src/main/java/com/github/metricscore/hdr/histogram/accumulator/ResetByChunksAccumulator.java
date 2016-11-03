@@ -17,7 +17,6 @@
 
 package com.github.metricscore.hdr.histogram.accumulator;
 
-import com.github.metricscore.hdr.histogram.util.EmptySnapshot;
 import com.github.metricscore.hdr.histogram.util.HistogramUtil;
 import com.github.metricscore.hdr.util.ResilientExecutionUtil;
 import com.github.metricscore.hdr.util.Clock;
@@ -104,9 +103,7 @@ public class ResetByChunksAccumulator implements Accumulator {
                 HistogramUtil.addSecondToFirst(correspondentArchivedHistogram.histogram, currentPhase.totalsHistogram);
                 correspondentArchivedHistogram.proposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp + (archive.length - 1) * intervalBetweenResettingMillis;
             }
-            if (currentPhase.totalsHistogram.getTotalCount() > 0) {
-                currentPhase.totalsHistogram.reset();
-            }
+            HistogramUtil.reset(currentPhase.totalsHistogram);
         } finally {
             long millisSinceCreation = currentTimeMillis - creationTimestamp;
             long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
@@ -117,9 +114,7 @@ public class ResetByChunksAccumulator implements Accumulator {
 
     @Override
     public final synchronized Snapshot getSnapshot(Function<Histogram, Snapshot> snapshotTaker) {
-        if (temporarySnapshotHistogram.getTotalCount() > 0) {
-            temporarySnapshotHistogram.reset();
-        }
+        HistogramUtil.reset(temporarySnapshotHistogram);
         long currentTimeMillis = clock.currentTimeMillis();
 
         for (Phase phase : phases) {
