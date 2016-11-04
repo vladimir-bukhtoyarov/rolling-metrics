@@ -43,23 +43,23 @@ public class TopBuilder {
     private int size;
     private Duration slowQueryThreshold;
     private Duration snapshotCachingDuration;
-    private int maxLengthOfQueryDescription;
+    private int maxDescriptionLengt;
     private Clock clock;
     private Executor backgroundExecutor;
     private TopFactory factory;
 
-    private TopBuilder(int size, Duration slowQueryThreshold, Duration snapshotCachingDuration, int maxLengthOfQueryDescription, Clock clock, Executor backgroundExecutor, TopFactory factory) {
+    private TopBuilder(int size, Duration slowQueryThreshold, Duration snapshotCachingDuration, int maxDescriptionLengt, Clock clock, Executor backgroundExecutor, TopFactory factory) {
         this.size = size;
         this.slowQueryThreshold = slowQueryThreshold;
         this.snapshotCachingDuration = snapshotCachingDuration;
-        this.maxLengthOfQueryDescription = maxLengthOfQueryDescription;
+        this.maxDescriptionLengt = maxDescriptionLengt;
         this.clock = clock;
         this.backgroundExecutor = backgroundExecutor;
         this.factory = factory;
     }
 
     public Top build() {
-        Top top = factory.create(size, slowQueryThreshold, maxLengthOfQueryDescription, clock);
+        Top top = factory.create(size, slowQueryThreshold, maxDescriptionLengt, clock);
         if (!snapshotCachingDuration.isZero()) {
             top = new SnapshotCachingTop(top, snapshotCachingDuration.toMillis(), clock);
         }
@@ -101,12 +101,12 @@ public class TopBuilder {
 
     public TopBuilder withMaxLengthOfQueryDescription(int maxLengthOfQueryDescription) {
         if (maxLengthOfQueryDescription < MIN_LENGTH_OF_QUERY_DESCRIPTION) {
-            String msg = "The requested maxLengthOfQueryDescription=" + maxLengthOfQueryDescription + " is wrong " +
-                    "because of maxLengthOfQueryDescription should be >=" + MIN_LENGTH_OF_QUERY_DESCRIPTION + "." +
+            String msg = "The requested maxDescriptionLengt=" + maxLengthOfQueryDescription + " is wrong " +
+                    "because of maxDescriptionLengt should be >=" + MIN_LENGTH_OF_QUERY_DESCRIPTION + "." +
                     "How do you plan to distinguish one query from another with so short description?";
             throw new IllegalArgumentException(msg);
         }
-        this.maxLengthOfQueryDescription = maxLengthOfQueryDescription;
+        this.maxDescriptionLengt = maxLengthOfQueryDescription;
         return this;
     }
 
@@ -176,24 +176,24 @@ public class TopBuilder {
 
     @Override
     public TopBuilder clone() {
-        return new TopBuilder(size, slowQueryThreshold, snapshotCachingDuration, maxLengthOfQueryDescription, clock, backgroundExecutor, factory);
+        return new TopBuilder(size, slowQueryThreshold, snapshotCachingDuration, maxDescriptionLengt, clock, backgroundExecutor, factory);
     }
 
     private interface TopFactory {
 
-        Top create(int size, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock);
+        Top create(int size, Duration slowQueryThreshold, int maxDescriptionLength, Clock clock);
 
         TopFactory UNIFORM = new TopFactory() {
             @Override
-            public Top create(int size, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock) {
-                return new UniformTop(size, slowQueryThreshold.toNanos(), maxLengthOfQueryDescription);
+            public Top create(int size, Duration slowQueryThreshold, int maxDescriptionLength, Clock clock) {
+                return new UniformTop(size, slowQueryThreshold.toNanos(), maxDescriptionLength);
             }
         };
 
         TopFactory RESET_ON_SNAPSHOT = new TopFactory() {
             @Override
-            public Top create(int size, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock) {
-                return new ResetOnSnapshotConcurrentTop(size, slowQueryThreshold.toNanos(), maxLengthOfQueryDescription);
+            public Top create(int size, Duration slowQueryThreshold, int maxDescriptionLength, Clock clock) {
+                return new ResetOnSnapshotConcurrentTop(size, slowQueryThreshold.toNanos(), maxDescriptionLength);
             }
         };
 
@@ -211,8 +211,8 @@ public class TopBuilder {
     private TopFactory resetByChunks(final long intervalBetweenResettingMillis, int numberOfHistoryChunks) {
         return new TopFactory() {
             @Override
-            public Top create(int size, Duration slowQueryThreshold, int maxLengthOfQueryDescription, Clock clock) {
-                return new ResetByChunksTop(size, slowQueryThreshold.toNanos(), maxLengthOfQueryDescription, intervalBetweenResettingMillis, numberOfHistoryChunks, clock, getExecutor());
+            public Top create(int size, Duration slowQueryThreshold, int maxDescriptionLength, Clock clock) {
+                return new ResetByChunksTop(size, slowQueryThreshold.toNanos(), maxDescriptionLength, intervalBetweenResettingMillis, numberOfHistoryChunks, clock, getExecutor());
             }
         };
     }

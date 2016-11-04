@@ -32,16 +32,16 @@ public abstract class PositionRecorder {
 
     protected final int size;
     protected final long slowQueryThresholdNanos;
-    protected final int maxLengthOfQueryDescription;
+    protected final int maxDescriptionLength;
 
-    protected PositionRecorder(int size, Duration slowQueryThreshold, int maxLengthOfQueryDescription) {
-        this(size, slowQueryThreshold.toNanos(), maxLengthOfQueryDescription);
+    protected PositionRecorder(int size, Duration slowQueryThreshold, int maxDescriptionLength) {
+        this(size, slowQueryThreshold.toNanos(), maxDescriptionLength);
     }
 
-    protected PositionRecorder(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
+    protected PositionRecorder(int size, long slowQueryThresholdNanos, int maxDescriptionLength) {
         this.slowQueryThresholdNanos = slowQueryThresholdNanos;
         this.size = size;
-        this.maxLengthOfQueryDescription = maxLengthOfQueryDescription;
+        this.maxDescriptionLength = maxDescriptionLength;
     }
 
     public void update(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
@@ -57,16 +57,29 @@ public abstract class PositionRecorder {
         return size;
     }
 
-    public static PositionRecorder createRecorder(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
+    public static PositionRecorder createRecorder(int size, long slowQueryThresholdNanos, int maxDescriptionLength) {
         if (size == 1) {
-            return new SinglePositionRecorder(slowQueryThresholdNanos, maxLengthOfQueryDescription);
+            return new SinglePositionRecorder(slowQueryThresholdNanos, maxDescriptionLength);
         } else {
-            return new MultiPositionRecorder(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
+            return new MultiPositionRecorder(size, slowQueryThresholdNanos, maxDescriptionLength);
         }
     }
 
     public PositionRecorder createEmptyCopy() {
-        return createRecorder(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
+        return createRecorder(size, slowQueryThresholdNanos, maxDescriptionLength);
+    }
+
+    protected boolean isNeedToAdd(long newTimestamp, long newLatency, Position currentMinimum) {
+        if (currentMinimum == null) {
+            return true;
+        }
+        if (newLatency > currentMinimum.getLatencyInNanoseconds()) {
+            return true;
+        }
+        if (newLatency == currentMinimum.getLatencyInNanoseconds() && newTimestamp > currentMinimum.getTimestamp()) {
+            return true;
+        }
+        return false;
     }
 
     protected abstract void updateConcurrently(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, long latencyNanos);

@@ -20,6 +20,8 @@ import com.github.metricscore.hdr.top.Position;
 
 import java.util.*;
 
+import static com.github.metricscore.hdr.top.impl.collector.PositionCollector.*;
+
 /**
  * Is not a part of public API, this class just used as building block for high-level Top implementations.
  *
@@ -30,7 +32,7 @@ class MultiPositionCollector implements PositionCollector {
     private final TreeSet<Position> positions = new TreeSet<>();
     private final int maxSize;
 
-    public MultiPositionCollector(int maxSize) {
+    MultiPositionCollector(int maxSize) {
         this.maxSize = maxSize;
     }
 
@@ -42,12 +44,15 @@ class MultiPositionCollector implements PositionCollector {
         }
 
         Position min = positions.first();
-        if (position.compareTo(min) <= 0) {
-            return false;
+        if (isNeedToAdd(position, min)) {
+            if (positions.add(position)) {
+                positions.remove(min);
+                return true;
+            } else {
+                return false;
+            }
         } else {
-            positions.remove(min);
-            positions.add(position);
-            return true;
+            return false;
         }
     }
 

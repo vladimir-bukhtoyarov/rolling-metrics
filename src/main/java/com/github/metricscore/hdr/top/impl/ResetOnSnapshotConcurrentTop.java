@@ -32,8 +32,8 @@ public class ResetOnSnapshotConcurrentTop implements Top {
     private final TwoPhasePositionRecorder recorder;
     private PositionRecorder intervalRecorder;
 
-    public ResetOnSnapshotConcurrentTop(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
-        this.recorder = new TwoPhasePositionRecorder(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
+    public ResetOnSnapshotConcurrentTop(int size, long slowQueryThresholdNanos, int maxDescriptionLength) {
+        this.recorder = new TwoPhasePositionRecorder(size, slowQueryThresholdNanos, maxDescriptionLength);
         this.intervalRecorder = recorder.getIntervalRecorder();
     }
 

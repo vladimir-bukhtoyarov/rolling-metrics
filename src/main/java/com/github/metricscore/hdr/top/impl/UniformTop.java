@@ -34,8 +34,8 @@ public class UniformTop implements Top {
     private final PositionCollector uniformCollector;
     private PositionRecorder intervalRecorder;
 
-    public UniformTop(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
-        this.phasedRecorder = new TwoPhasePositionRecorder(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
+    public UniformTop(int size, long slowQueryThresholdNanos, int maxDescriptionLength) {
+        this.phasedRecorder = new TwoPhasePositionRecorder(size, slowQueryThresholdNanos, maxDescriptionLength);
         intervalRecorder = phasedRecorder.getIntervalRecorder();
         this.uniformCollector = PositionCollector.createCollector(size);
     }

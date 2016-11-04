@@ -30,8 +30,8 @@ public class Position implements Comparable<Position> {
     private final long timestamp;
     private long latencyInNanoseconds;
 
-    public Position(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, int maxLengthOfQueryDescription) {
-        this(timestamp, latencyTime, latencyUnit, combineDescriptionWithLatency(latencyTime, latencyUnit, descriptionSupplier, maxLengthOfQueryDescription));
+    public Position(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, int maxDescriptionLengt) {
+        this(timestamp, latencyTime, latencyUnit, combineDescriptionWithLatency(latencyTime, latencyUnit, descriptionSupplier, maxDescriptionLengt));
     }
 
     public Position(long timestamp, long latencyTime, TimeUnit latencyUnit, String description) {
@@ -90,15 +90,47 @@ public class Position implements Comparable<Position> {
         return description.compareTo(other.description);
     }
 
-    private static String combineDescriptionWithLatency(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, int maxLengthOfQueryDescription) {
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Position position = (Position) o;
+
+        if (timestamp != position.timestamp) return false;
+        if (latencyInNanoseconds != position.latencyInNanoseconds) return false;
+        return description.equals(position.description);
+
+    }
+
+    @Override
+    public int hashCode() {
+        int result = description.hashCode();
+        result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
+        result = 31 * result + (int) (latencyInNanoseconds ^ (latencyInNanoseconds >>> 32));
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "Position{" +
+                "latencyTime=" + latencyTime +
+                ", latencyUnit=" + latencyUnit +
+                ", description='" + description + '\'' +
+                ", timestamp=" + timestamp +
+                ", latencyInNanoseconds=" + latencyInNanoseconds +
+                '}';
+    }
+
+    private static String combineDescriptionWithLatency(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, int maxDescriptionLength) {
         String queryDescription = descriptionSupplier.get();
         if (queryDescription == null) {
-            throw new NullPointerException("Query queryDescription should not be null");
+            throw new IllegalArgumentException("Query queryDescription should not be null");
         }
-        if (queryDescription.length() > maxLengthOfQueryDescription) {
-            queryDescription = queryDescription.substring(0, maxLengthOfQueryDescription);
+        if (queryDescription.length() > maxDescriptionLength) {
+            queryDescription = queryDescription.substring(0, maxDescriptionLength);
         }
-        return "" + latencyTime + " " + latencyUnit.toString() + " was spent to execute: " + queryDescription;
+        return queryDescription;
     }
 
 }

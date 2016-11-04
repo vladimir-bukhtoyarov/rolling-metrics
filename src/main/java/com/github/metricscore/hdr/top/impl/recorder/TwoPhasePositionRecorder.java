@@ -30,8 +30,8 @@ public class TwoPhasePositionRecorder {
     private volatile PositionRecorder active;
     private PositionRecorder inactive;
 
-    public TwoPhasePositionRecorder(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
-        this.active = PositionRecorder.createRecorder(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
+    public TwoPhasePositionRecorder(int size, long slowQueryThresholdNanos, int maxDescriptionLength) {
+        this.active = PositionRecorder.createRecorder(size, slowQueryThresholdNanos, maxDescriptionLength);
         this.inactive = null;
     }
 
@@ -42,12 +42,6 @@ public class TwoPhasePositionRecorder {
         } finally {
             recordingPhaser.writerCriticalSectionExit(criticalValueAtEnter);
         }
-    }
-
-    public synchronized void reset() {
-        // the currently inactive top is reset each time we flip. So flipping twice resets both:
-        performIntervalSample();
-        performIntervalSample();
     }
 
     public synchronized PositionRecorder getIntervalRecorder() {

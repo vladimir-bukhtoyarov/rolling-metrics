@@ -17,7 +17,6 @@
 
 package com.github.metricscore.hdr.top.impl.recorder;
 import com.github.metricscore.hdr.top.Position;
-import com.github.metricscore.hdr.top.Top;
 import com.github.metricscore.hdr.top.impl.collector.PositionCollector;
 
 import java.util.ArrayList;
@@ -41,8 +40,8 @@ class MultiPositionRecorder extends PositionRecorder {
     private final ConcurrentSkipListMap<PositionKey, Position> positions;
     private final AtomicLong phaseSequence = new AtomicLong();
 
-    public MultiPositionRecorder(int size, long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
-        super(size, slowQueryThresholdNanos, maxLengthOfQueryDescription);
+    public MultiPositionRecorder(int size, long slowQueryThresholdNanos, int maxDescriptionLength) {
+        super(size, slowQueryThresholdNanos, maxDescriptionLength);
         this.positions = new ConcurrentSkipListMap<>();
 
         // init by fake values
@@ -68,7 +67,7 @@ class MultiPositionRecorder extends PositionRecorder {
                 return;
             }
         }
-        Position position = new Position(timestamp, latencyTime, latencyUnit, descriptionSupplier, maxLengthOfQueryDescription);
+        Position position = new Position(timestamp, latencyTime, latencyUnit, descriptionSupplier, maxDescriptionLength);
         positions.put(new PositionKey(currentPhase, position), position);
         positions.pollFirstEntry();
     }

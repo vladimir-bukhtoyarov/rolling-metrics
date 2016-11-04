@@ -36,8 +36,8 @@ class SinglePositionRecorder extends PositionRecorder {
 
     private final AtomicReference<Position> max;
 
-    public SinglePositionRecorder(long slowQueryThresholdNanos, int maxLengthOfQueryDescription) {
-        super(1, slowQueryThresholdNanos, maxLengthOfQueryDescription);
+    public SinglePositionRecorder(long slowQueryThresholdNanos, int maxDescriptionLength) {
+        super(1, slowQueryThresholdNanos, maxDescriptionLength);
         this.max = new AtomicReference<>(null);
     }
 
@@ -46,15 +46,11 @@ class SinglePositionRecorder extends PositionRecorder {
         Position newMax = null;
         while (true) {
             Position previousMax = max.get();
-            if (previousMax != null) {
-                if (latencyNanos < previousMax.getLatencyInNanoseconds()) {
-                    return;
-                } else if (latencyNanos == previousMax.getLatencyInNanoseconds() && timestamp <= previousMax.getTimestamp()) {
-                    return;
-                }
+            if (!isNeedToAdd(timestamp, latencyNanos, previousMax)) {
+                return;
             }
             if (newMax == null) {
-                newMax = new Position(timestamp, latencyTime, latencyUnit, descriptionSupplier, super.maxLengthOfQueryDescription);
+                newMax = new Position(timestamp, latencyTime, latencyUnit, descriptionSupplier, super.maxDescriptionLength);
             }
             if (max.compareAndSet(previousMax, newMax)) {
                 return;

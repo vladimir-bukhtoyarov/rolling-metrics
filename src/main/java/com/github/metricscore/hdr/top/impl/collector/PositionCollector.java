@@ -42,4 +42,17 @@ public interface PositionCollector {
         }
     }
 
+    static boolean isNeedToAdd(Position newPosition, Position currentMinimum) {
+        if (currentMinimum == null) {
+            return true;
+        }
+        if (newPosition.getLatencyInNanoseconds() > currentMinimum.getLatencyInNanoseconds()) {
+            return true;
+        }
+        if (newPosition.getLatencyInNanoseconds() == currentMinimum.getLatencyInNanoseconds()) {
+            return newPosition.getTimestamp() > currentMinimum.getTimestamp();
+        }
+        return false;
+    }
+
 }

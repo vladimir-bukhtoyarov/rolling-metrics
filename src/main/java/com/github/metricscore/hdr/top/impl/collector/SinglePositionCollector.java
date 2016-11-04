@@ -22,6 +22,8 @@ import com.github.metricscore.hdr.top.Position;
 import java.util.Collections;
 import java.util.List;
 
+import static com.github.metricscore.hdr.top.impl.collector.PositionCollector.*;
+
 /**
  * Is not a part of public API, this class just used as building block for high-level Top implementations.
  *
@@ -33,7 +35,7 @@ class SinglePositionCollector implements PositionCollector {
 
     @Override
     public boolean add(Position position) {
-        if (max == null || position.getLatencyInNanoseconds() > max.getLatencyInNanoseconds()) {
+        if (isNeedToAdd(position, max)) {
             this.max = position;
             return true;
         } else {
