@@ -62,4 +62,11 @@ class SinglePositionCollector implements PositionCollector {
         }
     }
 
+    @Override
+    public String toString() {
+        return "SinglePositionCollector{" +
+                "max=" + max +
+                '}';
+    }
+
 }

@@ -80,4 +80,11 @@ class SinglePositionRecorder extends PositionRecorder {
         }
     }
 
+    @Override
+    public String toString() {
+        return "SinglePositionRecorder{" +
+                "max=" + max +
+                '}';
+    }
+
 }

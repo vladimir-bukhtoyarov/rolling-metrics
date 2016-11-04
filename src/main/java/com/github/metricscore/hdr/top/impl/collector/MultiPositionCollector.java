@@ -75,4 +75,12 @@ class MultiPositionCollector implements PositionCollector {
         return result;
     }
 
+    @Override
+    public String toString() {
+        return "MultiPositionCollector{" +
+                "positions=" + positions +
+                ", maxSize=" + maxSize +
+                '}';
+    }
+
 }

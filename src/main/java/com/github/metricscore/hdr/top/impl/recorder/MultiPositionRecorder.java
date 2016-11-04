@@ -148,4 +148,12 @@ class MultiPositionRecorder extends PositionRecorder {
         }
     }
 
+    @Override
+    public String toString() {
+        return "MultiPositionRecorder{" +
+                "positions=" + positions +
+                ", phaseSequence=" + phaseSequence +
+                '}';
+    }
+
 }
