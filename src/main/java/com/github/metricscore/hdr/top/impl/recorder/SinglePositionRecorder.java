@@ -36,7 +36,7 @@ class SinglePositionRecorder extends PositionRecorder {
 
     private final AtomicReference<Position> max;
 
-    public SinglePositionRecorder(long slowQueryThresholdNanos, int maxDescriptionLength) {
+    SinglePositionRecorder(long slowQueryThresholdNanos, int maxDescriptionLength) {
         super(1, slowQueryThresholdNanos, maxDescriptionLength);
         this.max = new AtomicReference<>(null);
     }
@@ -60,7 +60,12 @@ class SinglePositionRecorder extends PositionRecorder {
 
     @Override
     public List<Position> getPositionsInDescendingOrder() {
-        return Collections.singletonList(max.get());
+        Position position = max.get();
+        if (position == null) {
+            return Collections.emptyList();
+        } else {
+            return Collections.singletonList(position);
+        }
     }
 
     @Override

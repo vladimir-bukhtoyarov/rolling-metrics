@@ -22,32 +22,33 @@ import com.github.metricscore.hdr.top.impl.collector.PositionCollector;
 import com.github.metricscore.hdr.top.impl.collector.PositionCollectorTestUtil;
 import org.junit.Test;
 
-import static com.github.metricscore.hdr.top.TestData.first;
-import static com.github.metricscore.hdr.top.TestData.second;
-import static com.github.metricscore.hdr.top.TestData.third;
+import static com.github.metricscore.hdr.top.TestData.*;
 import static com.github.metricscore.hdr.top.impl.recorder.PositionRecorderTestUtil.*;
 
 
-public class SinglePositionRecorderTest {
+public class MultiPositionRecorderTest {
 
-    private PositionRecorder recorder = new SinglePositionRecorder(TestData.THRESHOLD_NANOS, 1000);
-    private PositionCollector collector = PositionCollector.createCollector(1);
+    private PositionRecorder recorder = new MultiPositionRecorder(2, TestData.THRESHOLD_NANOS, 1000);
+    private PositionCollector collector = PositionCollector.createCollector(2);
 
     @Test
     public void test() {
         assertEmpty(recorder);
 
         update(recorder, first);
+        update(recorder, first);
         checkOrder(recorder, first);
 
         update(recorder, second);
-        checkOrder(recorder, second);
+        update(recorder, second);
+        checkOrder(recorder, second, first);
 
         update(recorder, third);
-        checkOrder(recorder, third);
+        update(recorder, third);
+        checkOrder(recorder, third, second);
 
         update(recorder, first);
-        checkOrder(recorder, third);
+        checkOrder(recorder, third, second);
     }
 
     @Test
@@ -58,6 +59,10 @@ public class SinglePositionRecorderTest {
         update(recorder, first);
         recorder.addInto(collector);
         PositionCollectorTestUtil.checkOrder(collector, first);
+
+        update(recorder, second);
+        recorder.addInto(collector);
+        PositionCollectorTestUtil.checkOrder(collector, second, first);
     }
 
     @Test

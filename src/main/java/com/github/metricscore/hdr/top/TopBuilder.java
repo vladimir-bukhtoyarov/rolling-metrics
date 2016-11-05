@@ -131,7 +131,7 @@ public class TopBuilder {
         return this;
     }
 
-    public TopBuilder createResetOnSnapshotTop() {
+    public TopBuilder resetAllPositionsOnSnapshot() {
         this.factory = TopFactory.RESET_ON_SNAPSHOT;
         return this;
     }
@@ -200,7 +200,7 @@ public class TopBuilder {
     }
 
     private static void validateSize(int size) {
-        if (size <= 1) {
+        if (size < 1) {
             throw new IllegalArgumentException("size should be >=1");
         }
         if (size > MAX_POSITION_COUNT) {

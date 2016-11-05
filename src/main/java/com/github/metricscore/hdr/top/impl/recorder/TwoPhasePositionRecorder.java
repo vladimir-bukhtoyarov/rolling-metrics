@@ -48,8 +48,8 @@ public class TwoPhasePositionRecorder {
         return getIntervalRecorder(null);
     }
 
-    public synchronized PositionRecorder getIntervalRecorder(PositionRecorder queryTopToRecycle) {
-        inactive = queryTopToRecycle;
+    public synchronized PositionRecorder getIntervalRecorder(PositionRecorder recorderToRecycle) {
+        inactive = recorderToRecycle;
         performIntervalSample();
         PositionRecorder sampledQueryTop = inactive;
         inactive = null; // Once we expose the sample, we can't reuse it internally until it is recycled

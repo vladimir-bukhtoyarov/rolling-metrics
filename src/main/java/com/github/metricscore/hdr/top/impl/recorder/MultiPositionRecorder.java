@@ -40,7 +40,7 @@ class MultiPositionRecorder extends PositionRecorder {
     private final ConcurrentSkipListMap<PositionKey, Position> positions;
     private final AtomicLong phaseSequence = new AtomicLong();
 
-    public MultiPositionRecorder(int size, long slowQueryThresholdNanos, int maxDescriptionLength) {
+    MultiPositionRecorder(int size, long slowQueryThresholdNanos, int maxDescriptionLength) {
         super(size, slowQueryThresholdNanos, maxDescriptionLength);
         this.positions = new ConcurrentSkipListMap<>();
 
@@ -58,18 +58,13 @@ class MultiPositionRecorder extends PositionRecorder {
         PositionKey firstKey = firstEntry.getKey();
         Position firstPosition = firstEntry.getValue();
         long currentPhase = phaseSequence.get();
-        if (firstKey.phase == currentPhase && !isFake(firstPosition)) {
-            if (latencyNanos < firstPosition.getLatencyInNanoseconds()) {
-                // the measure should be skipped because it is lesser then smallest which already tracked in the positions.
-                return;
-            } else if (latencyNanos == firstPosition.getLatencyInNanoseconds() && timestamp <= firstPosition.getTimestamp()) {
-                // the measure should be skipped because it is lesser then smallest which already tracked in the positions.
-                return;
-            }
+        if (!isNeedToAdd(timestamp, latencyNanos, firstPosition, firstKey, currentPhase)) {
+            return;
         }
         Position position = new Position(timestamp, latencyTime, latencyUnit, descriptionSupplier, maxDescriptionLength);
-        positions.put(new PositionKey(currentPhase, position), position);
-        positions.pollFirstEntry();
+        if (positions.putIfAbsent(new PositionKey(currentPhase, position), position) == null) {
+            positions.pollFirstEntry();
+        }
     }
 
     @Override
@@ -79,10 +74,10 @@ class MultiPositionRecorder extends PositionRecorder {
 
         for (Map.Entry<PositionKey, Position> entry : positions.descendingMap().entrySet()) {
             Position position = entry.getValue();
-            if (isFake(position)) {
+            if (currentPhase != entry.getKey().phase) {
                 return notNullList(descendingTop);
             }
-            if (currentPhase != entry.getKey().phase) {
+            if (isFake(position)) {
                 return notNullList(descendingTop);
             }
             if (descendingTop == null) {
@@ -109,10 +104,20 @@ class MultiPositionRecorder extends PositionRecorder {
                 return;
             }
             Position position = positionEntry.getValue();
+            if (isFake(position)) {
+                return;
+            }
             if (!collector.add(position)) {
                 return;
             }
         }
+    }
+
+    private boolean isNeedToAdd(long newTimestamp, long newLatencyNanos, Position firstPosition, PositionKey firstKey, long currentPhase) {
+        if (firstKey.phase != currentPhase) {
+            return true;
+        }
+        return super.isNeedToAdd(newTimestamp, newLatencyNanos, firstPosition);
     }
 
     private boolean isFake(Position position) {

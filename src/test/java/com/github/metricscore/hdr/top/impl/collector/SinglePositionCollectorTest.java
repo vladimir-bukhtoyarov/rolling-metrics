@@ -19,12 +19,10 @@ package com.github.metricscore.hdr.top.impl.collector;
 
 import org.junit.Test;
 
-import java.util.Collections;
 
 import static com.github.metricscore.hdr.top.TestData.*;
 import static com.github.metricscore.hdr.top.impl.collector.PositionCollectorTestUtil.*;
 import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 
@@ -43,14 +41,14 @@ public class SinglePositionCollectorTest {
 
         assertTrue(collector.add(second));
         assertFalse(collector.add(second));
-        assertEquals(Collections.singletonList(second), collector.getPositionsInDescendingOrder());
+        checkOrder(collector, second);
 
         assertTrue(collector.add(third));
         assertFalse(collector.add(third));
-        assertEquals(Collections.singletonList(third), collector.getPositionsInDescendingOrder());
+        checkOrder(collector, third);
 
         assertFalse(collector.add(first));
-        assertEquals(Collections.singletonList(third), collector.getPositionsInDescendingOrder());
+        checkOrder(collector, third);
     }
 
     @Test

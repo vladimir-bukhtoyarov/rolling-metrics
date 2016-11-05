@@ -21,7 +21,6 @@ import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.IntStream;
 
 import static org.junit.Assert.*;
 
@@ -37,11 +36,7 @@ public class PositionTest {
     public void shouldReduceTooLongDescriptions() {
         int MAX_LENGTH = 1000;
         int ACTUAL_LENGTH = 2000;
-        Supplier<String> desciptionSupplier = () -> {
-            StringBuilder builder = new StringBuilder();
-            IntStream.range(0, ACTUAL_LENGTH).forEach(builder::append);
-            return builder.toString();
-        };
+        Supplier<String> desciptionSupplier = () -> TestData.generateString(ACTUAL_LENGTH);
         Position position = new Position(System.currentTimeMillis(), 22, TimeUnit.MILLISECONDS, desciptionSupplier, 1000);
         assertEquals(MAX_LENGTH, position.getQueryDescription().length());
     }
