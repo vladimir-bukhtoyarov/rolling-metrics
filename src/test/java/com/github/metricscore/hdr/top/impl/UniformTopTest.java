@@ -91,4 +91,13 @@ public class UniformTopTest {
         checkOrder(top, fifth, fourth, third);
     }
 
+    @Test(timeout = 32000)
+    public void testThatConcurrentThreadsNotHung() throws InterruptedException {
+        Top top = Top.builder(1)
+                .neverResetPostions()
+                .withSnapshotCachingDuration(Duration.ZERO)
+                .build();
+        TopTestUtil.runInParallel(top, Duration.ofSeconds(30), 0, 10_000);
+    }
+
 }

@@ -17,6 +17,7 @@
 
 package com.github.metricscore.hdr.top.impl;
 
+import com.github.metricscore.hdr.counter.WindowCounter;
 import com.github.metricscore.hdr.top.Position;
 import com.github.metricscore.hdr.top.TestData;
 import com.github.metricscore.hdr.top.Top;
@@ -25,9 +26,16 @@ import com.github.metricscore.hdr.top.impl.recorder.PositionRecorder;
 import junit.framework.TestCase;
 import org.junit.Assert;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
@@ -53,6 +61,50 @@ public class TopTestUtil {
 
     public static void assertEmpty(Top top) {
         Assert.assertEquals(Collections.emptyList(), top.getPositionsInDescendingOrder());
+    }
+
+    public static void runInParallel(Top top, Duration duration, long minValue, long maxValue) throws InterruptedException {
+        AtomicBoolean stopFlag = new AtomicBoolean(false);
+        AtomicReference<Throwable> errorRef = new AtomicReference<>();
+
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                stopFlag.set(true);
+            }
+        }, duration.toMillis());
+
+        Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors() * 2];
+        final CountDownLatch latch = new CountDownLatch(threads.length);
+        for (int i = 0; i < threads.length; i++) {
+            threads[i] = new Thread(() -> {
+                try {
+                    // update top 10 times and take snapshot on each cycle
+                    while (!stopFlag.get()) {
+                        for (int j = 1; j <= 10; j++) {
+                            long latency = minValue + ThreadLocalRandom.current().nextLong(maxValue - minValue);
+                            top.update(System.currentTimeMillis(), latency, TimeUnit.NANOSECONDS, () -> "" + latency);
+                        }
+                        top.getPositionsInDescendingOrder();
+                    }
+                } catch (Exception e){
+                    e.printStackTrace();
+                    errorRef.set(e);
+                } finally {
+                    latch.countDown();
+                }
+            });
+            threads[i].setDaemon(true);
+            threads[i].start();
+        }
+        latch.await();
+        //latch.await(duration.toMillis() + 4000, TimeUnit.MILLISECONDS);
+        if (latch.getCount() > 0) {
+            throw new IllegalStateException("" + latch.getCount() + " was not completed");
+        }
+        if (errorRef.get() != null) {
+            throw new RuntimeException(errorRef.get());
+        }
     }
 
     private static void negativeLatencyShouldBeIgnored(Top top) {

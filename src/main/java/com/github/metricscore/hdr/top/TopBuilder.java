@@ -155,14 +155,14 @@ public class TopBuilder {
         if (numberChunks > MAX_CHUNKS) {
             throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
         }
+        if (numberChunks < 2) {
+            throw new IllegalArgumentException("numberChunks should be >= 1");
+        }
         if (rollingWindow == null) {
             throw new IllegalArgumentException("rollingWindow should not be null");
         }
         if (rollingWindow.isNegative()) {
             throw new IllegalArgumentException("rollingWindow should not be negative");
-        }
-        if (numberChunks < 2) {
-            throw new IllegalArgumentException("numberChunks should be >= 1");
         }
 
         long intervalBetweenResettingMillis = rollingWindow.toMillis() / numberChunks;

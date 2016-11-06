@@ -94,4 +94,13 @@ public class ResetOnSnapshotTopTest {
         assertEmpty(top);
     }
 
+    @Test(timeout = 32000)
+    public void testThatConcurrentThreadsNotHung_1() throws InterruptedException {
+        Top top = Top.builder(1)
+                .resetAllPositionsOnSnapshot()
+                .withSnapshotCachingDuration(Duration.ZERO)
+                .build();
+        TopTestUtil.runInParallel(top, Duration.ofSeconds(30), 0, 10_000);
+    }
+
 }

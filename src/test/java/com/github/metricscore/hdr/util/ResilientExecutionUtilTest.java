@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
 
 public class ResilientExecutionUtilTest {
 
@@ -55,8 +56,23 @@ public class ResilientExecutionUtilTest {
     }
 
     @Test(timeout = 10000)
-    public void shouldAlwaysReturnSameInstanceOfBackgroundExecutor() throws InterruptedException {
+    public void shouldCorrectlyStopBackgroundExecutor() throws InterruptedException {
+        CountDownLatch latch = new CountDownLatch(1);
+        Thread[] executorThread = new Thread[1];
+        Runnable task = () -> {
+            executorThread[0] = Thread.currentThread();
+            latch.countDown();
+        };
+        Executor executor = util.getBackgroundExecutor();
+        util.execute(executor, task);
+        latch.await();
+        util.shutdownBackgroundExecutor();
+        executorThread[0].join();
+    }
 
+    @Test(timeout = 10000)
+    public void shouldAlwaysReturnSameInstanceOfBackgroundExecutor() throws InterruptedException {
+        assertSame(util.getBackgroundExecutor(), util.getBackgroundExecutor());
     }
 
     @Test(timeout = 10000)
@@ -95,11 +111,6 @@ public class ResilientExecutionUtilTest {
 
         latch.await();
         assertEquals(1, executionCount.get());
-    }
-
-    @Test
-    public void getBackgroundExecutor() throws Exception {
-        System.out.println(this.getClass().getClassLoader());
     }
 
 }

@@ -62,12 +62,14 @@ public class ResetByChunksTop implements Top {
         this.currentPhaseRef = new AtomicReference<>(left);
 
         Supplier<PositionCollector> collectorSupplier = () -> PositionCollector.createCollector(size);
-        this.archive = new ArchivedTop[numberHistoryChunks];
         this.historySupported = numberHistoryChunks > 0;
         if (historySupported) {
+            this.archive = new ArchivedTop[numberHistoryChunks];
             for (int i = 0; i < numberHistoryChunks; i++) {
                 this.archive[i] = new ArchivedTop(collectorSupplier.get(), Long.MIN_VALUE);
             }
+        } else {
+            archive = null;
         }
         this.temporarySnapshotCollector = collectorSupplier.get();
     }
@@ -106,9 +108,12 @@ public class ResetByChunksTop implements Top {
                 phase.totalsCollector.addInto(temporarySnapshotCollector);
             }
         }
-        for (ArchivedTop archivedTop : archive) {
-            if (archivedTop.proposedInvalidationTimestamp > currentTimeMillis) {
-                archivedTop.collector.addInto(temporarySnapshotCollector);
+
+        if (historySupported) {
+            for (ArchivedTop archivedTop : archive) {
+                if (archivedTop.proposedInvalidationTimestamp > currentTimeMillis) {
+                    archivedTop.collector.addInto(temporarySnapshotCollector);
+                }
             }
         }
 
@@ -131,7 +136,7 @@ public class ResetByChunksTop implements Top {
                 ArchivedTop correspondentArchivedTop = archive[correspondentArchiveIndex];
                 correspondentArchivedTop.collector.reset();
                 currentPhase.totalsCollector.addInto(correspondentArchivedTop.collector);
-                correspondentArchivedTop.proposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp + (archive.length - 1) * intervalBetweenResettingMillis;
+                correspondentArchivedTop.proposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp + archive.length * intervalBetweenResettingMillis;
             }
             currentPhase.totalsCollector.reset();
         } finally {
@@ -189,7 +194,10 @@ public class ResetByChunksTop implements Top {
             if (proposedInvalidationTimestampLocal > currentTimeMillis) {
                 return true;
             }
-            long correspondentChunkProposedInvalidationTimestamp = proposedInvalidationTimestampLocal + (archive.length - 1) * intervalBetweenResettingMillis;
+            if (!historySupported) {
+                return false;
+            }
+            long correspondentChunkProposedInvalidationTimestamp = proposedInvalidationTimestampLocal + archive.length * intervalBetweenResettingMillis;
             return correspondentChunkProposedInvalidationTimestamp > currentTimeMillis;
         }
     }
