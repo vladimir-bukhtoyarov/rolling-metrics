@@ -126,7 +126,7 @@ public class TopBuilder {
         return this;
     }
 
-    public TopBuilder neverResetPostions() {
+    public TopBuilder neverResetPositions() {
         this.factory = TopFactory.UNIFORM;
         return this;
     }
@@ -145,7 +145,8 @@ public class TopBuilder {
         }
         long intervalBetweenResettingMillis = intervalBetweenResetting.toMillis();
         if (intervalBetweenResettingMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
-            throw new IllegalArgumentException("");
+            String msg = "interval between resetting one chunk should be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis";
+            throw new IllegalArgumentException(msg);
         }
         this.factory = resetByChunks(intervalBetweenResettingMillis, 0);
         return this;
@@ -174,10 +175,6 @@ public class TopBuilder {
         return this;
     }
 
-    @Override
-    public TopBuilder clone() {
-        return new TopBuilder(size, slowQueryThreshold, snapshotCachingDuration, maxDescriptionLengt, clock, backgroundExecutor, factory);
-    }
 
     private interface TopFactory {
 

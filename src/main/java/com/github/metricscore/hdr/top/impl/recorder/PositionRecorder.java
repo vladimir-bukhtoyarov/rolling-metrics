@@ -20,7 +20,6 @@ package com.github.metricscore.hdr.top.impl.recorder;
 import com.github.metricscore.hdr.top.Position;
 import com.github.metricscore.hdr.top.impl.collector.PositionCollector;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -33,10 +32,6 @@ public abstract class PositionRecorder {
     protected final int size;
     protected final long slowQueryThresholdNanos;
     protected final int maxDescriptionLength;
-
-    protected PositionRecorder(int size, Duration slowQueryThreshold, int maxDescriptionLength) {
-        this(size, slowQueryThreshold.toNanos(), maxDescriptionLength);
-    }
 
     protected PositionRecorder(int size, long slowQueryThresholdNanos, int maxDescriptionLength) {
         this.slowQueryThresholdNanos = slowQueryThresholdNanos;

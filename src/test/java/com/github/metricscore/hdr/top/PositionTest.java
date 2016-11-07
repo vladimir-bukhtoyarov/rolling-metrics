@@ -53,4 +53,10 @@ public class PositionTest {
         assertEquals("SELECT * FROM DUAL", position.getQueryDescription());
     }
 
+    @Test
+    public void testToString() {
+        Position position = new Position(System.currentTimeMillis(), 2, TimeUnit.MILLISECONDS, () -> "SELECT * FROM DUAL", 1000);
+        System.out.println(position.toString());
+    }
+
 }

@@ -94,6 +94,15 @@ public class ResetOnSnapshotTopTest {
         assertEmpty(top);
     }
 
+    @Test
+    public void testToString() {
+        for (int i = 1; i <= 2; i++) {
+            System.out.println(Top.builder(i)
+                    .resetAllPositionsOnSnapshot()
+                    .build());
+        }
+    }
+
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung_1() throws InterruptedException {
         Top top = Top.builder(1)

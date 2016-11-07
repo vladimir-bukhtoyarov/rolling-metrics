@@ -32,7 +32,7 @@ public class UniformTopTest {
     public void testCommonAspects() {
         for (int i = 1; i <= 2; i++) {
             Top top = Top.builder(i)
-                    .neverResetPostions()
+                    .neverResetPositions()
                     .withSnapshotCachingDuration(Duration.ZERO)
                     .withSlowQueryThreshold(Duration.ofMillis(100))
                     .withMaxLengthOfQueryDescription(1000)
@@ -44,7 +44,7 @@ public class UniformTopTest {
     @Test
     public void test_size_1() throws Exception {
         Top top = Top.builder(1)
-                .neverResetPostions()
+                .neverResetPositions()
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
 
@@ -63,7 +63,7 @@ public class UniformTopTest {
     @Test
     public void test_size_3() throws Exception {
         Top top = Top.builder(3)
-                .neverResetPostions()
+                .neverResetPositions()
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
 
@@ -91,10 +91,19 @@ public class UniformTopTest {
         checkOrder(top, fifth, fourth, third);
     }
 
+    @Test
+    public void testToString() {
+        for (int i = 1; i <= 2; i++) {
+            System.out.println(Top.builder(i)
+                    .neverResetPositions()
+                    .build());
+        }
+    }
+
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
         Top top = Top.builder(1)
-                .neverResetPostions()
+                .neverResetPositions()
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
         TopTestUtil.runInParallel(top, Duration.ofSeconds(30), 0, 10_000);

@@ -146,7 +146,7 @@ public class ResetByChunksAccumulator implements Accumulator {
         // 4 - two recorders with two histogram
         // 2 - two histogram for storing accumulated values from current phase
         // 1 - temporary histogram used for snapshot extracting
-        return oneHistogramPessimisticFootprint * (archive.length + 4 + 2 + 1);
+        return oneHistogramPessimisticFootprint * ((archive != null? archive.length : 0) + 4 + 2 + 1);
     }
 
     private final class ArchivedHistogram {

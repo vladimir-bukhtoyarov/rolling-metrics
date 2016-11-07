@@ -52,4 +52,11 @@ public class SnapshotCachingTop implements Top {
         return target.getSize();
     }
 
+    @Override
+    public String toString() {
+        return "SnapshotCachingTop{" +
+                "target=" + target +
+                ", cache=" + cache +
+                '}';
+    }
 }
