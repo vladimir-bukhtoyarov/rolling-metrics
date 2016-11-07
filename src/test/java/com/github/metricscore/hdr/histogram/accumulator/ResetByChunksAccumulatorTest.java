@@ -60,7 +60,6 @@ public class ResetByChunksAccumulatorTest {
         assertEquals(9, snapshot.getMin());
         assertEquals(60, snapshot.getMax());
 
-        // should be switched to second chunk
         time.getAndAdd(1); // 1000
         reservoir.update(12);
         reservoir.update(70);
@@ -68,7 +67,6 @@ public class ResetByChunksAccumulatorTest {
         assertEquals(9, snapshot.getMin());
         assertEquals(70, snapshot.getMax());
 
-        // should be switched to third chunk
         time.getAndAdd(1001); // 2001
         reservoir.update(13);
         reservoir.update(80);
@@ -76,16 +74,14 @@ public class ResetByChunksAccumulatorTest {
         assertEquals(9, snapshot.getMin());
         assertEquals(80, snapshot.getMax());
 
-        // should be switched to first chunk
         time.getAndAdd(1000); // 3001
         snapshot = reservoir.getSnapshot();
-        assertEquals(12, snapshot.getMin());
+        assertEquals(9, snapshot.getMin());
         assertEquals(80, snapshot.getMax());
 
-        // should be switched to second chunk
         time.getAndAdd(999); // 4000
         snapshot = reservoir.getSnapshot();
-        assertEquals(13, snapshot.getMin());
+        assertEquals(12, snapshot.getMin());
         assertEquals(80, snapshot.getMax());
         reservoir.update(1);
         reservoir.update(200);
@@ -93,18 +89,17 @@ public class ResetByChunksAccumulatorTest {
         assertEquals(1, snapshot.getMin());
         assertEquals(200, snapshot.getMax());
 
-        // should invalidate all measures
         time.getAndAdd(10000); // 14000
         snapshot = reservoir.getSnapshot();
         assertEquals(0, snapshot.getMin());
         assertEquals(0, snapshot.getMax());
-
         reservoir.update(3);
-        time.addAndGet(2000); // 16000
+
+        time.addAndGet(3999); // 17999
         snapshot = reservoir.getSnapshot();
         assertEquals(3, snapshot.getMax());
 
-        time.addAndGet(1000); // 17000
+        time.addAndGet(1); // 18000
         snapshot = reservoir.getSnapshot();
         assertEquals(0, snapshot.getMax());
     }

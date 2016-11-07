@@ -56,13 +56,16 @@ public class ResetByChunksAccumulator implements Accumulator {
         this.phases = new Phase[] {left, right};
         this.currentPhaseRef = new AtomicReference<>(left);
 
-        this.archive = new ArchivedHistogram[numberHistoryChunks];
+
         this.historySupported = numberHistoryChunks > 0;
         if (historySupported) {
+            this.archive = new ArchivedHistogram[numberHistoryChunks];
             for (int i = 0; i < numberHistoryChunks; i++) {
                 Histogram archivedHistogram = HistogramUtil.createNonConcurrentCopy(left.intervalHistogram);
                 this.archive[i] = new ArchivedHistogram(archivedHistogram, Long.MIN_VALUE);
             }
+        } else {
+            this.archive = null;
         }
 
         this.temporarySnapshotHistogram = HistogramUtil.createNonConcurrentCopy(left.intervalHistogram);
@@ -101,7 +104,7 @@ public class ResetByChunksAccumulator implements Accumulator {
                 ArchivedHistogram correspondentArchivedHistogram = archive[correspondentArchiveIndex];
                 HistogramUtil.reset(correspondentArchivedHistogram.histogram);
                 HistogramUtil.addSecondToFirst(correspondentArchivedHistogram.histogram, currentPhase.totalsHistogram);
-                correspondentArchivedHistogram.proposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp + (archive.length - 1) * intervalBetweenResettingMillis;
+                correspondentArchivedHistogram.proposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp + archive.length * intervalBetweenResettingMillis;
             }
             HistogramUtil.reset(currentPhase.totalsHistogram);
         } finally {
@@ -124,9 +127,11 @@ public class ResetByChunksAccumulator implements Accumulator {
                 HistogramUtil.addSecondToFirst(temporarySnapshotHistogram, phase.totalsHistogram);
             }
         }
-        for (ArchivedHistogram archivedHistogram : archive) {
-            if (archivedHistogram.proposedInvalidationTimestamp > currentTimeMillis) {
-                HistogramUtil.addSecondToFirst(temporarySnapshotHistogram, archivedHistogram.histogram);
+        if (historySupported) {
+            for (ArchivedHistogram archivedHistogram : archive) {
+                if (archivedHistogram.proposedInvalidationTimestamp > currentTimeMillis) {
+                    HistogramUtil.addSecondToFirst(temporarySnapshotHistogram, archivedHistogram.histogram);
+                }
             }
         }
 
@@ -191,7 +196,10 @@ public class ResetByChunksAccumulator implements Accumulator {
             if (proposedInvalidationTimestampLocal > currentTimeMillis) {
                 return true;
             }
-            long correspondentChunkProposedInvalidationTimestamp = proposedInvalidationTimestampLocal + (archive.length - 1) * intervalBetweenResettingMillis;
+            if (!historySupported) {
+                return false;
+            }
+            long correspondentChunkProposedInvalidationTimestamp = proposedInvalidationTimestampLocal + archive.length * intervalBetweenResettingMillis;
             return correspondentChunkProposedInvalidationTimestamp > currentTimeMillis;
         }
     }
