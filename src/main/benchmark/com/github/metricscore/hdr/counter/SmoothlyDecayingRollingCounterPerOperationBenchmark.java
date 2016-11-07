@@ -33,13 +33,13 @@ import java.util.concurrent.atomic.AtomicLong;
 public class SmoothlyDecayingRollingCounterPerOperationBenchmark {
 
     @State(Scope.Benchmark)
-    public static class ResetAtSnapshotCounterWithLongResettingPeriodState {
+    public static class ResetOnSnapshotCounterWithLongResettingPeriodState {
 
         public final WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(3600), 7);
     }
 
     @State(Scope.Benchmark)
-    public static class ResetAtSnapshotCounterWithShortResettingPeriodState {
+    public static class ResetOnSnapshotCounterWithShortResettingPeriodState {
         private final Clock clock = new Clock() {
             // this timer implementation will lead to invalidate each chunk after each increment
             final AtomicLong timeMillis = new AtomicLong();
@@ -67,17 +67,17 @@ public class SmoothlyDecayingRollingCounterPerOperationBenchmark {
     }
 
     @Benchmark
-    public void benchmarkAddToCounterWithLongResettingPeriod(ResetAtSnapshotCounterWithLongResettingPeriodState state) {
+    public void benchmarkAddToCounterWithLongResettingPeriod(ResetOnSnapshotCounterWithLongResettingPeriodState state) {
         state.counter.add(1);
     }
 
     @Benchmark
-    public void benchmarkAddToCounterWithShortResettingPeriod(ResetAtSnapshotCounterWithShortResettingPeriodState state) {
+    public void benchmarkAddToCounterWithShortResettingPeriod(ResetOnSnapshotCounterWithShortResettingPeriodState state) {
         state.counter.add(1);
     }
 
     @Benchmark
-    public long readSum(ResetAtSnapshotCounterWithLongResettingPeriodState state) {
+    public long readSum(ResetOnSnapshotCounterWithLongResettingPeriodState state) {
         return state.counter.getSum();
     }
 

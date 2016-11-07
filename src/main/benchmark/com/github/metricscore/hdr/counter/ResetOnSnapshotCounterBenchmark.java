@@ -27,11 +27,11 @@ import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode({Mode.Throughput, Mode.AverageTime})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-public class ResetAtSnapshotCounterBenchmark {
+public class ResetOnSnapshotCounterBenchmark {
 
     @State(Scope.Benchmark)
     public static class CounterState {
-        public final WindowCounter counter = new ResetAtSnapshotCounter();
+        public final WindowCounter counter = new ResetOnSnapshotCounter();
     }
 
     @Benchmark
@@ -50,7 +50,7 @@ public class ResetAtSnapshotCounterBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(ResetAtSnapshotCounterBenchmark.class.getSimpleName())
+                .include(ResetOnSnapshotCounterBenchmark.class.getSimpleName())
                 .warmupIterations(5)
                 .measurementIterations(5)
                 .threads(4)

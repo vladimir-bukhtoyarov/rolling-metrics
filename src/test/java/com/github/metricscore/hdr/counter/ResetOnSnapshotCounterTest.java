@@ -19,15 +19,13 @@ package com.github.metricscore.hdr.counter;
 
 import org.junit.Test;
 
-import java.time.Duration;
-
 import static org.junit.Assert.assertEquals;
 
-public class ResetAtSnapshotCounterTest {
+public class ResetOnSnapshotCounterTest {
 
     @Test
     public void sumShouldBeClearedAtSnapshot() {
-        WindowCounter counter = new ResetAtSnapshotCounter();
+        WindowCounter counter = new ResetOnSnapshotCounter();
         counter.add(2);
         assertEquals(2, counter.getSum());
         assertEquals(0, counter.getSum());
@@ -40,7 +38,7 @@ public class ResetAtSnapshotCounterTest {
 
     @Test
     public void testToString() {
-        System.out.println(new ResetAtSnapshotCounter());
+        System.out.println(new ResetOnSnapshotCounter());
     }
 
 }

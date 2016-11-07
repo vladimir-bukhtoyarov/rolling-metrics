@@ -21,7 +21,7 @@ package com.github.metricscore.hdr.counter;
  * An incrementing and decrementing counter metric which having window semantic.
  *
  * @see SmoothlyDecayingRollingCounter
- * @see ResetAtSnapshotCounter
+ * @see ResetOnSnapshotCounter
  * @see ResetPeriodicallyCounter
  */
 public interface WindowCounter {

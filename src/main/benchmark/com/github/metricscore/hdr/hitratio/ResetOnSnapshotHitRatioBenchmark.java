@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode({Mode.Throughput, Mode.AverageTime})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-public class ResetAtSnapshotHitRatioBenchmark {
+public class ResetOnSnapshotHitRatioBenchmark {
 
     @org.openjdk.jmh.annotations.State(Scope.Benchmark)
     public static class State {
@@ -50,7 +50,7 @@ public class ResetAtSnapshotHitRatioBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(ResetAtSnapshotHitRatioBenchmark.class.getSimpleName())
+                .include(ResetOnSnapshotHitRatioBenchmark.class.getSimpleName())
                 .warmupIterations(5)
                 .measurementIterations(5)
                 .threads(4)
