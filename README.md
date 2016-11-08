@@ -2,7 +2,8 @@
 The library contains collection of advanced metrics which missed in the original [Metrics Core](https://dropwizard.github.io/metrics/3.1.0/manual/core/) such as:
 * Rolling time window counters. [See documentation for counters](counters.md).
 * Rolling time window hit-ratio. [See documentation for hit-ratio](hit-ratio.md).
-* Histograms with loss-less capturing. [See documentation for histograms](histograms.md).
+* Top of queries by latency. [See documentation for top](top.md).
+* Loss-less capturing histograms(based on HdrHistogram). [See documentation for histograms](histograms.md).
 
 ## Build status
 [![Build Status](https://travis-ci.org/vladimir-bukhtoyarov/metrics-core-hdr.svg?branch=master)](https://travis-ci.org/vladimir-bukhtoyarov/metrics-core-hdr)

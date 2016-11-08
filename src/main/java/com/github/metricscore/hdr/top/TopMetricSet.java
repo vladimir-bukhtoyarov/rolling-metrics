@@ -28,11 +28,43 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * The adapter to use {@link Top} with {@link com.codahale.metrics.MetricRegistry}.
+ * <p>
+ * <p><b>Sample Usage:</b>
+ * <pre> {@code
+ *
+ *  Top top = Top.builder(3).resetAllPositionsOnSnapshot().build();
+ *  MetricSet metricSet = new TopMetricSet("my-top", top, TimeUnit.MILLISECONDS, 5);
+ *  registry.registerAll(metricSet);
+ * }</pre>
+ * The code above creates 7 gauges with following names:
+ * <ul>
+ *   <li>my-top.latencyUnit</li>
+ *   <li>my-top.0.latency</li>
+ *   <li>my-top.0.description</li>
+ *   <li>my-top.1.latency</li>
+ *   <li>my-top.1.description</li>
+ *   <li>my-top.2.latency</li>
+ *   <li>my-top.2.description</li>
+ * </ul>
+ * The "latency" gauges have {@link BigDecimal} type, the "latencyUnit" and "description" gauges have {@link String} type.
+ * The number in the gauge name represents position in the top in descending order, the "0" is the slowest query.
+ * </p>
+ */
 public class TopMetricSet implements MetricSet {
 
     private final BigDecimal zero;
     private final Map<String, Metric> gauges;
 
+    /**
+     * Creates new collection of gauges which compatible with {@link com.codahale.metrics.MetricRegistry}.
+     *
+     * @param name the name prefix for each gauge
+     * @param top the target {@link Top}
+     * @param latencyUnit the time unit to convert latency
+     * @param digitsAfterDecimalPoint the number of digits after decimal point
+     */
     public TopMetricSet(String name, Top top, TimeUnit latencyUnit, int digitsAfterDecimalPoint) {
         if (name == null) {
             throw new IllegalArgumentException("name should not be null");
