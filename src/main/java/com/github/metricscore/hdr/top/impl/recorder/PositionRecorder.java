@@ -30,18 +30,18 @@ import java.util.function.Supplier;
 public abstract class PositionRecorder {
 
     protected final int size;
-    protected final long slowQueryThresholdNanos;
+    protected final long latencyThresholdNanos;
     protected final int maxDescriptionLength;
 
-    protected PositionRecorder(int size, long slowQueryThresholdNanos, int maxDescriptionLength) {
-        this.slowQueryThresholdNanos = slowQueryThresholdNanos;
+    protected PositionRecorder(int size, long latencyThresholdNanos, int maxDescriptionLength) {
+        this.latencyThresholdNanos = latencyThresholdNanos;
         this.size = size;
         this.maxDescriptionLength = maxDescriptionLength;
     }
 
     public void update(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
         long latencyNanos = latencyUnit.toNanos(latencyTime);
-        if (latencyNanos < slowQueryThresholdNanos) {
+        if (latencyNanos < latencyThresholdNanos) {
             // the measure should be skipped because it is lesser then threshold
             return;
         }
@@ -52,16 +52,16 @@ public abstract class PositionRecorder {
         return size;
     }
 
-    public static PositionRecorder createRecorder(int size, long slowQueryThresholdNanos, int maxDescriptionLength) {
+    public static PositionRecorder createRecorder(int size, long latencyThresholdNanos, int maxDescriptionLength) {
         if (size == 1) {
-            return new SinglePositionRecorder(slowQueryThresholdNanos, maxDescriptionLength);
+            return new SinglePositionRecorder(latencyThresholdNanos, maxDescriptionLength);
         } else {
-            return new MultiPositionRecorder(size, slowQueryThresholdNanos, maxDescriptionLength);
+            return new MultiPositionRecorder(size, latencyThresholdNanos, maxDescriptionLength);
         }
     }
 
     public PositionRecorder createEmptyCopy() {
-        return createRecorder(size, slowQueryThresholdNanos, maxDescriptionLength);
+        return createRecorder(size, latencyThresholdNanos, maxDescriptionLength);
     }
 
     protected boolean isNeedToAdd(long newTimestamp, long newLatency, Position currentMinimum) {

@@ -40,8 +40,8 @@ class MultiPositionRecorder extends PositionRecorder {
     private final ConcurrentSkipListMap<PositionKey, Position> positions;
     private final AtomicLong phaseSequence = new AtomicLong();
 
-    MultiPositionRecorder(int size, long slowQueryThresholdNanos, int maxDescriptionLength) {
-        super(size, slowQueryThresholdNanos, maxDescriptionLength);
+    MultiPositionRecorder(int size, long latencyThresholdNanos, int maxDescriptionLength) {
+        super(size, latencyThresholdNanos, maxDescriptionLength);
         this.positions = new ConcurrentSkipListMap<>();
 
         // init by fake values

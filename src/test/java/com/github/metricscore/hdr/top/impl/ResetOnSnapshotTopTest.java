@@ -34,7 +34,7 @@ public class ResetOnSnapshotTopTest {
             Top top = Top.builder(i)
                     .resetAllPositionsOnSnapshot()
                     .withSnapshotCachingDuration(Duration.ZERO)
-                    .withSlowQueryThreshold(Duration.ofMillis(100))
+                    .withLatencyThreshold(Duration.ofMillis(100))
                     .withMaxLengthOfQueryDescription(1000)
                     .build();
             testCommonScenarios(i, top, Duration.ofMillis(100).toNanos(), 1000);

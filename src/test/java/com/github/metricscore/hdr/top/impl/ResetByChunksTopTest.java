@@ -37,7 +37,7 @@ public class ResetByChunksTopTest {
             Top top = Top.builder(i)
                     .resetAllPositionsPeriodicallyByChunks(Duration.ofDays(1), 3)
                     .withSnapshotCachingDuration(Duration.ZERO)
-                    .withSlowQueryThreshold(Duration.ofMillis(100))
+                    .withLatencyThreshold(Duration.ofMillis(100))
                     .withMaxLengthOfQueryDescription(1000)
                     .build();
             testCommonScenarios(i, top, Duration.ofMillis(100).toNanos(), 1000);

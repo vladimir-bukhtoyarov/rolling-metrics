@@ -17,9 +17,6 @@
 
 package com.github.metricscore.hdr.top.impl;
 
-import com.github.metricscore.hdr.counter.CounterTestUtil;
-import com.github.metricscore.hdr.counter.ResetPeriodicallyCounter;
-import com.github.metricscore.hdr.counter.WindowCounter;
 import com.github.metricscore.hdr.top.Top;
 import com.github.metricscore.hdr.util.Clock;
 import com.github.metricscore.hdr.util.MockExecutor;
@@ -40,7 +37,7 @@ public class ResetPeriodicallyTopTest {
             Top top = Top.builder(i)
                     .resetAllPositionsPeriodically(Duration.ofDays(1))
                     .withSnapshotCachingDuration(Duration.ZERO)
-                    .withSlowQueryThreshold(Duration.ofMillis(100))
+                    .withLatencyThreshold(Duration.ofMillis(100))
                     .withMaxLengthOfQueryDescription(1000)
                     .build();
             testCommonScenarios(i, top, Duration.ofMillis(100).toNanos(), 1000);

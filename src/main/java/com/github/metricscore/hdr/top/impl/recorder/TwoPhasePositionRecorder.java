@@ -30,8 +30,8 @@ public class TwoPhasePositionRecorder {
     private volatile PositionRecorder active;
     private PositionRecorder inactive;
 
-    public TwoPhasePositionRecorder(int size, long slowQueryThresholdNanos, int maxDescriptionLength) {
-        this.active = PositionRecorder.createRecorder(size, slowQueryThresholdNanos, maxDescriptionLength);
+    public TwoPhasePositionRecorder(int size, long latencyThresholdNanos, int maxDescriptionLength) {
+        this.active = PositionRecorder.createRecorder(size, latencyThresholdNanos, maxDescriptionLength);
         this.inactive = null;
     }
 

@@ -34,7 +34,7 @@ public class UniformTopTest {
             Top top = Top.builder(i)
                     .neverResetPositions()
                     .withSnapshotCachingDuration(Duration.ZERO)
-                    .withSlowQueryThreshold(Duration.ofMillis(100))
+                    .withLatencyThreshold(Duration.ofMillis(100))
                     .withMaxLengthOfQueryDescription(1000)
                     .build();
             testCommonScenarios(i, top, Duration.ofMillis(100).toNanos(), 1000);

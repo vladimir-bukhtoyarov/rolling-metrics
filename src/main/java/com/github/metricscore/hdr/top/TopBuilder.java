@@ -26,6 +26,23 @@ import com.github.metricscore.hdr.util.ResilientExecutionUtil;
 import java.time.Duration;
 import java.util.concurrent.Executor;
 
+/**
+ * The builder for {@link Top}.
+ *
+ * <p><br> Basic examples of usage:
+ * <pre> {@code
+ *
+ *  Top top = Top.builder(3).resetAllPositionsOnSnapshot().build();
+ *  MetricSet metricSet = new TopMetricSet("my-top", top, TimeUnit.MILLISECONDS, 5);
+ *  registry.registerAll(metricSet);
+ * }</pre>
+ *
+ * <p>
+ * The responsibility of builder is only construction of {@link Top}, you should use {@link TopMetricSet} to integrate constructed {@link Top} into {@link com.codahale.metrics.MetricRegistry}
+ *
+ * @see Top
+ * @see TopMetricSet
+ */
 public class TopBuilder {
 
     public static final int MAX_POSITION_COUNT = 1000;
@@ -34,60 +51,97 @@ public class TopBuilder {
     public static final int MIN_LENGTH_OF_QUERY_DESCRIPTION = 10;
     public static final int DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION = 1000;
 
-    public static final Duration DEFAULT_SLOW_QUERY_THRESHOLD = Duration.ZERO;
+    public static final Duration DEFAULT_LATENCY_THRESHOLD = Duration.ZERO;
     public static final Duration DEFAULT_SNAPSHOT_CACHING_DURATION = Duration.ofSeconds(1);
 
     private static final Executor DEFAULT_BACKGROUND_EXECUTOR = null;
     private static final TopFactory DEFAULT_TOP_FACTORY = TopFactory.UNIFORM;
 
     private int size;
-    private Duration slowQueryThreshold;
+    private Duration latencyThreshold;
     private Duration snapshotCachingDuration;
-    private int maxDescriptionLengt;
+    private int maxDescriptionLength;
     private Clock clock;
     private Executor backgroundExecutor;
     private TopFactory factory;
 
-    private TopBuilder(int size, Duration slowQueryThreshold, Duration snapshotCachingDuration, int maxDescriptionLengt, Clock clock, Executor backgroundExecutor, TopFactory factory) {
+    private TopBuilder(int size, Duration latencyThreshold, Duration snapshotCachingDuration, int maxDescriptionLength, Clock clock, Executor backgroundExecutor, TopFactory factory) {
         this.size = size;
-        this.slowQueryThreshold = slowQueryThreshold;
+        this.latencyThreshold = latencyThreshold;
         this.snapshotCachingDuration = snapshotCachingDuration;
-        this.maxDescriptionLengt = maxDescriptionLengt;
+        this.maxDescriptionLength = maxDescriptionLength;
         this.clock = clock;
         this.backgroundExecutor = backgroundExecutor;
         this.factory = factory;
     }
 
+    /**
+     * Constructs new {@link Top} instance
+     *
+     * @return new {@link Top} instance
+     */
     public Top build() {
-        Top top = factory.create(size, slowQueryThreshold, maxDescriptionLengt, clock);
+        Top top = factory.create(size, latencyThreshold, maxDescriptionLength, clock);
         if (!snapshotCachingDuration.isZero()) {
             top = new SnapshotCachingTop(top, snapshotCachingDuration.toMillis(), clock);
         }
         return top;
     }
 
+    /**
+     * Creates new builder instance.
+     *
+     * @param size the count of positions for tops which will be constructed by this builder
+     * @return this builder instance
+     */
     public static TopBuilder newBuilder(int size) {
         validateSize(size);
-        return new TopBuilder(size, DEFAULT_SLOW_QUERY_THRESHOLD, DEFAULT_SNAPSHOT_CACHING_DURATION, DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION, Clock.defaultClock(), DEFAULT_BACKGROUND_EXECUTOR, DEFAULT_TOP_FACTORY);
+        return new TopBuilder(size, DEFAULT_LATENCY_THRESHOLD, DEFAULT_SNAPSHOT_CACHING_DURATION, DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION, Clock.defaultClock(), DEFAULT_BACKGROUND_EXECUTOR, DEFAULT_TOP_FACTORY);
     }
 
+    /**
+     * Configures the maximum count of positions for tops which will be constructed by this builder.
+     *
+     * @param size the maximum count of positions
+     * @return this builder instance
+     */
     public TopBuilder withPositionCount(int size) {
         validateSize(size);
         this.size = size;
         return this;
     }
 
-    public TopBuilder withSlowQueryThreshold(Duration slowQueryThreshold) {
-        if (slowQueryThreshold == null) {
-            throw new IllegalArgumentException("slowQueryThreshold should not be null");
+    /**
+     * Configures the latency threshold. The queries having latency which shorter than threshold, will not be tracked in the top.
+     * The default value is zero {@link #DEFAULT_LATENCY_THRESHOLD}, means that all queries can be recorded independent of its latency.
+     *
+     * Specify this parameter when you want not to track queries which fast,
+     * in other words when you want see nothing when all going well.
+     * 
+     * @param latencyThreshold
+     * @return this builder instance
+     */
+    public TopBuilder withLatencyThreshold(Duration latencyThreshold) {
+        if (latencyThreshold == null) {
+            throw new IllegalArgumentException("latencyThreshold should not be null");
         }
-        if (slowQueryThreshold.isNegative()) {
-            throw new IllegalArgumentException("slowQueryThreshold should not be negative");
+        if (latencyThreshold.isNegative()) {
+            throw new IllegalArgumentException("latencyThreshold should not be negative");
         }
-        this.slowQueryThreshold = slowQueryThreshold;
+        this.latencyThreshold = latencyThreshold;
         return this;
     }
 
+    /**
+     * Configures the duration for caching the results of invocation of {@link Top#getPositionsInDescendingOrder()}.
+     * Currently the caching is only one way to solve <a href="https://github.com/dropwizard/metrics/issues/1016">atomicity read problem</a>.
+     * The default value is one second {@link #DEFAULT_SNAPSHOT_CACHING_DURATION}.
+     * You can specify zero duration to discard caching at all, but theoretically,
+     * you should not disable cache until Dropwizard-Metrics reporting pipeline will be rewritten <a href="https://github.com/marshallpierce/metrics-thoughts">in scope of v-4-0</a>
+     *
+     * @param snapshotCachingDuration
+     * @return this builder instance
+     */
     public TopBuilder withSnapshotCachingDuration(Duration snapshotCachingDuration) {
         if (snapshotCachingDuration == null) {
             throw new IllegalArgumentException("snapshotCachingDuration should not be null");
@@ -99,17 +153,27 @@ public class TopBuilder {
         return this;
     }
 
+    /**
+     *
+     * @param maxLengthOfQueryDescription
+     * @return
+     */
     public TopBuilder withMaxLengthOfQueryDescription(int maxLengthOfQueryDescription) {
         if (maxLengthOfQueryDescription < MIN_LENGTH_OF_QUERY_DESCRIPTION) {
-            String msg = "The requested maxDescriptionLengt=" + maxLengthOfQueryDescription + " is wrong " +
-                    "because of maxDescriptionLengt should be >=" + MIN_LENGTH_OF_QUERY_DESCRIPTION + "." +
+            String msg = "The requested maxDescriptionLength=" + maxLengthOfQueryDescription + " is wrong " +
+                    "because of maxDescriptionLength should be >=" + MIN_LENGTH_OF_QUERY_DESCRIPTION + "." +
                     "How do you plan to distinguish one query from another with so short description?";
             throw new IllegalArgumentException(msg);
         }
-        this.maxDescriptionLengt = maxLengthOfQueryDescription;
+        this.maxDescriptionLength = maxLengthOfQueryDescription;
         return this;
     }
 
+    /**
+     *
+     * @param clock
+     * @return this builder instance
+     */
     public TopBuilder withClock(Clock clock) {
         if (clock == null) {
             throw new IllegalArgumentException("Clock should not be null");
@@ -118,6 +182,11 @@ public class TopBuilder {
         return this;
     }
 
+    /**
+     *
+     * @param backgroundExecutor
+     * @return this builder instance
+     */
     public TopBuilder withBackgroundExecutor(Executor backgroundExecutor) {
         if (backgroundExecutor == null) {
             throw new IllegalArgumentException("Clock should not be null");
@@ -126,16 +195,29 @@ public class TopBuilder {
         return this;
     }
 
+    /**
+     *
+     * @return this builder instance
+     */
     public TopBuilder neverResetPositions() {
         this.factory = TopFactory.UNIFORM;
         return this;
     }
 
+    /**
+     *
+     * @return this builder instance
+     */
     public TopBuilder resetAllPositionsOnSnapshot() {
         this.factory = TopFactory.RESET_ON_SNAPSHOT;
         return this;
     }
 
+    /**
+     *
+     * @param intervalBetweenResetting
+     * @return this builder instance
+     */
     public TopBuilder resetAllPositionsPeriodically(Duration intervalBetweenResetting) {
         if (intervalBetweenResetting == null) {
             throw new IllegalArgumentException("intervalBetweenResetting should not be null");
@@ -152,6 +234,12 @@ public class TopBuilder {
         return this;
     }
 
+    /**
+     *
+     * @param rollingWindow
+     * @param numberChunks
+     * @return this builder instance
+     */
     public TopBuilder resetAllPositionsPeriodicallyByChunks(Duration rollingWindow, int numberChunks) {
         if (numberChunks > MAX_CHUNKS) {
             throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
@@ -178,19 +266,19 @@ public class TopBuilder {
 
     private interface TopFactory {
 
-        Top create(int size, Duration slowQueryThreshold, int maxDescriptionLength, Clock clock);
+        Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Clock clock);
 
         TopFactory UNIFORM = new TopFactory() {
             @Override
-            public Top create(int size, Duration slowQueryThreshold, int maxDescriptionLength, Clock clock) {
-                return new UniformTop(size, slowQueryThreshold.toNanos(), maxDescriptionLength);
+            public Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Clock clock) {
+                return new UniformTop(size, latencyThreshold.toNanos(), maxDescriptionLength);
             }
         };
 
         TopFactory RESET_ON_SNAPSHOT = new TopFactory() {
             @Override
-            public Top create(int size, Duration slowQueryThreshold, int maxDescriptionLength, Clock clock) {
-                return new ResetOnSnapshotConcurrentTop(size, slowQueryThreshold.toNanos(), maxDescriptionLength);
+            public Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Clock clock) {
+                return new ResetOnSnapshotConcurrentTop(size, latencyThreshold.toNanos(), maxDescriptionLength);
             }
         };
 
@@ -208,8 +296,8 @@ public class TopBuilder {
     private TopFactory resetByChunks(final long intervalBetweenResettingMillis, int numberOfHistoryChunks) {
         return new TopFactory() {
             @Override
-            public Top create(int size, Duration slowQueryThreshold, int maxDescriptionLength, Clock clock) {
-                return new ResetByChunksTop(size, slowQueryThreshold.toNanos(), maxDescriptionLength, intervalBetweenResettingMillis, numberOfHistoryChunks, clock, getExecutor());
+            public Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Clock clock) {
+                return new ResetByChunksTop(size, latencyThreshold.toNanos(), maxDescriptionLength, intervalBetweenResettingMillis, numberOfHistoryChunks, clock, getExecutor());
             }
         };
     }

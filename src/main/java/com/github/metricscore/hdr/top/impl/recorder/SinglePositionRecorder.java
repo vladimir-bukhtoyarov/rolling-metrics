@@ -36,8 +36,8 @@ class SinglePositionRecorder extends PositionRecorder {
 
     private final AtomicReference<Position> max;
 
-    SinglePositionRecorder(long slowQueryThresholdNanos, int maxDescriptionLength) {
-        super(1, slowQueryThresholdNanos, maxDescriptionLength);
+    SinglePositionRecorder(long latencyThresholdNanos, int maxDescriptionLength) {
+        super(1, latencyThresholdNanos, maxDescriptionLength);
         this.max = new AtomicReference<>(null);
     }
 

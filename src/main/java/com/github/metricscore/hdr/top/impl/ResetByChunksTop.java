@@ -49,13 +49,13 @@ public class ResetByChunksTop implements Top {
     private final Phase[] phases;
     private final AtomicReference<Phase> currentPhaseRef;
 
-    public ResetByChunksTop(int size, long slowQueryThresholdNanos, int maxDescriptionLength, long intervalBetweenResettingMillis, int numberHistoryChunks, Clock clock, Executor backgroundExecutor) {
+    public ResetByChunksTop(int size, long latencyThresholdNanos, int maxDescriptionLength, long intervalBetweenResettingMillis, int numberHistoryChunks, Clock clock, Executor backgroundExecutor) {
         this.intervalBetweenResettingMillis = intervalBetweenResettingMillis;
         this.clock = clock;
         this.creationTimestamp = clock.currentTimeMillis();
         this.backgroundExecutor = backgroundExecutor;
 
-        Supplier<TwoPhasePositionRecorder> recorderSupplier = () -> new TwoPhasePositionRecorder(size, slowQueryThresholdNanos, maxDescriptionLength);
+        Supplier<TwoPhasePositionRecorder> recorderSupplier = () -> new TwoPhasePositionRecorder(size, latencyThresholdNanos, maxDescriptionLength);
         this.left = new Phase(recorderSupplier.get(), creationTimestamp + intervalBetweenResettingMillis);
         this.right = new Phase(recorderSupplier.get(), Long.MAX_VALUE);
         this.phases = new Phase[] {left, right};

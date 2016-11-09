@@ -54,17 +54,17 @@ public class TopBuilderTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void nullSlowQueryThresholdShouldBeDisallowed() {
-        Top.builder(1).withSlowQueryThreshold(null);
+        Top.builder(1).withLatencyThreshold(null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void negativeSlowQueryThresholdShouldBeDisallowed() {
-        Top.builder(1).withSlowQueryThreshold(Duration.ofMillis(-1));
+        Top.builder(1).withLatencyThreshold(Duration.ofMillis(-1));
     }
 
     @Test
     public void zeroSlowQueryThresholdShouldBeAllowed() {
-        Top.builder(1).withSlowQueryThreshold(Duration.ZERO);
+        Top.builder(1).withLatencyThreshold(Duration.ZERO);
     }
 
     @Test(expected = IllegalArgumentException.class)
