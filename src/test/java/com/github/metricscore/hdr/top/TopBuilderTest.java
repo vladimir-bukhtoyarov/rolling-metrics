@@ -99,27 +99,27 @@ public class TopBuilderTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void tooManyChunksShouldBeDisallowed() {
-        Top.builder(1).resetAllPositionsPeriodicallyByChunks(Duration.ofDays(1), TopBuilder.MAX_CHUNKS + 1);
+        Top.builder(1).resetPositionsPeriodicallyByChunks(Duration.ofDays(1), TopBuilder.MAX_CHUNKS + 1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void lesserThanTwoChunksShouldBeDisallowed() {
-        Top.builder(1).resetAllPositionsPeriodicallyByChunks(Duration.ofDays(1), 1);
+        Top.builder(1).resetPositionsPeriodicallyByChunks(Duration.ofDays(1), 1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void nullRollingWindowShouldBeDisallowed() {
-        Top.builder(1).resetAllPositionsPeriodicallyByChunks(null, TopBuilder.MAX_CHUNKS);
+        Top.builder(1).resetPositionsPeriodicallyByChunks(null, TopBuilder.MAX_CHUNKS);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void tooShortChunkTtlShouldBeDisallowed() {
-        Top.builder(1).resetAllPositionsPeriodicallyByChunks(Duration.ofMillis(TopBuilder.MIN_CHUNK_RESETTING_INTERVAL_MILLIS * 10 - 1), 10);
+        Top.builder(1).resetPositionsPeriodicallyByChunks(Duration.ofMillis(TopBuilder.MIN_CHUNK_RESETTING_INTERVAL_MILLIS * 10 - 1), 10);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void negativeChunkTtlShouldBeDisallowed() {
-        Top.builder(1).resetAllPositionsPeriodicallyByChunks(Duration.ofMillis(-2000), 2);
+        Top.builder(1).resetPositionsPeriodicallyByChunks(Duration.ofMillis(-2000), 2);
     }
 
     @Test

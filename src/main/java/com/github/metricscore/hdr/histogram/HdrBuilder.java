@@ -32,7 +32,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
 /**
- * The entry point of metrics-core-hdr library which can be used for creation and registration histograms, timers and reservoirs.
+ * The builder for creation and registration histograms, timers and reservoirs.
  *
  * <p><br> Basic examples of usage:
  * <pre><code>
@@ -82,6 +82,7 @@ public class HdrBuilder {
      *
      * @return this builder instance
      * @see #resetReservoirPeriodically(Duration)
+     * @see #resetReservoirPeriodicallyByChunks(Duration, int)
      * @see #neverResetReservoir()
      */
     public HdrBuilder resetReservoirOnSnapshot() {

@@ -35,7 +35,7 @@ public class ResetByChunksTopTest {
     public void testCommonAspects() {
         for (int i = 1; i <= 2; i++) {
             Top top = Top.builder(i)
-                    .resetAllPositionsPeriodicallyByChunks(Duration.ofDays(1), 3)
+                    .resetPositionsPeriodicallyByChunks(Duration.ofDays(1), 3)
                     .withSnapshotCachingDuration(Duration.ZERO)
                     .withLatencyThreshold(Duration.ofMillis(100))
                     .withMaxLengthOfQueryDescription(1000)
@@ -49,7 +49,7 @@ public class ResetByChunksTopTest {
         AtomicLong currentTimeMillis = new AtomicLong(0L);
         Clock clock = Clock.mock(currentTimeMillis);
         Top top = Top.builder(1)
-                .resetAllPositionsPeriodicallyByChunks(Duration.ofSeconds(3), 3)
+                .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(3), 3)
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .withClock(clock)
                 .withBackgroundExecutor(MockExecutor.INSTANCE)
@@ -123,7 +123,7 @@ public class ResetByChunksTopTest {
         AtomicLong currentTimeMillis = new AtomicLong(0L);
         Clock clock = Clock.mock(currentTimeMillis);
         Top top = Top.builder(3)
-                .resetAllPositionsPeriodicallyByChunks(Duration.ofSeconds(3), 3)
+                .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(3), 3)
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .withClock(clock)
                 .withBackgroundExecutor(MockExecutor.INSTANCE)
@@ -196,7 +196,7 @@ public class ResetByChunksTopTest {
     public void testToString() {
         for (int i = 1; i <= 2; i++) {
             System.out.println(Top.builder(i)
-                    .resetAllPositionsPeriodicallyByChunks(Duration.ofDays(1), 3)
+                    .resetPositionsPeriodicallyByChunks(Duration.ofDays(1), 3)
                     .build());
         }
     }
@@ -204,7 +204,7 @@ public class ResetByChunksTopTest {
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung_1() throws InterruptedException {
         Top top = Top.builder(1)
-                .resetAllPositionsPeriodicallyByChunks(Duration.ofSeconds(2), 2)
+                .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(2), 2)
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
         TopTestUtil.runInParallel(top, Duration.ofSeconds(30), 0, 10_000);
@@ -213,7 +213,7 @@ public class ResetByChunksTopTest {
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung_3() throws InterruptedException {
         Top top = Top.builder(3)
-                .resetAllPositionsPeriodicallyByChunks(Duration.ofSeconds(2), 2)
+                .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(2), 2)
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
         TopTestUtil.runInParallel(top, Duration.ofSeconds(30), 0, 10_000);

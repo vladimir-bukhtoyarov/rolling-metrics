@@ -37,12 +37,12 @@ public class TopBenchmark {
     public static class TopState {
 
         final Top chunkedTop_1 = Top.builder(1)
-                .resetAllPositionsPeriodicallyByChunks(Duration.ofSeconds(4), 4)
+                .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(4), 4)
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
 
         final Top chunkedTop_10 = Top.builder(10)
-                .resetAllPositionsPeriodicallyByChunks(Duration.ofSeconds(4), 4)
+                .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(4), 4)
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
 

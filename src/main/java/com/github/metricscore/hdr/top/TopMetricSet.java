@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * The "latency" gauges have {@link BigDecimal} type, the "latencyUnit" and "description" gauges have {@link String} type.
  * The number in the gauge name represents position in the top in descending order, the "0" is the slowest query.
- * </p>
+ *
  */
 public class TopMetricSet implements MetricSet {
 

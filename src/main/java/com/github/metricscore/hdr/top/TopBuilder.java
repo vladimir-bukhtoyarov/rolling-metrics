@@ -25,6 +25,7 @@ import com.github.metricscore.hdr.util.ResilientExecutionUtil;
 
 import java.time.Duration;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadFactory;
 
 /**
  * The builder for {@link Top}.
@@ -154,9 +155,14 @@ public class TopBuilder {
     }
 
     /**
+     * Specifies the max length of description position int the top. The characters upper {@code maxLengthOfQueryDescription} limit will be truncated
      *
-     * @param maxLengthOfQueryDescription
-     * @return
+     * <p>
+     * The default value is 1000 symbol {@link #DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION}.
+     *
+     * @param maxLengthOfQueryDescription the max length of description position int the top.
+     *
+     * @return this builder instance
      */
     public TopBuilder withMaxLengthOfQueryDescription(int maxLengthOfQueryDescription) {
         if (maxLengthOfQueryDescription < MIN_LENGTH_OF_QUERY_DESCRIPTION) {
@@ -170,8 +176,11 @@ public class TopBuilder {
     }
 
     /**
+     * Replaces default clock.
+     * Most likely you should never use this method, because replacing time measuring has sense only for unit testing.
      *
-     * @param clock
+     * @param clock the abstraction over time
+     *
      * @return this builder instance
      */
     public TopBuilder withClock(Clock clock) {
@@ -183,8 +192,17 @@ public class TopBuilder {
     }
 
     /**
+     * Configures the executor which will be used if any of {@link #resetAllPositionsPeriodically(Duration)} (Duration)} or {@link #resetPositionsPeriodicallyByChunks(Duration, int)} (Duration, int)} (Duration)}.
      *
-     * @param backgroundExecutor
+     * <p>
+     * Normally you should not use this method because of default executor provided by {@link ResilientExecutionUtil#getBackgroundExecutor()} is quietly enough for mostly use cases.
+     * </p>
+     *
+     * <p>
+     * You can use this method for example inside JEE environments with enabled SecurityManager,
+     * in case of {@link ResilientExecutionUtil#setThreadFactory(ThreadFactory)} is not enough to meat security rules.
+     * </p>
+     *
      * @return this builder instance
      */
     public TopBuilder withBackgroundExecutor(Executor backgroundExecutor) {
@@ -196,8 +214,23 @@ public class TopBuilder {
     }
 
     /**
+     * Top configured with this strategy will store all values since the top was created.
+     *
+     * <p>This is default strategy for {@link TopBuilder}.
+     * This strategy is useless for long running applications, because very slow queries happen in the past
+     * will not provide chances to fresh queries to take place in the top.
+     * So, it is strongly recommended to switch eviction strategy to one of:
+     * <ul>
+     *     <li>{@link #resetAllPositionsPeriodically(Duration)}</li>
+     *     <li>{@link #resetPositionsPeriodicallyByChunks(Duration, int)}</li>
+     *     <li>{@link #resetAllPositionsOnSnapshot()}</li>
+     * </ul>
      *
      * @return this builder instance
+     *
+     * @see #resetPositionsPeriodicallyByChunks(Duration, int)
+     * @see #resetAllPositionsPeriodically(Duration)
+     * @see #resetAllPositionsOnSnapshot()
      */
     public TopBuilder neverResetPositions() {
         this.factory = TopFactory.UNIFORM;
@@ -205,8 +238,11 @@ public class TopBuilder {
     }
 
     /**
+     * Top configured with this strategy will be cleared each time when {@link Top#getPositionsInDescendingOrder()} invoked.
      *
      * @return this builder instance
+     * @see #resetPositionsPeriodicallyByChunks(Duration, int)
+     * @see #resetAllPositionsPeriodically(Duration)
      */
     public TopBuilder resetAllPositionsOnSnapshot() {
         this.factory = TopFactory.RESET_ON_SNAPSHOT;
@@ -214,8 +250,16 @@ public class TopBuilder {
     }
 
     /**
+     * Top configured with this strategy will be cleared at all after each {@code intervalBetweenResetting} elapsed.
      *
-     * @param intervalBetweenResetting
+     * <p>
+     *     If You use this strategy inside JEE environment,
+     *     then it would be better to call {@code ResilientExecutionUtil.getInstance().shutdownBackgroundExecutor()}
+     *     once in application shutdown listener,
+     *     in order to avoid leaking reference to classloader through the thread which this library creates for resetting of top in background.
+     * </p>
+     *
+     * @param intervalBetweenResetting specifies how often need to reset the top
      * @return this builder instance
      */
     public TopBuilder resetAllPositionsPeriodically(Duration intervalBetweenResetting) {
@@ -235,26 +279,41 @@ public class TopBuilder {
     }
 
     /**
+     * Top configured with this strategy will be divided to <tt>numberChunks</tt> parts,
+     * and one chunk will be cleared after each <tt>rollingTimeWindow / numberChunks</tt> elapsed.
+     * This strategy is more smoothly then <tt>resetAllPositionsPeriodically</tt> because top never zeroed at whole,
+     * so user experience provided by <tt>resetPositionsPeriodicallyByChunks</tt> should look more pretty.
+     * <p>
+     * The value recorded to top will take affect at least <tt>rollingTimeWindow</tt> and at most <tt>rollingTimeWindow *(1 + 1/numberChunks)</tt> time,
+     * for example when you configure <tt>rollingTimeWindow=60 seconds and numberChunks=6</tt> then each value recorded to top will be stored at <tt>60-70 seconds</tt>
+     * </p>
      *
-     * @param rollingWindow
-     * @param numberChunks
+     * <p>
+     *     If You use this strategy inside JEE environment,
+     *     then it would be better to call {@code ResilientExecutionUtil.getInstance().shutdownBackgroundExecutor()}
+     *     once in application shutdown listener,
+     *     in order to avoid leaking reference to classloader through the thread which this library creates for rotation of top in background.
+     * </p>
+     *
+     * @param rollingTimeWindow the total rolling time window, any value recorded to top will not be evicted from it at least <tt>rollingTimeWindow</tt>
+     * @param numberChunks specifies number of chunks by which the top will be slitted
      * @return this builder instance
      */
-    public TopBuilder resetAllPositionsPeriodicallyByChunks(Duration rollingWindow, int numberChunks) {
+    public TopBuilder resetPositionsPeriodicallyByChunks(Duration rollingTimeWindow, int numberChunks) {
         if (numberChunks > MAX_CHUNKS) {
             throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
         }
         if (numberChunks < 2) {
             throw new IllegalArgumentException("numberChunks should be >= 1");
         }
-        if (rollingWindow == null) {
-            throw new IllegalArgumentException("rollingWindow should not be null");
+        if (rollingTimeWindow == null) {
+            throw new IllegalArgumentException("rollingTimeWindow should not be null");
         }
-        if (rollingWindow.isNegative()) {
-            throw new IllegalArgumentException("rollingWindow should not be negative");
+        if (rollingTimeWindow.isNegative()) {
+            throw new IllegalArgumentException("rollingTimeWindow should not be negative");
         }
 
-        long intervalBetweenResettingMillis = rollingWindow.toMillis() / numberChunks;
+        long intervalBetweenResettingMillis = rollingTimeWindow.toMillis() / numberChunks;
         if (intervalBetweenResettingMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
             String msg = "interval between resetting one chunk should be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis";
             throw new IllegalArgumentException(msg);
