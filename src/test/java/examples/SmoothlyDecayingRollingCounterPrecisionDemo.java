@@ -17,8 +17,8 @@
 
 package examples;
 
-import com.github.metricscore.hdr.counter.SmoothlyDecayingRollingCounter;
-import com.github.metricscore.hdr.counter.WindowCounter;
+import com.github.rollingmetrics.counter.SmoothlyDecayingRollingCounter;
+import com.github.rollingmetrics.counter.WindowCounter;
 
 import java.time.Duration;
 import java.util.Timer;
