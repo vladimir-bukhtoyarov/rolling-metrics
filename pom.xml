@@ -20,19 +20,19 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.metrics-core-addons</groupId>
-    <artifactId>metrics-core-hdr</artifactId>
-    <version>1.6.0</version>
+    <groupId>com.github.vladimir-bukhtoyarov</groupId>
+    <artifactId>rolling-metrics</artifactId>
+    <version>2.0.0-SNAPSHOT</version>
 
     <packaging>jar</packaging>
-    <name>Metrics-Core-HDR</name>
+    <name>Rolling metrics</name>
 
-    <description>Integration metrics-core and HdrHistogram</description>
-    <url>https://github.com/vladimir-bukhtoyarov/metrics-core-hdr</url>
+    <description>Collection of advanced monitoring metrics with rolling time window semantic</description>
+    <url>https://github.com/vladimir-bukhtoyarov/rolling-metrics</url>
 
     <scm>
-        <url>https://github.com/vladimir-bukhtoyarov/metrics-core-hdr</url>
-        <connection>scm:git:git://github.com/vladimir-bukhtoyarov/metrics-core-hdr.git</connection>
+        <url>https://github.com/vladimir-bukhtoyarov/rolling-metrics</url>
+        <connection>scm:git:git://github.com/vladimir-bukhtoyarov/rolling-metrics.git</connection>
     </scm>
     <developers>
         <developer>
@@ -53,10 +53,6 @@
         <repository>
             <id>jcenter</id>
             <url>http://jcenter.bintray.com</url>
-        </repository>
-        <repository>
-            <id>vladimir-bukhtoyarov</id>
-            <url>https://dl.bintray.com/vladimir-bukhtoyarov/maven</url>
         </repository>
     </repositories>
 
