@@ -99,5 +99,4 @@ local.properties
 # TeXlipse plugin
 .texlipse
 
-
-/src/main/benchmark/com/github/metricscore/hdr/histogram/accumulator/OtherHistogramsBenchmarks.java
+target/

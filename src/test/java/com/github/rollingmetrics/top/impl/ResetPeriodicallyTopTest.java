@@ -151,7 +151,7 @@ public class ResetPeriodicallyTopTest {
         }
     }
 
-    @Test(timeout = 32000)
+    @Test(timeout = 35000)
     public void testThatConcurrentThreadsNotHung_1() throws InterruptedException {
         Top top = Top.builder(1)
                 .resetAllPositionsPeriodically(Duration.ofSeconds(1))
@@ -160,7 +160,7 @@ public class ResetPeriodicallyTopTest {
         TopTestUtil.runInParallel(top, Duration.ofSeconds(30), 0, 10_000);
     }
 
-    @Test(timeout = 32000)
+    @Test(timeout = 35000)
     public void testThatConcurrentThreadsNotHung_3() throws InterruptedException {
         Top top = Top.builder(3)
                 .resetAllPositionsPeriodically(Duration.ofSeconds(1))
