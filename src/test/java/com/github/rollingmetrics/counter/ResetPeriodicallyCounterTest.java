@@ -22,6 +22,7 @@ import com.github.rollingmetrics.util.Clock;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
@@ -72,7 +73,7 @@ public class ResetPeriodicallyCounterTest {
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
         WindowCounter counter = new ResetPeriodicallyCounter(Duration.ofMillis(50));
-        CounterTestUtil.runInParallel(counter, Duration.ofSeconds(30));
+        CounterTestUtil.runInParallel(counter, TimeUnit.SECONDS.toMillis(30));
     }
 
 

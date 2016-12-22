@@ -21,6 +21,7 @@ import com.github.rollingmetrics.util.Clock;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
@@ -92,7 +93,7 @@ public class ResetPeriodicallyHitRatioTest {
 
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
-        HitRationTestUtil.runInParallel(new ResetPeriodicallyHitRatio(Duration.ofMillis(1)), Duration.ofSeconds(30));
+        HitRationTestUtil.runInParallel(new ResetPeriodicallyHitRatio(Duration.ofMillis(1)), TimeUnit.SECONDS.toMillis(30));
     }
 
 }

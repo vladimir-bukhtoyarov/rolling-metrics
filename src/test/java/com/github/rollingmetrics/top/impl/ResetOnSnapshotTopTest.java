@@ -22,6 +22,7 @@ import com.github.rollingmetrics.top.TestData;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 import static com.github.rollingmetrics.top.impl.TopTestUtil.*;
 
@@ -109,7 +110,7 @@ public class ResetOnSnapshotTopTest {
                 .resetAllPositionsOnSnapshot()
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
-        TopTestUtil.runInParallel(top, Duration.ofSeconds(30), 0, 10_000);
+        TopTestUtil.runInParallel(top, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
     }
 
 }

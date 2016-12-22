@@ -23,6 +23,7 @@ import com.github.rollingmetrics.util.MockExecutor;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.github.rollingmetrics.top.TestData.*;
@@ -151,13 +152,13 @@ public class ResetPeriodicallyTopTest {
         }
     }
 
-    @Test(timeout = 35000)
+    @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung_1() throws InterruptedException {
         Top top = Top.builder(1)
                 .resetAllPositionsPeriodically(Duration.ofSeconds(1))
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
-        TopTestUtil.runInParallel(top, Duration.ofSeconds(30), 0, 10_000);
+        TopTestUtil.runInParallel(top, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
     }
 
     @Test(timeout = 35000)
@@ -166,7 +167,7 @@ public class ResetPeriodicallyTopTest {
                 .resetAllPositionsPeriodically(Duration.ofSeconds(1))
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
-        TopTestUtil.runInParallel(top, Duration.ofSeconds(30), 0, 10_000);
+        TopTestUtil.runInParallel(top, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
     }
 
 }

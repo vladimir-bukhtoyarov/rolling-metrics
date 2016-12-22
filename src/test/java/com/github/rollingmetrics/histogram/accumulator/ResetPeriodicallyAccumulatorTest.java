@@ -28,6 +28,7 @@ import com.github.rollingmetrics.util.Clock;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static junit.framework.TestCase.assertEquals;
@@ -105,7 +106,7 @@ public class ResetPeriodicallyAccumulatorTest {
                 .resetReservoirPeriodically(Duration.ofSeconds(1))
                 .buildReservoir();
 
-        HistogramUtil.runInParallel(reservoir, Duration.ofSeconds(30));
+        HistogramUtil.runInParallel(reservoir, TimeUnit.SECONDS.toMillis(30));
     }
 
 }

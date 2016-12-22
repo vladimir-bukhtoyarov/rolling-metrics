@@ -19,10 +19,10 @@ package com.github.rollingmetrics.top.impl;
 
 import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.top.TestData;
-import com.github.rollingmetrics.top.Top;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 
 public class UniformTopTest {
@@ -105,7 +105,7 @@ public class UniformTopTest {
                 .neverResetPositions()
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
-        TopTestUtil.runInParallel(top, Duration.ofSeconds(30), 0, 10_000);
+        TopTestUtil.runInParallel(top, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
     }
 
 }

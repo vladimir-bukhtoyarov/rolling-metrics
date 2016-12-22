@@ -29,24 +29,17 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class HistogramUtil {
 
-    public static void runInParallel(Reservoir reservoir, Duration duration) throws InterruptedException {
-        AtomicBoolean stopFlag = new AtomicBoolean(false);
+    public static void runInParallel(Reservoir reservoir, long durationMillis) throws InterruptedException {
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
 
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                stopFlag.set(true);
-            }
-        }, duration.toMillis());
-
         Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors() * 2];
+        long start = System.currentTimeMillis();
         final CountDownLatch latch = new CountDownLatch(threads.length);
         for (int i = 0; i < threads.length; i++) {
             threads[i] = new Thread(() -> {
                 try {
                     // update reservoir 100 times and take snapshot on each cycle
-                    while (!stopFlag.get()) {
+                    while (errorRef.get() == null && System.currentTimeMillis() - start < durationMillis) {
                         for (int j = 1; j <= 10; j++) {
                             reservoir.update(ThreadLocalRandom.current().nextInt(j));
                         }

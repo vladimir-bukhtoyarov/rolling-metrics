@@ -18,10 +18,10 @@
 package com.github.rollingmetrics.hitratio;
 
 import com.github.rollingmetrics.util.Clock;
-import com.github.rollingmetrics.util.Clock;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.*;
@@ -163,7 +163,7 @@ public class SmoothlyDecayingRollingHitRatioTest {
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
         SmoothlyDecayingRollingHitRatio hitRatio = new SmoothlyDecayingRollingHitRatio(Duration.ofSeconds(1), 100);
-        HitRationTestUtil.runInParallel(hitRatio, Duration.ofSeconds(30));
+        HitRationTestUtil.runInParallel(hitRatio, TimeUnit.SECONDS.toMillis(30));
     }
 
 }

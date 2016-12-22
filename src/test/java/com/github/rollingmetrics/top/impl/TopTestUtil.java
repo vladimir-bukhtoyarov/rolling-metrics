@@ -65,24 +65,17 @@ public class TopTestUtil {
         Assert.assertEquals(Collections.emptyList(), top.getPositionsInDescendingOrder());
     }
 
-    public static void runInParallel(Top top, Duration duration, long minValue, long maxValue) throws InterruptedException {
-        AtomicBoolean stopFlag = new AtomicBoolean(false);
+    public static void runInParallel(Top top, long durationMillis, long minValue, long maxValue) throws InterruptedException {
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
-
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                stopFlag.set(true);
-            }
-        }, duration.toMillis());
 
         Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors() * 2];
         final CountDownLatch latch = new CountDownLatch(threads.length);
+        long start = System.currentTimeMillis();
         for (int i = 0; i < threads.length; i++) {
             threads[i] = new Thread(() -> {
                 try {
                     // update top 10 times and take snapshot on each cycle
-                    while (!stopFlag.get()) {
+                    while (errorRef.get() == null && System.currentTimeMillis() - start < durationMillis) {
                         for (int j = 1; j <= 10; j++) {
                             long latency = minValue + ThreadLocalRandom.current().nextLong(maxValue - minValue);
                             top.update(System.currentTimeMillis(), latency, TimeUnit.NANOSECONDS, () -> "" + latency);

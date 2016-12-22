@@ -21,11 +21,10 @@ import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.util.Clock;
 import com.github.rollingmetrics.util.MockExecutor;
 import com.github.rollingmetrics.top.TestData;
-import com.github.rollingmetrics.top.Top;
-import com.github.rollingmetrics.util.Clock;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 
@@ -207,7 +206,7 @@ public class ResetByChunksTopTest {
                 .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(2), 2)
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
-        TopTestUtil.runInParallel(top, Duration.ofSeconds(30), 0, 10_000);
+        TopTestUtil.runInParallel(top, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
     }
 
     @Test(timeout = 32000)
@@ -216,7 +215,7 @@ public class ResetByChunksTopTest {
                 .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(2), 2)
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
-        TopTestUtil.runInParallel(top, Duration.ofSeconds(30), 0, 10_000);
+        TopTestUtil.runInParallel(top, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
     }
 
 }

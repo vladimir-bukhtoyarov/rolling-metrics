@@ -59,24 +59,17 @@ public class HitRationTestUtil {
         }
     }
 
-    public static void runInParallel(HitRatio hitRatio, Duration duration) throws InterruptedException {
-        AtomicBoolean stopFlag = new AtomicBoolean(false);
+    public static void runInParallel(HitRatio hitRatio, long durationMillis) throws InterruptedException {
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
-
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                stopFlag.set(true);
-            }
-        }, duration.toMillis());
 
         Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors() * 2];
         final CountDownLatch latch = new CountDownLatch(threads.length);
+        long start = System.currentTimeMillis();
         for (int i = 0; i < threads.length; i++) {
             threads[i] = new Thread(() -> {
                 try {
                     // update reservoir 100 times and take snapshot on each cycle
-                    while (!stopFlag.get()) {
+                    while (errorRef.get() == null && System.currentTimeMillis() - start < durationMillis) {
                         for (int j = 1; j <= 10; j++) {
                             int randomInt = ThreadLocalRandom.current().nextInt(j);
                             hitRatio.update(randomInt, randomInt + 1);

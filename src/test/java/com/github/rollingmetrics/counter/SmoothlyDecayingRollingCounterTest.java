@@ -22,6 +22,7 @@ import com.github.rollingmetrics.util.Clock;
 import org.junit.Test;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.junit.Assert.assertEquals;
@@ -85,7 +86,7 @@ public class SmoothlyDecayingRollingCounterTest {
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
         WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 3);
-        CounterTestUtil.runInParallel(counter, Duration.ofSeconds(30));
+        CounterTestUtil.runInParallel(counter, TimeUnit.SECONDS.toMillis(30));
     }
 
     @Test(expected = IllegalArgumentException.class)

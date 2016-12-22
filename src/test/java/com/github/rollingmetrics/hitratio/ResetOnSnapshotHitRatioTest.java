@@ -19,7 +19,8 @@ package com.github.rollingmetrics.hitratio;
 
 import org.junit.Test;
 
-import java.time.Duration;
+
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 
@@ -62,7 +63,7 @@ public class ResetOnSnapshotHitRatioTest {
 
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
-        HitRationTestUtil.runInParallel(hitRatio, Duration.ofSeconds(30));
+        HitRationTestUtil.runInParallel(hitRatio, TimeUnit.SECONDS.toMillis(30));
     }
 
 }
