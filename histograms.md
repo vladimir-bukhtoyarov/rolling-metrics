@@ -4,7 +4,7 @@ Due to its sampling nature, all built-in Metrics Core histogram implementations 
 * Can loss critical min/max values. See [this discussion](https://groups.google.com/forum/#!msg/mechanical-sympathy/I4JfZQ1GYi8/ocuzIyC3N9EJ) for more information. 
 * Can report obsolete values to snapshot. See [this blog post](http://taint.org/2014/01/16/145944a.html) for more information.
 
-## How to metrics-core-HDR solves this problems?
+## How to Rolling-Metrics solves this problems?
 The problems above already solved in scope of [HdrHistogram](https://github.com/HdrHistogram/HdrHistogram) project,
 so this library just provides tightly integration of HdrHistogram into Metrics Core as first class citizen.
 You should not waste your time to figure out who is better in the fight of metrics-core versus HdrHistogram, just use two solutions together.
@@ -19,11 +19,11 @@ From the Metrics Core, you get:
 * Integration(out of the box and third-parties) with hundreds libraries, servers, frameworks and API stacks.
 * Integration(out of the box and third-parties) with many monitoring systems like graphite, ganglia, influxdb.
 
-`Metrics core HDR` provides ability to take advantages from both powerful libraries.
+`Rolling-Metrics` provides ability to take advantages from both powerful libraries.
 
 ## Usage
 ### Metrics construction and registration
-In order to construct metrics you need to create [builder](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/master/src/main/java/com/github/metricscore/hdrhistogram/HdrBuilder.java) instance. 
+In order to construct metrics you need to create [builder](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/master/src/main/java/com/github/rolling-metrics/histogram/HdrBuilder.java) instance. 
 The one builder instance can be reused to construct metrics multiple times. 
 
 #### Example of timer construction
@@ -65,7 +65,7 @@ The one builder instance can be reused to construct metrics multiple times.
 ```
 
 ## Basic configuration options
-This section describes basic configuration options supported by [HdrBuilder API](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/master/src/main/java/com/github/metricscore/hdrhistogram/HdrBuilder.java).   
+This section describes basic configuration options supported by [HdrBuilder API](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/master/src/main/java/com/github/rollingmetrics/histogram/HdrBuilder.java).   
 #### Number of significant value digits
 This option configures the number of significant decimal digits to which the histogram will maintain value resolution and separation.
 Value precision is expressed as the number of significant digits in the value recording, and provides control over value quantization behavior across the value range and the subsequent value resolution at any given level.
@@ -117,10 +117,10 @@ When snapshot footprint is unoptimized then snapshot becomes as accurate as it i
 ```
 
 ## Configuration options for evicting the old values of from reservoir.
-HdrHistogram do not lose recorded values, it is good because you do not lose min/max values, 
-but in same time it is bad because in real world use-cases you need to show measurements which actual to current moment of time or time window,
+```HdrHistogram``` do not lose recorded values, it is good because you do not lose min/max values, 
+but in same time in real world use-cases you need to show measurements which actual to current moment of time or time window,
 nobody interests in percentiles aggregated for a few days or weeks, everybody wants to see percentiles which actual now. 
-So you need in way to deleted obsolete(already not interested) values from reservoir, Metrics-Core-Hdr provides four different strategies to do this:
+So you need in way to deleted obsolete(already not interested) values from reservoir, ```Rolling-Metrics``` provides four different strategies to do this:
 
 #### Reset reservoir on snapshot
 Reservoir configured with this strategy will be cleared each time when snapshot taken.
@@ -172,7 +172,7 @@ Histogram will auto-generate an additional series of decreasingly-smaller (down 
   builder.withExpectedIntervalBetweenValueSamples(10);  
 ```
 **WARNING:** You should not use this feature for monitoring your application in the production, its designed to be used inside benchmarks and load testing.
-if something still unclear about this option then refer directly to HdrHistogram [documentation](https://github.com/HdrHistogram/HdrHistogram) and [sources](https://github.com/HdrHistogram/HdrHistogram/blob/master/src/main/java/org/HdrHistogram/AbstractHistogram.java).
+if something still unclear about this option then refer directly to ```HdrHistogram``` [documentation](https://github.com/HdrHistogram/HdrHistogram) and [sources](https://github.com/HdrHistogram/HdrHistogram/blob/master/src/main/java/org/HdrHistogram/AbstractHistogram.java).
     
 #### Snapshot caching 
 This option configures the period for which taken snapshot will be cached. Snapshot caching can be useful together with bad-designed monitoring solutions(like [Zabbix java gateway](https://www.zabbix.com/documentation/2.0/ru/manual/concepts/java)) which pull monitoring data from application through chain(like RMI/JMX) which does not allow to catch multiple values in single request,
