@@ -1,9 +1,9 @@
 # Counters
 ## Types of counters
-The metrics core HDR provides three type of counters:
-* [ResetOnSnapshotCounter](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/1.6/src/main/java/com/github/metricscore/hdr/counter/ResetOnSnapshotCounter.java) - the counter which reset its state to zero after each invocation of *getSum()*.
-* [ResetPeriodicallyCounter](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/1.6/src/main/java/com/github/metricscore/hdr/counter/ResetPeriodicallyCounter.java) - the counter which reset its state to zero each time when configured interval is elapsed.
-* [SmoothlyDecayingRollingCounter](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/1.6/src/main/java/com/github/metricscore/hdr/counter/SmoothlyDecayingRollingCounter.java) the rolling time window counter which resets its state by chunks.
+The Rolling-Metrics provides three type of counters:
+* [ResetOnSnapshotCounter](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/2.0/src/main/java/com/github/rollingmetrics/counter/ResetOnSnapshotCounter.java) - the counter which reset its state to zero after each invocation of *getSum()*.
+* [ResetPeriodicallyCounter](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/2.0/src/main/java/com/github/rollingmetrics/counter/ResetPeriodicallyCounter.java) - the counter which reset its state to zero each time when configured interval is elapsed.
+* [SmoothlyDecayingRollingCounter](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/2.0/src/main/java/com/github/rollingmetrics/counter/SmoothlyDecayingRollingCounter.java) the rolling time window counter which resets its state by chunks.
 
 ## ResetOnSnapshotCounter
 The counter which reset its state to zero after each invocation of *getSum()*.

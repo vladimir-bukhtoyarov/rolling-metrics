@@ -2,7 +2,7 @@
 HitRatio the metric which measure ratio between hits and misses.
 
 ## Description for hit-ratio interface
-The [HitRatio](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/1.4/src/main/java/com/github/metricscore/hdr/hitratio/HitRatio.java) - consists from four methods:
+The [HitRatio](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/2.0/src/main/java/com/github/rollingmetrics/hitratio/HitRatio.java) - consists from four methods:
 
 **1. incrementHitCount** - registers the fact of single hit:
 ``` java
@@ -36,11 +36,11 @@ The [HitRatio](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/1.4
 ```
 
 ## Types of hit-ratios
-The metrics core HDR provides four types of hit-ratio implementations:
-* [ResetOnSnapshotHitRatio](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/1.4/src/main/java/com/github/metricscore/hdr/hitratio/ResetOnSnapshotHitRatio.java) - the hit-ratio which reset its state to zero after each invocation of *getHitRatio()*.
-* [ResetPeriodicallyHitRatio](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/1.4/src/main/java/com/github/metricscore/hdr/hitratio/ResetPeriodicallyHitRatio.java) - the hit-ratio which reset its state to zero each time when configured interval is elapsed.
-* [SmoothlyDecayingRollingHitRatio](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/1.4/src/main/java/com/github/metricscore/hdr/hitratio/SmoothlyDecayingRollingHitRatio.java) The rolling time window hit-ratio implementation which resets its state by chunks.
-* [UniformHitRatio](https://github.com/vladimir-bukhtoyarov/metrics-core-hdr/blob/1.4/src/main/java/com/github/metricscore/hdr/hitratio/UniformHitRatio.java) the hit-ratio which never evicts collected values.
+The Rolling-Metrics provides four types of hit-ratio implementations:
+* [ResetOnSnapshotHitRatio](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/2.0/src/main/java/com/github/rollingmetrics/hitratio/ResetOnSnapshotHitRatio.java) - the hit-ratio which reset its state to zero after each invocation of *getHitRatio()*.
+* [ResetPeriodicallyHitRatio](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/2.0/src/main/java/com/github/rollingmetrics/hitratio/ResetPeriodicallyHitRatio.java) - the hit-ratio which reset its state to zero each time when configured interval is elapsed.
+* [SmoothlyDecayingRollingHitRatio](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/2.0/src/main/java/com/github/rollingmetrics/hitratio/SmoothlyDecayingRollingHitRatio.java) The rolling time window hit-ratio implementation which resets its state by chunks.
+* [UniformHitRatio](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/2.0/src/main/java/com/github/rollingmetrics/hitratio/UniformHitRatio.java) the hit-ratio which never evicts collected values.
 
 ## Concurrency properties for all implementations:
 * Writing is lock-free.
