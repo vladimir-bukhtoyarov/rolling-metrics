@@ -6,7 +6,6 @@ The library contains collection of advanced metrics which missed in the original
 * Loss-less capturing histograms(based on HdrHistogram). [See documentation for histograms](histograms.md).
 
 ## Build status
-[![Build Status](https://travis-ci.org/vladimir-bukhtoyarov/rolling-metrics.svg?branch=master)](https://travis-ci.org/vladimir-bukhtoyarov/rolling-metrics)
 [![Coverage Status](https://coveralls.io/repos/github/vladimir-bukhtoyarov/rolling-metrics/badge.svg?branch=master)](https://coveralls.io/github/vladimir-bukhtoyarov/rolling-metrics?branch=master)
 [![Hex.pm](https://img.shields.io/hexpm/l/plug.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Download](https://api.bintray.com/packages/vladimir-bukhtoyarov/maven/rolling-metrics/images/download.svg) ](https://bintray.com/vladimir-bukhtoyarov/maven/rolling-metrics/_latestVersion)
