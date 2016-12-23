@@ -1,7 +1,7 @@
 # Top
 Top - the ```N```-position collection for queries sorted by latency in descended order. Each position in the top has the latency and description.
 The top always stores no more than ```N``` positions, the longer queries displace shorter queries when top reaches max size.
-Reading the javadocs for [Top](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/2.0/src/main/java/com/github/rollingmetrics/top/Top.java) and [TopBuilder](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/1.6/src/main/java/com/github/rollingmetrics/top/TopBuilder.java) classes is quite enough to start with this functionality.
+Reading the javadocs for [Top](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/2.0/src/main/java/com/github/rollingmetrics/top/Top.java) and [TopBuilder](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/2.0/src/main/java/com/github/rollingmetrics/top/TopBuilder.java) classes is quite enough to start with this functionality.
  
 Concurrency properties:
 * Writing is lock-free. Writers never blocked by readers or other writers.

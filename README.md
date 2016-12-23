@@ -14,7 +14,7 @@ The library contains collection of advanced metrics which missed in the original
 ## Get Rolling-Metrics library
 
 #### By direct link
-[Download compiled jar, sources, javadocs](https://github.com/vladimir-bukhtoyarov/rolling-metrics/releases/tag/2.0.0)
+[Download compiled jar, sources, javadocs](https://github.com/vladimir-bukhtoyarov/rolling-metrics/releases/tag/2.0.1)
 
 #### You can build Rolling Metrics from sources
 
@@ -43,7 +43,7 @@ Then include Rolling-Metrics as dependency to your `pom.xml`
 <dependency>
     <groupId>com.github.vladimir-bukhtoyarov</groupId>
     <artifactId>rolling-metrics</artifactId>
-    <version>1.6.0</version>
+    <version>2.0.1</version>
 </dependency>
 ```
 
