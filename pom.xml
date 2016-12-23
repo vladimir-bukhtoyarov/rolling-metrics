@@ -59,7 +59,7 @@
     <distributionManagement>
         <repository>
             <id>vladimir-bukhtoyarov-bintray-repo</id>
-            <url>https://api.bintray.com/maven/vladimir-bukhtoyarov/maven/metrics-core-hdr/</url>
+            <url>https://api.bintray.com/maven/vladimir-bukhtoyarov/maven/rolling-metrics/</url>
         </repository>
     </distributionManagement>
 
