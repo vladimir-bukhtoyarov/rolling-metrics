@@ -26,24 +26,13 @@ mvn clean install
 
 #### You can add rolling-metrics to your project as maven dependency
 
-The Rolling-Metrics library is distributed through [Bintray](http://bintray.com/), so you need to add Bintray repository to your `pom.xml`
-
-```xml
-     <repositories>
-         <repository>
-             <id>jcenter</id>
-             <url>http://jcenter.bintray.com</url>
-         </repository>
-     </repositories>
-```
-
-Then include Rolling-Metrics as dependency to your `pom.xml`
-
+The Rolling-Metrics library is distributed through both [JCenter](https://bintray.com/bintray/jcenter?filterByPkgName=rolling-metrics) and [Maven Central](http://search.maven.org/),
+use any of them:
 ```xml
 <dependency>
     <groupId>com.github.vladimir-bukhtoyarov</groupId>
     <artifactId>rolling-metrics</artifactId>
-    <version>2.0.1</version>
+    <version>2.0.2</version>
 </dependency>
 ```
 
