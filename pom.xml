@@ -1,21 +1,38 @@
 <?xml version="1.0"?>
+<!--
+  ~
+  ~  Copyright 2016 Vladimir Bukhtoyarov
+  ~
+  ~    Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~          http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~   Unless required by applicable law or agreed to in writing, software
+  ~   distributed under the License is distributed on an "AS IS" BASIS,
+  ~   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~   See the License for the specific language governing permissions and
+  ~   limitations under the License.
+  -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.metrics-core-addons</groupId>
-    <artifactId>metrics-core-hdr</artifactId>
-    <version>1.0.0</version>
+    <groupId>com.github.vladimir-bukhtoyarov</groupId>
+    <artifactId>rolling-metrics</artifactId>
+    <version>2.0.2</version>
 
     <packaging>jar</packaging>
-    <name>Metrics-Core-HDR</name>
+    <name>Rolling metrics</name>
 
-    <description>Integration metrics-core and HdrHistogram</description>
-    <url>https://github.com/vladimir-bukhtoyarov/metrics-core-hdr</url>
+    <description>Collection of advanced monitoring metrics with rolling time window semantic</description>
+    <url>https://github.com/vladimir-bukhtoyarov/rolling-metrics</url>
 
     <scm>
-        <url>https://github.com/vladimir-bukhtoyarov/metrics-core-hdr</url>
-        <connection>scm:git:git://github.com/vladimir-bukhtoyarov/metrics-core-hdr.git</connection>
+        <url>https://github.com/vladimir-bukhtoyarov/rolling-metrics</url>
+        <connection>scm:git:git://github.com/vladimir-bukhtoyarov/rolling-metrics.git</connection>
     </scm>
     <developers>
         <developer>
@@ -25,10 +42,18 @@
             <url>https://github.com/vladimir-bukhtoyarov</url>
         </developer>
     </developers>
+    <licenses>
+        <license>
+            <name>The Apache Software License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
     <properties>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <benchmark.jar.name>benchmark</benchmark.jar.name>
     </properties>
 
     <repositories>
@@ -36,11 +61,14 @@
             <id>jcenter</id>
             <url>http://jcenter.bintray.com</url>
         </repository>
-        <repository>
-            <id>vladimir-bukhtoyarov</id>
-            <url>https://dl.bintray.com/vladimir-bukhtoyarov/maven</url>
-        </repository>
     </repositories>
+
+    <distributionManagement>
+        <repository>
+            <id>vladimir-bukhtoyarov-bintray-repo</id>
+            <url>https://api.bintray.com/maven/vladimir-bukhtoyarov/maven/rolling-metrics/</url>
+        </repository>
+    </distributionManagement>
 
     <dependencies>
         <dependency>
@@ -120,6 +148,95 @@
                                 <goals>
                                     <goal>jar</goal>
                                 </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>generate-benchmark</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>org.openjdk.jmh</groupId>
+                    <artifactId>jmh-core</artifactId>
+                    <version>1.14</version>
+                </dependency>
+                <dependency>
+                    <groupId>org.openjdk.jmh</groupId>
+                    <artifactId>jmh-generator-annprocess</artifactId>
+                    <version>1.14</version>
+                    <scope>provided</scope>
+                </dependency>
+                <dependency>
+                    <groupId>io.dropwizard.metrics</groupId>
+                    <artifactId>metrics-core</artifactId>
+                    <version>3.1.2</version>
+                    <scope>compile</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.hdrhistogram</groupId>
+                    <artifactId>HdrHistogram</artifactId>
+                    <version>2.1.8</version>
+                    <scope>compile</scope>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <version>1.7</version>
+                        <executions>
+                            <execution>
+                                <id>add-source</id>
+                                <phase>generate-sources</phase>
+                                <goals>
+                                    <goal>add-source</goal>
+                                </goals>
+                                <configuration>
+                                    <sources>
+                                        <source>${project.basedir}/src/main/benchmark</source>
+                                    </sources>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>2.2</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>shade</goal>
+                                </goals>
+                                <configuration>
+                                    <finalName>${benchmark.jar.name}</finalName>
+                                    <transformers>
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                            <mainClass>org.openjdk.jmh.Main</mainClass>
+                                        </transformer>
+                                    </transformers>
+                                    <filters>
+                                        <filter>
+                                            <!--
+                                                Shading signed JARs will fail without this.
+                                                http://stackoverflow.com/questions/999489/invalid-signature-file-when-attempting-to-run-a-jar
+                                            -->
+                                            <artifact>*:*</artifact>
+                                            <excludes>
+                                                <exclude>META-INF/*.SF</exclude>
+                                                <exclude>META-INF/*.DSA</exclude>
+                                                <exclude>META-INF/*.RSA</exclude>
+                                            </excludes>
+                                        </filter>
+                                    </filters>
+                                </configuration>
                             </execution>
                         </executions>
                     </plugin>

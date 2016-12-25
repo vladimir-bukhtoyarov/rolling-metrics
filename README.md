@@ -1,6 +1,4 @@
 # Rolling-Metrics
-
-[![Join the chat at https://gitter.im/vladimir-bukhtoyarov/rolling-metrics](https://badges.gitter.im/vladimir-bukhtoyarov/rolling-metrics.svg)](https://gitter.im/vladimir-bukhtoyarov/rolling-metrics?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 The library contains collection of advanced metrics which missed in the original [Metrics Core](https://dropwizard.github.io/metrics/3.1.0/manual/core/) such as:
 * Rolling time window counters. [See documentation for counters](counters.md).
 * Rolling time window hit-ratio. [See documentation for hit-ratio](hit-ratio.md).
@@ -11,7 +9,7 @@ The library contains collection of advanced metrics which missed in the original
 [![Coverage Status](https://coveralls.io/repos/github/vladimir-bukhtoyarov/rolling-metrics/badge.svg?branch=master)](https://coveralls.io/github/vladimir-bukhtoyarov/rolling-metrics?branch=master)
 [![Hex.pm](https://img.shields.io/hexpm/l/plug.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Download](https://api.bintray.com/packages/vladimir-bukhtoyarov/maven/rolling-metrics/images/download.svg) ](https://bintray.com/vladimir-bukhtoyarov/maven/rolling-metrics/_latestVersion)
-[![Join the chat at https://gitter.im/vladimir-bukhtoyarov/rolling-metrics](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/vladimir-bukhtoyarov/rolling-metrics?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/vladimir-bukhtoyarov/rolling-metrics](https://badges.gitter.im/vladimir-bukhtoyarov/rolling-metrics.svg)](https://gitter.im/vladimir-bukhtoyarov/rolling-metrics?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 ## Get Rolling-Metrics library
 
