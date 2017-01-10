@@ -1,3 +1,16 @@
+<div>
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- github -->
+<ins class="adsbygoogle"
+     style="display:block"
+     data-ad-client="ca-pub-5275939145150040"
+     data-ad-slot="7565681843"
+     data-ad-format="auto"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+</div>
+
 # Rolling-Metrics
 The library contains collection of advanced metrics which missed in the original [Metrics Core](https://dropwizard.github.io/metrics/3.1.0/manual/core/) such as:
 * Rolling time window counters. [See documentation for counters](counters.md).
