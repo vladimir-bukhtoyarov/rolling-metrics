@@ -29,7 +29,7 @@ The one builder instance can be reused to construct metrics multiple times.
 #### Example of timer construction
 
 ```java
-  HdrBuilder builder = HdrBuilder();
+  HdrBuilder builder = new HdrBuilder();
 
   // Build and register timer in one line of code. 
   // Prefer this style by default.
@@ -48,7 +48,7 @@ The one builder instance can be reused to construct metrics multiple times.
 
 #### Example of histogram construction
 ```java
-  HdrBuilder builder = HdrBuilder();
+  HdrBuilder builder = new HdrBuilder();
 
   // build and register histogram in one line of code (prefer this style)
   Histogram histogram1 = builder.buildAndRegisterHistogram(registry, "my-histogram-1");
