@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.counter;
 
+import com.github.rollingmetrics.util.BackgroundClock;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -32,7 +33,22 @@ public class SmoothlyDecayingRollingCounterBenchmark {
 
     @State(Scope.Benchmark)
     public static class CounterState {
-        public final WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofMillis(1000), 10);
+
+        BackgroundClock backgroundClock;
+        public WindowCounter counter;
+        public WindowCounter counterWithBackgroundClock;
+
+        @Setup
+        public void setup() {
+            backgroundClock = new BackgroundClock(100);
+            counterWithBackgroundClock = new SmoothlyDecayingRollingCounter(Duration.ofMillis(1000), 10, backgroundClock);
+            counter = new SmoothlyDecayingRollingCounter(Duration.ofMillis(1000), 10);
+        }
+
+        @TearDown
+        public void tearDown() {
+            backgroundClock.stop();
+        }
     }
 
     @Benchmark
@@ -46,6 +62,20 @@ public class SmoothlyDecayingRollingCounterBenchmark {
     @Group("readSumWithContendedWrite")
     @GroupThreads(1)
     public long readSum(CounterState state) {
+        return state.counter.getSum();
+    }
+
+    @Benchmark
+    @Group("readSumWithContendedWrite_backgroundClock")
+    @GroupThreads(3)
+    public void add_withBackgroundClock(CounterState state) {
+        state.counter.add(42);
+    }
+
+    @Benchmark
+    @Group("readSumWithContendedWrite_backgroundClock")
+    @GroupThreads(1)
+    public long readSum_withBackgroundClock(CounterState state) {
         return state.counter.getSum();
     }
 
