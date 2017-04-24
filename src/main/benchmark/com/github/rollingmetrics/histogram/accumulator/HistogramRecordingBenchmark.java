@@ -22,6 +22,7 @@ import com.codahale.metrics.Histogram;
 import com.github.rollingmetrics.histogram.HdrBuilder;
 import com.github.rollingmetrics.histogram.OverflowResolver;
 import com.github.rollingmetrics.histogram.OverflowResolver;
+import com.github.rollingmetrics.util.BackgroundClock;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -38,6 +39,8 @@ public class HistogramRecordingBenchmark {
 
     @State(Scope.Benchmark)
     public static class HistogramState {
+
+        BackgroundClock backgroundClock;
 
         final Histogram chunkedHistogram = new HdrBuilder()
                 .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(3), 3)
@@ -69,11 +72,46 @@ public class HistogramRecordingBenchmark {
 
         final Histogram metricsCoreHistogram = new Histogram(new ExponentiallyDecayingReservoir());
 
+        private Histogram chunkedHistogramWithBackgroundClock;
+        private Histogram upperLimitedChunkedHistogramWithBackgroundClock;
+        private Histogram resetPeriodicallyHistogramWithBackgroundClock;
+
+        @Setup
+        public void setup() {
+            backgroundClock = new BackgroundClock(100);
+
+            this.chunkedHistogramWithBackgroundClock = new HdrBuilder(backgroundClock)
+                    .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(3), 3)
+                    .buildHistogram();
+
+            this.upperLimitedChunkedHistogramWithBackgroundClock = new HdrBuilder(backgroundClock)
+                    .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(3), 3)
+                    .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
+                    .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
+                    .buildHistogram();
+
+            this.resetPeriodicallyHistogramWithBackgroundClock = new HdrBuilder(backgroundClock)
+                    .resetReservoirPeriodically(Duration.ofSeconds(300))
+                    .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
+                    .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
+                    .buildHistogram();
+        }
+
+        @TearDown
+        public void tearDown() {
+            backgroundClock.stop();
+        }
+
     }
 
     @Benchmark
     public long baseLine() {
         return getRandomValue();
+    }
+
+    @Benchmark
+    public long baseLineGetCurrentTimeMillis() {
+        return System.currentTimeMillis();
     }
 
     @Benchmark
@@ -84,6 +122,21 @@ public class HistogramRecordingBenchmark {
     @Benchmark
     public void updateUniformHistogram(HistogramState state) {
         state.uniformHistogram.update(getRandomValue());
+    }
+
+    @Benchmark
+    public void updateResetPeriodicallyHistogramWithBackgroundClock(HistogramState state) {
+        state.resetPeriodicallyHistogramWithBackgroundClock.update(getRandomValue());
+    }
+
+    @Benchmark
+    public void updateChunkedHistogramWithBackgroundClock(HistogramState state) {
+        state.chunkedHistogramWithBackgroundClock.update(getRandomValue());
+    }
+
+    @Benchmark
+    public void updateChunkedUpperLimitedHistogramWithBackgroundClock(HistogramState state) {
+        state.upperLimitedChunkedHistogramWithBackgroundClock.update(getRandomValue());
     }
 
     @Benchmark
