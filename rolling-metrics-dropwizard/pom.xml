@@ -22,12 +22,20 @@
     <parent>
         <artifactId>rolling-metrics-parent</artifactId>
         <groupId>com.github.vladimir-bukhtoyarov</groupId>
-        <version>2.1.0-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.github.vladimir-bukhtoyarov</groupId>
     <artifactId>rolling-metrics-dropwizard</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.github.vladimir-bukhtoyarov</groupId>
+            <artifactId>rolling-metrics-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 
 
 </project>

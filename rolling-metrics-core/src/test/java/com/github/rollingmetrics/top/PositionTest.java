@@ -22,6 +22,8 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static org.junit.Assert.assertEquals;
+
 public class PositionTest {
 
     @Test(expected = IllegalArgumentException.class)

@@ -27,30 +27,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.github.vladimir-bukhtoyarov</groupId>
-    <artifactId>rolling-metrics-core</artifactId>
+    <artifactId>rolling-metrics-jmx</artifactId>
 
     <dependencies>
         <dependency>
-            <groupId>io.dropwizard.metrics</groupId>
-            <artifactId>metrics-core</artifactId>
-            <version>3.1.2</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.hdrhistogram</groupId>
-            <artifactId>HdrHistogram</artifactId>
-            <version>2.1.8</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- Test dependencies-->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
+            <groupId>com.github.vladimir-bukhtoyarov</groupId>
+            <artifactId>rolling-metrics-core</artifactId>
+            <version>${project.version}</version>
         </dependency>
     </dependencies>
-
 
 </project>

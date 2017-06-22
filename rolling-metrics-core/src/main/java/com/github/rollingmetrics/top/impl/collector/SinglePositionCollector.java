@@ -22,6 +22,8 @@ import com.github.rollingmetrics.top.Position;
 import java.util.Collections;
 import java.util.List;
 
+import static com.github.rollingmetrics.top.impl.collector.PositionCollector.isNeedToAdd;
+
 /**
  * Is not a part of public API, this class just used as building block for high-level Top implementations.
  *

@@ -21,6 +21,8 @@ import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import static org.junit.Assert.assertEquals;
+
 
 public class GaugeToCounterAdapterTest {
 
