@@ -18,7 +18,7 @@
 package com.github.rollingmetrics.top.impl;
 
 
-import com.github.rollingmetrics.histogram.util.Printer;
+import com.github.rollingmetrics.util.Printer;
 import com.github.rollingmetrics.top.Position;
 import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.top.impl.collector.PositionCollector;
@@ -204,7 +204,7 @@ public class ResetByChunksTop implements Top {
 
     @Override
     public String toString() {
-        return "ResetByChunksAccumulator{" +
+        return "ResetByChunksRollingHdrHistogramImpl{" +
                 "\nintervalBetweenResettingMillis=" + intervalBetweenResettingMillis +
                 ",\n creationTimestamp=" + creationTimestamp +
                 (!historySupported ? "" : ",\n archive=" + Printer.printArray(archive, "chunk")) +

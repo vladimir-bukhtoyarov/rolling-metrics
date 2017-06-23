@@ -131,14 +131,14 @@ public class TopBuilderTest {
 
         assertEquals(1,top.getSize());
 
-        TopTestUtil.update(top, TestData.first);
-        TopTestUtil.checkOrder(top, TestData.first);
+        TopTestUtil.update(top, TopTestData.first);
+        TopTestUtil.checkOrder(top, TopTestData.first);
 
-        TopTestUtil.update(top, TestData.second);
-        TopTestUtil.checkOrder(top, TestData.first);
+        TopTestUtil.update(top, TopTestData.second);
+        TopTestUtil.checkOrder(top, TopTestData.first);
 
         currentTimeMillis.addAndGet(10_000);
-        TopTestUtil.checkOrder(top, TestData.second);
+        TopTestUtil.checkOrder(top, TopTestData.second);
     }
 
     @Test
@@ -150,14 +150,14 @@ public class TopBuilderTest {
                 .withClock(clock)
                 .build();
 
-        TopTestUtil.update(top, TestData.first);
-        TopTestUtil.checkOrder(top, TestData.first);
+        TopTestUtil.update(top, TopTestData.first);
+        TopTestUtil.checkOrder(top, TopTestData.first);
 
-        TopTestUtil.update(top, TestData.second);
-        TopTestUtil.checkOrder(top, TestData.first);
+        TopTestUtil.update(top, TopTestData.second);
+        TopTestUtil.checkOrder(top, TopTestData.first);
 
         currentTimeMillis.addAndGet(1_000);
-        TopTestUtil.checkOrder(top, TestData.second);
+        TopTestUtil.checkOrder(top, TopTestData.second);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -173,9 +173,9 @@ public class TopBuilderTest {
     @Test
     public void shouldAllowToReplaceSize() {
         Top top = Top.builder(1).withPositionCount(2).build();
-        TopTestUtil.update(top, TestData.first);
-        TopTestUtil.update(top, TestData.second);
-        TopTestUtil.checkOrder(top, TestData.second, TestData.first);
+        TopTestUtil.update(top, TopTestData.first);
+        TopTestUtil.update(top, TopTestData.second);
+        TopTestUtil.checkOrder(top, TopTestData.second, TopTestData.first);
     }
 
 }

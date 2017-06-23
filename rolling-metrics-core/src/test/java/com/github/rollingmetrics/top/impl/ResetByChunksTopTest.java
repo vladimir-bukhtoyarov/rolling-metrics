@@ -20,7 +20,7 @@ package com.github.rollingmetrics.top.impl;
 import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.util.Clock;
 import com.github.rollingmetrics.util.MockExecutor;
-import com.github.rollingmetrics.top.TestData;
+import com.github.rollingmetrics.top.TopTestData;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -56,50 +56,50 @@ public class ResetByChunksTopTest {
 
         TopTestUtil.assertEmpty(top);
 
-        TopTestUtil.update(top, TestData.fifth);
-        TopTestUtil.checkOrder(top, TestData.fifth);
+        TopTestUtil.update(top, TopTestData.fifth);
+        TopTestUtil.checkOrder(top, TopTestData.fifth);
 
         currentTimeMillis.addAndGet(500L); //500
-        TopTestUtil.checkOrder(top, TestData.fifth);
+        TopTestUtil.checkOrder(top, TopTestData.fifth);
 
         currentTimeMillis.addAndGet(500L); //1000
-        TopTestUtil.checkOrder(top, TestData.fifth);
+        TopTestUtil.checkOrder(top, TopTestData.fifth);
 
-        TopTestUtil.update(top, TestData.fourth);
-        TopTestUtil.checkOrder(top, TestData.fifth);
-        TopTestUtil.checkOrder(top, TestData.fifth);
+        TopTestUtil.update(top, TopTestData.fourth);
+        TopTestUtil.checkOrder(top, TopTestData.fifth);
+        TopTestUtil.checkOrder(top, TopTestData.fifth);
 
         currentTimeMillis.addAndGet(1L); //1001
-        TopTestUtil.update(top, TestData.first);
-        TopTestUtil.checkOrder(top, TestData.fifth);
+        TopTestUtil.update(top, TopTestData.first);
+        TopTestUtil.checkOrder(top, TopTestData.fifth);
 
         currentTimeMillis.addAndGet(1000L); //2001
-        TopTestUtil.checkOrder(top, TestData.fifth);
+        TopTestUtil.checkOrder(top, TopTestData.fifth);
 
-        TopTestUtil.update(top, TestData.first);
-        TopTestUtil.update(top, TestData.second);
-        TopTestUtil.update(top, TestData.third);
-        TopTestUtil.checkOrder(top, TestData.fifth);
+        TopTestUtil.update(top, TopTestData.first);
+        TopTestUtil.update(top, TopTestData.second);
+        TopTestUtil.update(top, TopTestData.third);
+        TopTestUtil.checkOrder(top, TopTestData.fifth);
 
         currentTimeMillis.addAndGet(999L); //3000
-        TopTestUtil.checkOrder(top, TestData.fifth);
+        TopTestUtil.checkOrder(top, TopTestData.fifth);
 
         currentTimeMillis.addAndGet(1L); //3001
-        TopTestUtil.update(top, TestData.second);
-        TopTestUtil.checkOrder(top, TestData.fifth);
+        TopTestUtil.update(top, TopTestData.second);
+        TopTestUtil.checkOrder(top, TopTestData.fifth);
 
         currentTimeMillis.addAndGet(999L); //4000
-        TopTestUtil.update(top, TestData.first);
-        TopTestUtil.checkOrder(top, TestData.fourth);
+        TopTestUtil.update(top, TopTestData.first);
+        TopTestUtil.checkOrder(top, TopTestData.fourth);
 
         currentTimeMillis.addAndGet(1000L); //5000
-        TopTestUtil.checkOrder(top, TestData.third);
+        TopTestUtil.checkOrder(top, TopTestData.third);
 
         currentTimeMillis.addAndGet(1000L); //6000
-        TopTestUtil.checkOrder(top, TestData.second);
+        TopTestUtil.checkOrder(top, TopTestData.second);
 
         currentTimeMillis.addAndGet(1000L); //7000
-        TopTestUtil.checkOrder(top, TestData.first);
+        TopTestUtil.checkOrder(top, TopTestData.first);
 
         currentTimeMillis.addAndGet(1000L); //8000
         TopTestUtil.assertEmpty(top);
@@ -107,11 +107,11 @@ public class ResetByChunksTopTest {
         currentTimeMillis.addAndGet(2999L); //10_999
         TopTestUtil.assertEmpty(top);
 
-        TopTestUtil.update(top, TestData.second);
-        TopTestUtil.checkOrder(top, TestData.second);
+        TopTestUtil.update(top, TopTestData.second);
+        TopTestUtil.checkOrder(top, TopTestData.second);
 
         currentTimeMillis.addAndGet(3000L); //13_999
-        TopTestUtil.checkOrder(top, TestData.second);
+        TopTestUtil.checkOrder(top, TopTestData.second);
 
         currentTimeMillis.addAndGet(1L); //14_000
         TopTestUtil.assertEmpty(top);
@@ -130,50 +130,50 @@ public class ResetByChunksTopTest {
 
         TopTestUtil.assertEmpty(top);
 
-        TopTestUtil.update(top, TestData.fifth);
-        TopTestUtil.checkOrder(top, TestData.fifth);
+        TopTestUtil.update(top, TopTestData.fifth);
+        TopTestUtil.checkOrder(top, TopTestData.fifth);
 
         currentTimeMillis.addAndGet(500L); //500
-        TopTestUtil.checkOrder(top, TestData.fifth);
+        TopTestUtil.checkOrder(top, TopTestData.fifth);
 
         currentTimeMillis.addAndGet(500L); //1000
-        TopTestUtil.checkOrder(top, TestData.fifth);
+        TopTestUtil.checkOrder(top, TopTestData.fifth);
 
-        TopTestUtil.update(top, TestData.fourth);
-        TopTestUtil.checkOrder(top, TestData.fifth, TestData.fourth);
-        TopTestUtil.checkOrder(top, TestData.fifth, TestData.fourth);
+        TopTestUtil.update(top, TopTestData.fourth);
+        TopTestUtil.checkOrder(top, TopTestData.fifth, TopTestData.fourth);
+        TopTestUtil.checkOrder(top, TopTestData.fifth, TopTestData.fourth);
 
         currentTimeMillis.addAndGet(1L); //1001
-        TopTestUtil.update(top, TestData.first);
-        TopTestUtil.checkOrder(top, TestData.fifth, TestData.fourth, TestData.first);
+        TopTestUtil.update(top, TopTestData.first);
+        TopTestUtil.checkOrder(top, TopTestData.fifth, TopTestData.fourth, TopTestData.first);
 
         currentTimeMillis.addAndGet(1000L); //2001
-        TopTestUtil.checkOrder(top, TestData.fifth, TestData.fourth, TestData.first);
+        TopTestUtil.checkOrder(top, TopTestData.fifth, TopTestData.fourth, TopTestData.first);
 
-        TopTestUtil.update(top, TestData.first);
-        TopTestUtil.update(top, TestData.second);
-        TopTestUtil.update(top, TestData.third);
-        TopTestUtil.checkOrder(top, TestData.fifth, TestData.fourth, TestData.third);
+        TopTestUtil.update(top, TopTestData.first);
+        TopTestUtil.update(top, TopTestData.second);
+        TopTestUtil.update(top, TopTestData.third);
+        TopTestUtil.checkOrder(top, TopTestData.fifth, TopTestData.fourth, TopTestData.third);
 
         currentTimeMillis.addAndGet(999L); //3000
-        TopTestUtil.checkOrder(top, TestData.fifth, TestData.fourth, TestData.third);
+        TopTestUtil.checkOrder(top, TopTestData.fifth, TopTestData.fourth, TopTestData.third);
 
         currentTimeMillis.addAndGet(1L); //3001
-        TopTestUtil.update(top, TestData.second);
-        TopTestUtil.checkOrder(top, TestData.fifth, TestData.fourth, TestData.third);
+        TopTestUtil.update(top, TopTestData.second);
+        TopTestUtil.checkOrder(top, TopTestData.fifth, TopTestData.fourth, TopTestData.third);
 
         currentTimeMillis.addAndGet(999L); //4000
-        TopTestUtil.update(top, TestData.first);
-        TopTestUtil.checkOrder(top, TestData.fourth, TestData.third, TestData.second);
+        TopTestUtil.update(top, TopTestData.first);
+        TopTestUtil.checkOrder(top, TopTestData.fourth, TopTestData.third, TopTestData.second);
 
         currentTimeMillis.addAndGet(1000L); //5000
-        TopTestUtil.checkOrder(top, TestData.third, TestData.second, TestData.first);
+        TopTestUtil.checkOrder(top, TopTestData.third, TopTestData.second, TopTestData.first);
 
         currentTimeMillis.addAndGet(1000L); //6000
-        TopTestUtil.checkOrder(top, TestData.second, TestData.first);
+        TopTestUtil.checkOrder(top, TopTestData.second, TopTestData.first);
 
         currentTimeMillis.addAndGet(1000L); //7000
-        TopTestUtil.checkOrder(top, TestData.first);
+        TopTestUtil.checkOrder(top, TopTestData.first);
 
         currentTimeMillis.addAndGet(1000L); //8000
         TopTestUtil.assertEmpty(top);
@@ -181,11 +181,11 @@ public class ResetByChunksTopTest {
         currentTimeMillis.addAndGet(2999L); //10_999
         TopTestUtil.assertEmpty(top);
 
-        TopTestUtil.update(top, TestData.second);
-        TopTestUtil.checkOrder(top, TestData.second);
+        TopTestUtil.update(top, TopTestData.second);
+        TopTestUtil.checkOrder(top, TopTestData.second);
 
         currentTimeMillis.addAndGet(3000L); //13_999
-        TopTestUtil.checkOrder(top, TestData.second);
+        TopTestUtil.checkOrder(top, TopTestData.second);
 
         currentTimeMillis.addAndGet(1L); //14_000
         TopTestUtil.assertEmpty(top);

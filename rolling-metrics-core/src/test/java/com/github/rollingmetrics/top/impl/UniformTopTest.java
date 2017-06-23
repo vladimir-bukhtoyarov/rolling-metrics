@@ -18,7 +18,7 @@
 package com.github.rollingmetrics.top.impl;
 
 import com.github.rollingmetrics.top.Top;
-import com.github.rollingmetrics.top.TestData;
+import com.github.rollingmetrics.top.TopTestData;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -49,14 +49,14 @@ public class UniformTopTest {
 
         TopTestUtil.assertEmpty(top);
 
-        TopTestUtil.update(top, TestData.first);
-        TopTestUtil.checkOrder(top, TestData.first);
+        TopTestUtil.update(top, TopTestData.first);
+        TopTestUtil.checkOrder(top, TopTestData.first);
 
-        TopTestUtil.update(top, TestData.second);
-        TopTestUtil.checkOrder(top, TestData.second);
+        TopTestUtil.update(top, TopTestData.second);
+        TopTestUtil.checkOrder(top, TopTestData.second);
 
-        TopTestUtil.update(top, TestData.first);
-        TopTestUtil.checkOrder(top, TestData.second);
+        TopTestUtil.update(top, TopTestData.first);
+        TopTestUtil.checkOrder(top, TopTestData.second);
     }
 
     @Test
@@ -68,26 +68,26 @@ public class UniformTopTest {
 
         TopTestUtil.assertEmpty(top);
 
-        TopTestUtil.update(top, TestData.first);
-        TopTestUtil.checkOrder(top, TestData.first);
+        TopTestUtil.update(top, TopTestData.first);
+        TopTestUtil.checkOrder(top, TopTestData.first);
 
-        TopTestUtil.update(top, TestData.second);
-        TopTestUtil.checkOrder(top, TestData.second, TestData.first);
+        TopTestUtil.update(top, TopTestData.second);
+        TopTestUtil.checkOrder(top, TopTestData.second, TopTestData.first);
 
-        TopTestUtil.update(top, TestData.third);
-        TopTestUtil.checkOrder(top, TestData.third, TestData.second, TestData.first);
+        TopTestUtil.update(top, TopTestData.third);
+        TopTestUtil.checkOrder(top, TopTestData.third, TopTestData.second, TopTestData.first);
 
-        TopTestUtil.update(top, TestData.fourth);
-        TopTestUtil.checkOrder(top, TestData.fourth, TestData.third, TestData.second);
+        TopTestUtil.update(top, TopTestData.fourth);
+        TopTestUtil.checkOrder(top, TopTestData.fourth, TopTestData.third, TopTestData.second);
 
-        TopTestUtil.update(top, TestData.fifth);
-        TopTestUtil.checkOrder(top, TestData.fifth, TestData.fourth, TestData.third);
+        TopTestUtil.update(top, TopTestData.fifth);
+        TopTestUtil.checkOrder(top, TopTestData.fifth, TopTestData.fourth, TopTestData.third);
 
-        TopTestUtil.update(top, TestData.first);
-        TopTestUtil.checkOrder(top, TestData.fifth, TestData.fourth, TestData.third);
+        TopTestUtil.update(top, TopTestData.first);
+        TopTestUtil.checkOrder(top, TopTestData.fifth, TopTestData.fourth, TopTestData.third);
 
-        TopTestUtil.update(top, TestData.fifth);
-        TopTestUtil.checkOrder(top, TestData.fifth, TestData.fourth, TestData.third);
+        TopTestUtil.update(top, TopTestData.fifth);
+        TopTestUtil.checkOrder(top, TopTestData.fifth, TopTestData.fourth, TopTestData.third);
     }
 
     @Test

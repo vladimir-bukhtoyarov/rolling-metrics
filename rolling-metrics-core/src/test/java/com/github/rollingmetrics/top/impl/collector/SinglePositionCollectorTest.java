@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.top.impl.collector;
 
-import com.github.rollingmetrics.top.TestData;
+import com.github.rollingmetrics.top.TopTestData;
 import org.junit.Test;
 
 
@@ -34,20 +34,20 @@ public class SinglePositionCollectorTest {
     public void test() {
         PositionCollectorTestUtil.assertEmpty(collector);
 
-        assertTrue(collector.add(TestData.first));
-        assertFalse(collector.add(TestData.first));
-        PositionCollectorTestUtil.checkOrder(collector, TestData.first);
+        assertTrue(collector.add(TopTestData.first));
+        assertFalse(collector.add(TopTestData.first));
+        PositionCollectorTestUtil.checkOrder(collector, TopTestData.first);
 
-        assertTrue(collector.add(TestData.second));
-        assertFalse(collector.add(TestData.second));
-        PositionCollectorTestUtil.checkOrder(collector, TestData.second);
+        assertTrue(collector.add(TopTestData.second));
+        assertFalse(collector.add(TopTestData.second));
+        PositionCollectorTestUtil.checkOrder(collector, TopTestData.second);
 
-        assertTrue(collector.add(TestData.third));
-        assertFalse(collector.add(TestData.third));
-        PositionCollectorTestUtil.checkOrder(collector, TestData.third);
+        assertTrue(collector.add(TopTestData.third));
+        assertFalse(collector.add(TopTestData.third));
+        PositionCollectorTestUtil.checkOrder(collector, TopTestData.third);
 
-        assertFalse(collector.add(TestData.first));
-        PositionCollectorTestUtil.checkOrder(collector, TestData.third);
+        assertFalse(collector.add(TopTestData.first));
+        PositionCollectorTestUtil.checkOrder(collector, TopTestData.third);
     }
 
     @Test
@@ -55,14 +55,14 @@ public class SinglePositionCollectorTest {
         collector.addInto(collector2);
         PositionCollectorTestUtil.assertEmpty(collector2);
 
-        collector.add(TestData.first);
+        collector.add(TopTestData.first);
         collector.addInto(collector2);
-        PositionCollectorTestUtil.checkOrder(collector2, TestData.first);
+        PositionCollectorTestUtil.checkOrder(collector2, TopTestData.first);
     }
 
     @Test
     public void testReset() {
-        collector.add(TestData.first);
+        collector.add(TopTestData.first);
 
         collector.reset();
         PositionCollectorTestUtil.assertEmpty(collector);

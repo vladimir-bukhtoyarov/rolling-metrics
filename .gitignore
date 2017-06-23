@@ -72,7 +72,7 @@ tmp/
 *.swp
 *~.nib
 local.properties
-.settings/
+.recorderSettings/
 .loadpath
 
 # Eclipse Core

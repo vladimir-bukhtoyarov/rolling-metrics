@@ -18,7 +18,7 @@
 package com.github.rollingmetrics.util;
 
 
-import com.github.rollingmetrics.histogram.accumulator.ResetByChunksAccumulator;
+import com.github.rollingmetrics.histogram.hdr.impl.ResetByChunksRollingHdrHistogramImpl;
 
 import java.util.Objects;
 import java.util.concurrent.*;
@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Util class which should be used for execution tasks(like histogram rotation) in background.
- * Known clients: {@link ResetByChunksAccumulator}.
+ * Known clients: {@link ResetByChunksRollingHdrHistogramImpl}.
  *
  * For background execution this class maintains own implementation of executor {@link SingleThreadExecutor}
  * which extremely fast and has no blocking on task queueing.

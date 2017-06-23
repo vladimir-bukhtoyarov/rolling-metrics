@@ -40,7 +40,7 @@ The query description must contain:
  import com.codahale.metrics.MetricSet;
  import com.datastax.driver.core.*;
  import com.github.rollingmetrics.top.Top;
- import com.github.rollingmetrics.top.TopMetricSet;
+ import com.github.rollingmetrics.dropwizard.adapter.TopMetricSet;
 
  import java.time.Duration;
  import java.util.Date;

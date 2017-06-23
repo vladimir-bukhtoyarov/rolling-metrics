@@ -18,7 +18,7 @@
 package com.github.rollingmetrics.top.impl;
 
 import com.github.rollingmetrics.top.Position;
-import com.github.rollingmetrics.top.TestData;
+import com.github.rollingmetrics.top.TopTestData;
 import com.github.rollingmetrics.top.Top;
 import junit.framework.TestCase;
 
@@ -103,7 +103,7 @@ public class TopTestUtil {
     }
 
     private static void tooLongDescriptionShouldBeReduced(Top top, long latencyThresholdNanos, int maxDescriptionLength) {
-        Supplier<String> longDescription = () -> TestData.generateString(maxDescriptionLength * 2);
+        Supplier<String> longDescription = () -> TopTestData.generateString(maxDescriptionLength * 2);
         top.update(System.currentTimeMillis(), latencyThresholdNanos, TimeUnit.NANOSECONDS, longDescription);
         Position position = top.getPositionsInDescendingOrder().get(0);
         assertEquals(maxDescriptionLength, position.getQueryDescription().length());

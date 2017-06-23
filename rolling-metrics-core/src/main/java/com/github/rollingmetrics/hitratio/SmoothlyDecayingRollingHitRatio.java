@@ -18,7 +18,7 @@
 package com.github.rollingmetrics.hitratio;
 
 import com.github.rollingmetrics.util.Clock;
-import com.github.rollingmetrics.histogram.util.Printer;
+import com.github.rollingmetrics.util.Printer;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;

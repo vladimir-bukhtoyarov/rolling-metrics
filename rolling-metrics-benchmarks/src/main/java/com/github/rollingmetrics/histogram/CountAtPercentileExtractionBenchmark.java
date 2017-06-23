@@ -18,6 +18,7 @@
 package com.github.rollingmetrics.histogram;
 
 import com.codahale.metrics.Snapshot;
+import com.github.rollingmetrics.histogram.hdr.HdrReservoir;
 import org.HdrHistogram.Histogram;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;

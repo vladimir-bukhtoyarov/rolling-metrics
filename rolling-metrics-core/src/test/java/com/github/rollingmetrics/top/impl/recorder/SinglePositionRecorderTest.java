@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.top.impl.recorder;
 
-import com.github.rollingmetrics.top.TestData;
+import com.github.rollingmetrics.top.TopTestData;
 import com.github.rollingmetrics.top.impl.collector.PositionCollector;
 import com.github.rollingmetrics.top.impl.collector.PositionCollectorTestUtil;
 import org.junit.Test;
@@ -25,24 +25,24 @@ import org.junit.Test;
 
 public class SinglePositionRecorderTest {
 
-    private PositionRecorder recorder = new SinglePositionRecorder(TestData.THRESHOLD_NANOS, 1000);
+    private PositionRecorder recorder = new SinglePositionRecorder(TopTestData.THRESHOLD_NANOS, 1000);
     private PositionCollector collector = PositionCollector.createCollector(1);
 
     @Test
     public void test() {
         PositionRecorderTestUtil.assertEmpty(recorder);
 
-        PositionRecorderTestUtil.update(recorder, TestData.first);
-        PositionRecorderTestUtil.checkOrder(recorder, TestData.first);
+        PositionRecorderTestUtil.update(recorder, TopTestData.first);
+        PositionRecorderTestUtil.checkOrder(recorder, TopTestData.first);
 
-        PositionRecorderTestUtil.update(recorder, TestData.second);
-        PositionRecorderTestUtil.checkOrder(recorder, TestData.second);
+        PositionRecorderTestUtil.update(recorder, TopTestData.second);
+        PositionRecorderTestUtil.checkOrder(recorder, TopTestData.second);
 
-        PositionRecorderTestUtil.update(recorder, TestData.third);
-        PositionRecorderTestUtil.checkOrder(recorder, TestData.third);
+        PositionRecorderTestUtil.update(recorder, TopTestData.third);
+        PositionRecorderTestUtil.checkOrder(recorder, TopTestData.third);
 
-        PositionRecorderTestUtil.update(recorder, TestData.first);
-        PositionRecorderTestUtil.checkOrder(recorder, TestData.third);
+        PositionRecorderTestUtil.update(recorder, TopTestData.first);
+        PositionRecorderTestUtil.checkOrder(recorder, TopTestData.third);
     }
 
     @Test
@@ -50,14 +50,14 @@ public class SinglePositionRecorderTest {
         recorder.addInto(collector);
         PositionCollectorTestUtil.assertEmpty(collector);
 
-        PositionRecorderTestUtil.update(recorder, TestData.first);
+        PositionRecorderTestUtil.update(recorder, TopTestData.first);
         recorder.addInto(collector);
-        PositionCollectorTestUtil.checkOrder(collector, TestData.first);
+        PositionCollectorTestUtil.checkOrder(collector, TopTestData.first);
     }
 
     @Test
     public void testReset() {
-        PositionRecorderTestUtil.update(recorder, TestData.first);
+        PositionRecorderTestUtil.update(recorder, TopTestData.first);
 
         recorder.reset();
         PositionRecorderTestUtil.assertEmpty(recorder);

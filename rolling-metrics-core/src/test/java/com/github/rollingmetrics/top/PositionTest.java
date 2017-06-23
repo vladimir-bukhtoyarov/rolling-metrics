@@ -36,7 +36,7 @@ public class PositionTest {
     public void shouldReduceTooLongDescriptions() {
         int MAX_LENGTH = 1000;
         int ACTUAL_LENGTH = 2000;
-        Supplier<String> desciptionSupplier = () -> TestData.generateString(ACTUAL_LENGTH);
+        Supplier<String> desciptionSupplier = () -> TopTestData.generateString(ACTUAL_LENGTH);
         Position position = new Position(System.currentTimeMillis(), 22, TimeUnit.MILLISECONDS, desciptionSupplier, 1000);
         assertEquals(MAX_LENGTH, position.getQueryDescription().length());
     }

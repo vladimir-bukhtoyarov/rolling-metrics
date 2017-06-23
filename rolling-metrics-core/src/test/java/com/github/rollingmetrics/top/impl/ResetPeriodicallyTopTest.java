@@ -26,7 +26,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.github.rollingmetrics.top.TestData.*;
+import static com.github.rollingmetrics.top.TopTestData.*;
 import static com.github.rollingmetrics.top.impl.TopTestUtil.assertEmpty;
 import static com.github.rollingmetrics.top.impl.TopTestUtil.checkOrder;
 import static com.github.rollingmetrics.top.impl.TopTestUtil.update;
