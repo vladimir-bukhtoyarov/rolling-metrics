@@ -51,7 +51,7 @@ public class HistogramUtil {
         if (source instanceof ConcurrentHistogram) {
             return new Histogram(source.getNumberOfSignificantValueDigits());
         } else if (source instanceof AtomicHistogram) {
-            return new AtomicHistogram(
+            return new Histogram(
                     source.getLowestDiscernibleValue(),
                     source.getHighestTrackableValue(),
                     source.getNumberOfSignificantValueDigits()
