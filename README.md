@@ -14,7 +14,7 @@ The library contains collection of advanced metrics which missed in the original
 ## Get Rolling-Metrics library
 
 #### By direct link
-[Download compiled jar, sources, javadocs](https://github.com/vladimir-bukhtoyarov/rolling-metrics/releases/tag/2.0.1)
+[Download compiled jar, sources, javadocs](https://github.com/vladimir-bukhtoyarov/rolling-metrics/releases/tag/2.0.2)
 
 #### You can build Rolling Metrics from sources
 
