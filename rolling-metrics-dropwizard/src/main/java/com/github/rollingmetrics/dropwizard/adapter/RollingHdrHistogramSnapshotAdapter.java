@@ -17,7 +17,7 @@
 package com.github.rollingmetrics.dropwizard.adapter;
 
 import com.codahale.metrics.Snapshot;
-import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramSnapshot;
+import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
 
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
@@ -31,9 +31,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  */
 class RollingHdrHistogramSnapshotAdapter extends Snapshot {
 
-    private final RollingHdrHistogramSnapshot target;
+    private final RollingSnapshot target;
 
-    public RollingHdrHistogramSnapshotAdapter(RollingHdrHistogramSnapshot target) {
+    public RollingHdrHistogramSnapshotAdapter(RollingSnapshot target) {
         this.target = Objects.requireNonNull(target);
     }
 

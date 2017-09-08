@@ -20,43 +20,43 @@ import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
 
-public class EmptyRollingHdrHistogramSnapshotTest {
+public class EmptyRollingSnapshotTest {
 
     @Test
     public void testGetValue() throws Exception {
-        assertEquals(0.0, EmptyRollingHdrHistogramSnapshot.INSTANCE.getValue(50.0));
-        assertEquals(0.0, EmptyRollingHdrHistogramSnapshot.INSTANCE.getValue(60.0));
+        assertEquals(0.0, EmptyRollingSnapshot.INSTANCE.getValue(50.0));
+        assertEquals(0.0, EmptyRollingSnapshot.INSTANCE.getValue(60.0));
     }
 
     @Test
     public void testGetValues() throws Exception {
-        long[] values = EmptyRollingHdrHistogramSnapshot.INSTANCE.getValues();
+        long[] values = EmptyRollingSnapshot.INSTANCE.getValues();
         assertEquals(0, values.length);
     }
 
     @Test
     public void testSize() throws Exception {
-        assertEquals(0, EmptyRollingHdrHistogramSnapshot.INSTANCE.size());
+        assertEquals(0, EmptyRollingSnapshot.INSTANCE.size());
     }
 
     @Test
     public void testGetMax() throws Exception {
-        assertEquals(0, EmptyRollingHdrHistogramSnapshot.INSTANCE.getMax());
+        assertEquals(0, EmptyRollingSnapshot.INSTANCE.getMax());
     }
 
     @Test
     public void testGetMean() throws Exception {
-        assertEquals(0.0, EmptyRollingHdrHistogramSnapshot.INSTANCE.getMean());
+        assertEquals(0.0, EmptyRollingSnapshot.INSTANCE.getMean());
     }
 
     @Test
     public void testGetMin() throws Exception {
-        assertEquals(0, EmptyRollingHdrHistogramSnapshot.INSTANCE.getMin());
+        assertEquals(0, EmptyRollingSnapshot.INSTANCE.getMin());
     }
 
     @Test
     public void testGetStdDev() throws Exception {
-        assertEquals(0.0, EmptyRollingHdrHistogramSnapshot.INSTANCE.getStdDev());
+        assertEquals(0.0, EmptyRollingSnapshot.INSTANCE.getStdDev());
     }
 
 }

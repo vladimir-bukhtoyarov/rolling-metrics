@@ -17,9 +17,6 @@
 package com.github.rollingmetrics.histogram.hdr;
 
 import com.github.rollingmetrics.histogram.OverflowResolver;
-import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
-import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramBuilder;
-import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramSnapshot;
 import org.junit.Test;
 import java.time.Duration;
 import java.util.function.Function;
@@ -28,7 +25,7 @@ import static junit.framework.TestCase.assertEquals;
 
 public class PrintingTest {
 
-    private Function<RollingHdrHistogram, RollingHdrHistogramSnapshot> snapshotTaker = reservoir -> {
+    private Function<RollingHdrHistogram, RollingSnapshot> snapshotTaker = reservoir -> {
         for (int i = 1; i <= 1000; i++) {
             reservoir.update(i);
         }
@@ -38,7 +35,7 @@ public class PrintingTest {
     @Test
     public void testSmartSnapshotPrinting() {
         RollingHdrHistogram histogram = RollingHdrHistogram.builder().build();
-        RollingHdrHistogramSnapshot snapshot = snapshotTaker.apply(histogram);
+        RollingSnapshot snapshot = snapshotTaker.apply(histogram);
         System.out.println(snapshot);
     }
 
@@ -46,7 +43,7 @@ public class PrintingTest {
     public void testFullSnapshotPrinting() {
         RollingHdrHistogram histogram = RollingHdrHistogram.builder()
                 .withoutSnapshotOptimization().build();
-        RollingHdrHistogramSnapshot snapshot = snapshotTaker.apply(histogram);
+        RollingSnapshot snapshot = snapshotTaker.apply(histogram);
         System.out.println(snapshot);
     }
 

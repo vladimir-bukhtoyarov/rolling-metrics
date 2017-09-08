@@ -32,7 +32,7 @@ public interface RollingHdrHistogram {
      */
     int getEstimatedFootprintInBytes();
 
-    RollingHdrHistogramSnapshot getSnapshot();
+    RollingSnapshot getSnapshot();
 
     void update(long value);
 

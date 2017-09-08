@@ -21,7 +21,7 @@ import com.github.rollingmetrics.util.Clock;
 
 class SnapshotCachingRollingHdrHistogram implements RollingHdrHistogram {
 
-    private final CachingSupplier<RollingHdrHistogramSnapshot> cachingSupplier;
+    private final CachingSupplier<RollingSnapshot> cachingSupplier;
     private final RollingHdrHistogram target;
 
     SnapshotCachingRollingHdrHistogram(RollingHdrHistogram target, long cachingDurationMillis, Clock clock) {
@@ -40,7 +40,7 @@ class SnapshotCachingRollingHdrHistogram implements RollingHdrHistogram {
     }
 
     @Override
-    public RollingHdrHistogramSnapshot getSnapshot() {
+    public RollingSnapshot getSnapshot() {
         return cachingSupplier.get();
     }
 

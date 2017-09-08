@@ -18,7 +18,7 @@
 package com.github.rollingmetrics.histogram.hdr.impl;
 
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
-import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramSnapshot;
+import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
@@ -33,18 +33,18 @@ public class ResetOnSnapshotRollingHdrHistogramImplTest {
 
         histogram.update(10);
         histogram.update(20);
-        RollingHdrHistogramSnapshot firstSnapshot = histogram.getSnapshot();
+        RollingSnapshot firstSnapshot = histogram.getSnapshot();
 
         histogram.update(30);
         histogram.update(40);
-        RollingHdrHistogramSnapshot secondSnapshot = histogram.getSnapshot();
+        RollingSnapshot secondSnapshot = histogram.getSnapshot();
         assertNotSame(firstSnapshot, secondSnapshot);
         assertEquals(30, secondSnapshot.getMin());
         assertEquals(40, secondSnapshot.getMax());
 
         histogram.update(50);
         histogram.update(60);
-        RollingHdrHistogramSnapshot thirdSnapshot = histogram.getSnapshot();
+        RollingSnapshot thirdSnapshot = histogram.getSnapshot();
         assertNotSame(secondSnapshot, thirdSnapshot);
         assertEquals(50, thirdSnapshot.getMin());
         assertEquals(60, thirdSnapshot.getMax());

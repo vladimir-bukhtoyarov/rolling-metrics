@@ -30,7 +30,7 @@ public class OverflowResolverTest {
                 build();
 
         histogram.update(101);
-        RollingHdrHistogramSnapshot snapshot = histogram.getSnapshot();
+        RollingSnapshot snapshot = histogram.getSnapshot();
         assertEquals(0, snapshot.getMax());
 
         histogram.update(100);
@@ -49,7 +49,7 @@ public class OverflowResolverTest {
                 .build();
 
         histogram.update(101);
-        RollingHdrHistogramSnapshot snapshot = histogram.getSnapshot();
+        RollingSnapshot snapshot = histogram.getSnapshot();
         assertEquals(100, snapshot.getMax());
 
         histogram.update(100);
@@ -75,7 +75,7 @@ public class OverflowResolverTest {
                 .withHighestTrackableValue(100, OverflowResolver.PASS_THRU)
                 .build();
         histogram.update(101);
-        RollingHdrHistogramSnapshot snapshot = histogram.getSnapshot();
+        RollingSnapshot snapshot = histogram.getSnapshot();
         assertEquals(101, snapshot.getMax());
     }
 

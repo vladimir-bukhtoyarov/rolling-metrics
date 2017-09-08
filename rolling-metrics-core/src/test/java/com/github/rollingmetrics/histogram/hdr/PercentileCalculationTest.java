@@ -28,7 +28,7 @@ import static junit.framework.TestCase.assertEquals;
 
 public class PercentileCalculationTest {
 
-    private Function<RollingHdrHistogram, RollingHdrHistogramSnapshot> snapshotTaker = reservoir -> {
+    private Function<RollingHdrHistogram, RollingSnapshot> snapshotTaker = reservoir -> {
         for (int i = 1; i <= 100000; i++) {
             reservoir.update(i);
         }
@@ -49,7 +49,7 @@ public class PercentileCalculationTest {
         RollingHdrHistogram reservoir = RollingHdrHistogram.builder()
                 .withPredefinedPercentiles(predefinedPercentiles)
                 .build();
-        RollingHdrHistogramSnapshot snapshot = snapshotTaker.apply(reservoir);
+        RollingSnapshot snapshot = snapshotTaker.apply(reservoir);
 
         Histogram hdrHistogram = createEquivalentHistogram();
         assertEquals(hdrHistogram.getStdDeviation(), snapshot.getStdDev());
@@ -91,7 +91,7 @@ public class PercentileCalculationTest {
         RollingHdrHistogram reservoir = RollingHdrHistogram.builder()
                 .withoutSnapshotOptimization()
                 .build();
-        RollingHdrHistogramSnapshot snapshot = snapshotTaker.apply(reservoir);
+        RollingSnapshot snapshot = snapshotTaker.apply(reservoir);
 
         Histogram hdrHistogram = createEquivalentHistogram();
         assertEquals(hdrHistogram.getStdDeviation(), snapshot.getStdDev());

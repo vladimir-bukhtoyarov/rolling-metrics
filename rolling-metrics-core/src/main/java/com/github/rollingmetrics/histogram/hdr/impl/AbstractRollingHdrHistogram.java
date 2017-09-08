@@ -21,7 +21,7 @@ import com.github.rollingmetrics.histogram.OverflowResolver;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramBuilder;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.histogram.hdr.RecorderSettings;
-import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramSnapshot;
+import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.HistogramIterationValue;
 
@@ -39,7 +39,7 @@ import java.util.function.Function;
  */
 public abstract class AbstractRollingHdrHistogram implements RollingHdrHistogram {
 
-    private final Function<Histogram, RollingHdrHistogramSnapshot> snapshotTaker;
+    private final Function<Histogram, RollingSnapshot> snapshotTaker;
     private final long highestTrackableValue;
     private final OverflowResolver overflowResolver;
     private final long expectedIntervalBetweenValueSamples;
@@ -58,7 +58,7 @@ public abstract class AbstractRollingHdrHistogram implements RollingHdrHistogram
     }
 
     @Override
-    public RollingHdrHistogramSnapshot getSnapshot() {
+    public RollingSnapshot getSnapshot() {
         return getSnapshot(snapshotTaker);
     }
 
@@ -74,11 +74,11 @@ public abstract class AbstractRollingHdrHistogram implements RollingHdrHistogram
         recordSingleValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
     }
 
-    protected abstract RollingHdrHistogramSnapshot getSnapshot(Function<Histogram, RollingHdrHistogramSnapshot> snapshotTaker);
+    protected abstract RollingSnapshot getSnapshot(Function<Histogram, RollingSnapshot> snapshotTaker);
 
     protected abstract void recordSingleValueWithExpectedInterval(long value, long expectedIntervalBetweenValueSamples);
 
-    static RollingHdrHistogramSnapshot takeSmartSnapshot(final double[] predefinedQuantiles, Histogram histogram) {
+    static RollingSnapshot takeSmartSnapshot(final double[] predefinedQuantiles, Histogram histogram) {
         final long max = histogram.getMaxValue();
         final long min = histogram.getMinValue();
         final double mean = histogram.getMean();
@@ -95,8 +95,8 @@ public abstract class AbstractRollingHdrHistogram implements RollingHdrHistogram
         return createSmartSnapshot(predefinedQuantiles, max, min, mean, median, stdDeviation, values);
     }
 
-    static RollingHdrHistogramSnapshot createSmartSnapshot(final double[] predefinedQuantiles, final long max, final long min, final double mean, final double median, final double stdDeviation, final double[] values) {
-        return new RollingHdrHistogramSnapshot() {
+    static RollingSnapshot createSmartSnapshot(final double[] predefinedQuantiles, final long max, final long min, final double mean, final double median, final double stdDeviation, final double[] values) {
+        return new RollingSnapshot() {
             @Override
             public double getValue(double quantile) {
                 for (int i = 0; i < predefinedQuantiles.length; i++) {
@@ -163,8 +163,8 @@ public abstract class AbstractRollingHdrHistogram implements RollingHdrHistogram
         };
     }
 
-    private static RollingHdrHistogramSnapshot takeFullSnapshot(final Histogram histogram) {
-        return new RollingHdrHistogramSnapshot() {
+    private static RollingSnapshot takeFullSnapshot(final Histogram histogram) {
+        return new RollingSnapshot() {
             @Override
             public double getValue(double quantile) {
                 double percentile = quantile * 100.0;

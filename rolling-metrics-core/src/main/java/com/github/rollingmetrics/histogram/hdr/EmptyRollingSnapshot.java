@@ -17,9 +17,9 @@
 package com.github.rollingmetrics.histogram.hdr;
 
 
-public class EmptyRollingHdrHistogramSnapshot implements RollingHdrHistogramSnapshot {
+public class EmptyRollingSnapshot implements RollingSnapshot {
 
-    public static final EmptyRollingHdrHistogramSnapshot INSTANCE = new EmptyRollingHdrHistogramSnapshot();
+    public static final EmptyRollingSnapshot INSTANCE = new EmptyRollingSnapshot();
     private static final long[] VALUES = new long[0];
 
     @Override

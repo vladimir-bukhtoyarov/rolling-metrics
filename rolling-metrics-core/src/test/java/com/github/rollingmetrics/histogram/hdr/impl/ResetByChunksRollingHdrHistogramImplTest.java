@@ -19,7 +19,7 @@ package com.github.rollingmetrics.histogram.hdr.impl;
 
 
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
-import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramSnapshot;
+import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
 import com.github.rollingmetrics.util.Clock;
 import com.github.rollingmetrics.util.MockExecutor;
 import org.junit.Test;
@@ -44,7 +44,7 @@ public class ResetByChunksRollingHdrHistogramImplTest {
 
         histogram.update(10);
         histogram.update(20);
-        RollingHdrHistogramSnapshot snapshot = histogram.getSnapshot();
+        RollingSnapshot snapshot = histogram.getSnapshot();
         assertEquals(10, snapshot.getMin());
         assertEquals(20, snapshot.getMax());
 

@@ -19,7 +19,7 @@ package com.github.rollingmetrics.histogram.hdr.impl;
 
 import com.github.rollingmetrics.histogram.hdr.HdrHistogramUtil;
 import com.github.rollingmetrics.histogram.hdr.RecorderSettings;
-import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramSnapshot;
+import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
 import com.github.rollingmetrics.util.ResilientExecutionUtil;
 import com.github.rollingmetrics.util.Clock;
 import com.github.rollingmetrics.util.Printer;
@@ -118,7 +118,7 @@ public class ResetByChunksRollingHdrHistogramImpl extends AbstractRollingHdrHist
     }
 
     @Override
-    public final synchronized RollingHdrHistogramSnapshot getSnapshot(Function<Histogram, RollingHdrHistogramSnapshot> snapshotTaker) {
+    public final synchronized RollingSnapshot getSnapshot(Function<Histogram, RollingSnapshot> snapshotTaker) {
         HdrHistogramUtil.reset(temporarySnapshotHistogram);
         long currentTimeMillis = clock.currentTimeMillis();
 

@@ -37,11 +37,11 @@ public class HdrHistogramUtil {
         }
     }
 
-    public static RollingHdrHistogramSnapshot getSnapshot(Histogram histogram, Function<Histogram, RollingHdrHistogramSnapshot> snapshotTaker) {
+    public static RollingSnapshot getSnapshot(Histogram histogram, Function<Histogram, RollingSnapshot> snapshotTaker) {
         if (histogram.getTotalCount() > 0) {
             return snapshotTaker.apply(histogram);
         } else {
-            return EmptyRollingHdrHistogramSnapshot.INSTANCE;
+            return EmptyRollingSnapshot.INSTANCE;
         }
     }
 

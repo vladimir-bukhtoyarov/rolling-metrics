@@ -19,7 +19,7 @@ package com.github.rollingmetrics.histogram.hdr;
 /**
  * TODO
  */
-public interface RollingHdrHistogramSnapshot {
+public interface RollingSnapshot {
 
     double getValue(double quantile);
 

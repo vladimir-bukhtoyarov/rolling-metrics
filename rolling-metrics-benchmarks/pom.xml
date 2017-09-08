@@ -22,7 +22,7 @@
     <parent>
         <artifactId>rolling-metrics-parent</artifactId>
         <groupId>com.github.vladimir-bukhtoyarov</groupId>
-        <version>3.0.0-SNAPSHOT</version>
+        <version>3.0.0-RC1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -32,6 +32,7 @@
     <properties>
         <benchmark.jar.name>benchmark</benchmark.jar.name>
         <benchmark.jmh.version>1.19</benchmark.jmh.version>
+        <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
     <dependencies>

@@ -63,12 +63,12 @@ public class SnapshotCachingTest {
 
         reservoir.update(10);
         reservoir.update(20);
-        RollingHdrHistogramSnapshot firstSnapshot = reservoir.getSnapshot();
+        RollingSnapshot firstSnapshot = reservoir.getSnapshot();
 
         time.getAndAdd(900);
         reservoir.update(30);
         reservoir.update(40);
-        RollingHdrHistogramSnapshot firstCachedSnapshot = reservoir.getSnapshot();
+        RollingSnapshot firstCachedSnapshot = reservoir.getSnapshot();
         assertSame(firstSnapshot, firstCachedSnapshot);
         assertEquals(10, firstCachedSnapshot.getMin());
         assertEquals(20, firstCachedSnapshot.getMax());
@@ -76,7 +76,7 @@ public class SnapshotCachingTest {
         time.getAndAdd(99);
         reservoir.update(50);
         reservoir.update(60);
-        RollingHdrHistogramSnapshot secondCachedSnapshot = reservoir.getSnapshot();
+        RollingSnapshot secondCachedSnapshot = reservoir.getSnapshot();
         assertSame(firstSnapshot, secondCachedSnapshot);
         assertEquals(10, secondCachedSnapshot.getMin());
         assertEquals(20, secondCachedSnapshot.getMax());
@@ -84,7 +84,7 @@ public class SnapshotCachingTest {
         time.getAndAdd(1);
         reservoir.update(70);
         reservoir.update(80);
-        RollingHdrHistogramSnapshot firstNewSnapshot = reservoir.getSnapshot();
+        RollingSnapshot firstNewSnapshot = reservoir.getSnapshot();
         assertNotSame(firstSnapshot, firstNewSnapshot);
         assertEquals(30, firstNewSnapshot.getMin());
         assertEquals(80, firstNewSnapshot.getMax());
@@ -92,7 +92,7 @@ public class SnapshotCachingTest {
         time.getAndAdd(1001);
         reservoir.update(90);
         reservoir.update(100);
-        RollingHdrHistogramSnapshot secondNewSnapshot = reservoir.getSnapshot();
+        RollingSnapshot secondNewSnapshot = reservoir.getSnapshot();
         assertNotSame(firstNewSnapshot, secondNewSnapshot);
         assertEquals(90, secondNewSnapshot.getMin());
         assertEquals(100, secondNewSnapshot.getMax());

@@ -1,24 +1,22 @@
 /*
+ *    Copyright 2017 Vladimir Bukhtoyarov
  *
- *  Copyright 2017 Vladimir Bukhtoyarov
+ *      Licensed under the Apache License, Version 2.0 (the "License");
+ *      you may not use this file except in compliance with the License.
+ *      You may obtain a copy of the License at
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *            http://www.apache.org/licenses/LICENSE-2.0
  *
- *          http://www.apache.org/licenses/LICENSE-2.0
- *
- *   Unless required by applicable law or agreed to in writing, software
- *   distributed under the License is distributed on an "AS IS" BASIS,
- *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *   See the License for the specific language governing permissions and
- *   limitations under the License.
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
  */
 
-package com.github.rollingmetrics.histogram;
+package com.github.rollingmetrics.histogram.hdr.impl;
 
-import com.codahale.metrics.Snapshot;
-import com.github.rollingmetrics.histogram.hdr.HdrReservoir;
+import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
 import org.HdrHistogram.Histogram;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
@@ -54,19 +52,19 @@ public class CountAtPercentileExtractionBenchmark {
     }
 
     @Benchmark
-    public Snapshot calculatePercentile_7(HistogramState state) {
-        return HdrReservoir.takeSmartSnapshot(HistogramState.DEFAULT_PERCENTILES_7, state.histogram);
+    public RollingSnapshot calculatePercentile_7(HistogramState state) {
+        return AbstractRollingHdrHistogram.takeSmartSnapshot(HistogramState.DEFAULT_PERCENTILES_7, state.histogram);
     }
 
     @Benchmark
-    public Snapshot calculatePercentile_1(HistogramState state) {
-        return HdrReservoir.takeSmartSnapshot(HistogramState.DEFAULT_PERCENTILES_1, state.histogram);
+    public RollingSnapshot calculatePercentile_1(HistogramState state) {
+        return AbstractRollingHdrHistogram.takeSmartSnapshot(HistogramState.DEFAULT_PERCENTILES_1, state.histogram);
     }
 
     public static class OneThread {
         public static void main(String[] args) throws RunnerException {
             Options opt = new OptionsBuilder()
-                    .include(((Class) CountAtPercentileExtractionBenchmark.class).getSimpleName())
+                    .include((CountAtPercentileExtractionBenchmark.class).getSimpleName())
                     .warmupIterations(5)
                     .measurementIterations(5)
                     .threads(1)

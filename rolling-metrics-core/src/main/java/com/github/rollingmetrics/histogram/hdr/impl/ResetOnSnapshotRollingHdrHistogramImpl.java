@@ -19,7 +19,7 @@ package com.github.rollingmetrics.histogram.hdr.impl;
 
 import com.github.rollingmetrics.histogram.hdr.HdrHistogramUtil;
 import com.github.rollingmetrics.histogram.hdr.RecorderSettings;
-import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramSnapshot;
+import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
 
@@ -42,7 +42,7 @@ public class ResetOnSnapshotRollingHdrHistogramImpl extends AbstractRollingHdrHi
     }
 
     @Override
-    synchronized public final RollingHdrHistogramSnapshot getSnapshot(Function<Histogram, RollingHdrHistogramSnapshot> snapshotTaker) {
+    synchronized public final RollingSnapshot getSnapshot(Function<Histogram, RollingSnapshot> snapshotTaker) {
         intervalHistogram = recorder.getIntervalHistogram(intervalHistogram);
         return HdrHistogramUtil.getSnapshot(intervalHistogram, snapshotTaker);
     }
