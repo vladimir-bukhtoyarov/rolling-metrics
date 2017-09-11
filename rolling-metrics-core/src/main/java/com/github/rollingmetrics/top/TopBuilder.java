@@ -39,11 +39,7 @@ import java.util.concurrent.ThreadFactory;
  *  registry.registerAll(metricSet);
  * }</pre>
  *
- * <p>
- * The responsibility of builder is only construction of {@link Top}, you should use {@link TopMetricSet} to integrate constructed {@link Top} into {@link com.codahale.metrics.MetricRegistry}
- *
  * @see Top
- * @see TopMetricSet
  */
 public class TopBuilder {
 

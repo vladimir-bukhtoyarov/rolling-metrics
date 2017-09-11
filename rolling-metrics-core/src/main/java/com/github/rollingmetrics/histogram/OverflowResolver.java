@@ -23,7 +23,7 @@ package com.github.rollingmetrics.histogram;
  * When highestTrackableValue is specified then {@link org.HdrHistogram.AbstractHistogram} may throw ArrayIndexOutOfBoundsException in the method {@link org.HdrHistogram.AbstractHistogram#recordValue(long)}
  * if value is exceeds highestTrackableValue, so OverflowResolver is addressed to solve this problem.
  *
- * @see HdrBuilder#withHighestTrackableValue(long, OverflowResolver)
+ * @see com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramBuilder#withHighestTrackableValue(long, OverflowResolver)
  * @see org.HdrHistogram.AbstractHistogram#recordValue(long)
  */
 public enum OverflowResolver {

@@ -230,7 +230,7 @@ public class RollingHdrHistogramBuilder {
      * Histogram will auto-generate an additional series of decreasingly-smaller (down to the expectedIntervalBetweenValueSamples) value records.
      *
      * <p>
-     * <font color="red">  WARNING:</font> You should not use this method for monitoring your application in the production,
+     * <strong>WARNING:</strong> You should not use this method for monitoring your application in the production,
      * its designed to be used inside benchmarks and load testing. See related notes {@link org.HdrHistogram.AbstractHistogram#recordValueWithExpectedInterval(long, long)}
      * for more explanations about coordinated omission and expected interval correction.
      * </p>

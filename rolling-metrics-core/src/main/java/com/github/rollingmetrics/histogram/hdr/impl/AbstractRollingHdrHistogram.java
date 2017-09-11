@@ -31,9 +31,7 @@ import java.util.function.Function;
 
 
 /**
- * A {@link com.codahale.metrics.Reservoir} implementation backed by {@link org.HdrHistogram.Recorder}
- *
- * This class is not the part of metrics-core-hdr public API and should not be used by user directly.
+ * This class is not the part of rolling-metrics public API and should not be used by user directly.
  *
  * @see RollingHdrHistogramBuilder
  */

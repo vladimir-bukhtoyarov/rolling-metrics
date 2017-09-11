@@ -45,7 +45,7 @@ class ReservoirToRollingHdrHistogramAdapter implements Reservoir {
 
     @Override
     public Snapshot getSnapshot() {
-        return null;
+        return new RollingHdrHistogramSnapshotAdapter(target.getSnapshot());
     }
 
 }
