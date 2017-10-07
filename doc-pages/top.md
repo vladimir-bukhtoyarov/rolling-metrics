@@ -7,19 +7,6 @@ Concurrency properties:
 * Writing is lock-free. Writers never blocked by readers or other writers.
 * Snapshot extraction always performed under lock, so readers blocks each other.
 
-
-## How to add Top to MetricRegistry?
-The implementation of Top does not implement of any MetricCore interface, this decision was taken in order to provide ability to use Top without dependency from metrics-core library.
-So you need to register Top manually as MetricSet in **MetricRegistry**, for example:
-```java
-   Top top = Top.builder(3).resetAllPositionsOnSnapshot().build();
-   
-   TimeUnit latencyOutputUnit = TimeUnit.MILLISECONDS;
-   int digitsAfterDecimalPoint = 5;
-   MetricSet metricSet = new TopMetricSet("my-top", top, latencyOutputUnit, digitsAfterDecimalPoint);
-   registry.registerAll(metricSet);
-```
-
 ## The real world usage example
 Lets detect slow queries to Cassandra database. The detection should be implemented on the client driver level.
 

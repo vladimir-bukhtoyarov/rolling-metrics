@@ -57,12 +57,3 @@ Example of usage:
     WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(60), 10);
     counter.add(42);
 ```
-
-## How to add counters to MetricRegistry?
-The all three types of counter mentioned above do not implement of any MetricCore interface, 
-this decision was taken in order to provide ability to use counters without dependency from metrics-core library.
-So you need to register counter as Gauge in **MetricRegistry**, for example:
-```java
-   WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(60), 10);
-   registry.register("my-counter", (Gauge<Long>) counter::getSum);
-```

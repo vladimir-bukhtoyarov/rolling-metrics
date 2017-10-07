@@ -99,13 +99,3 @@ The hit-ratio which never evicts collected values.
 Usage recommendations:
 * When you do not need in "rolling time window" semantic. Else use {@link SmoothlyDecayingRollingHitRatio}
 * Normally you should not use this implementation because in real world use-cases you need to show measurements which actual to current moment of time or time window.
-
-
-## How to add hit-ratio to MetricRegistry?
-The all of types of hit-ratio mentioned above do not implement of any MetricCore interface,
-this decision was taken in order to provide ability to use hit-ratio without dependency from metrics-core library.
-So you need to register hit-ratio as Gauge in **MetricRegistry**, for example:
-```java
-   HitRatio ratio = new ResetOnSnapshotHitRatio();
-   registry.register("my-hit-ratio", (Gauge<Double>) ratio::getHitRatio);
-```
