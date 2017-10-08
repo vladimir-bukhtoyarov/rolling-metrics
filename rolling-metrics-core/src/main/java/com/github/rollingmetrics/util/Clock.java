@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.util;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -31,14 +32,42 @@ public interface Clock {
      */
     long currentTimeMillis();
 
+    /**
+     * Returns the current value of the running Java Virtual Machine's high-resolution time source, in nanoseconds.
+     *
+     * @return the current value of the running Java Virtual Machine's high-resolution time source, in nanoseconds
+     */
+    long nanoTime();
+
     static Clock defaultClock() {
         return DEFAULT_CLOCK;
     }
 
     static Clock mock(AtomicLong currentTime) {
-        return currentTime::get;
+        return new Clock() {
+            @Override
+            public long currentTimeMillis() {
+                return currentTime.get();
+            }
+
+            @Override
+            public long nanoTime() {
+                return TimeUnit.MILLISECONDS.toNanos(currentTimeMillis());
+            }
+        };
     }
 
-    Clock DEFAULT_CLOCK = System::currentTimeMillis;
+    Clock DEFAULT_CLOCK = new Clock() {
+
+        @Override
+        public long currentTimeMillis() {
+            return System.currentTimeMillis();
+        }
+
+        @Override
+        public long nanoTime() {
+            return System.nanoTime();
+        }
+    };
 
 }

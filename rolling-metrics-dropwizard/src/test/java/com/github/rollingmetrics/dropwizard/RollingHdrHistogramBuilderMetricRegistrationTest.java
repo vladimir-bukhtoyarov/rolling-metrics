@@ -19,7 +19,7 @@ package com.github.rollingmetrics.dropwizard;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import com.github.rollingmetrics.dropwizard.adapter.DropwizardAdapters;
+import com.github.rollingmetrics.dropwizard.adapter.DropwizardAdapter;
 import com.github.rollingmetrics.histogram.OverflowResolver;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramBuilder;
@@ -42,14 +42,14 @@ public class RollingHdrHistogramBuilderMetricRegistrationTest {
     @Test
     public void testBuildAndRegisterHistogram() {
         RollingHdrHistogram hdrHistogram = builder.build();
-        Histogram historam = DropwizardAdapters.convertToHistogramAndRegister(hdrHistogram, registry, "myhistogram");
+        Histogram historam = DropwizardAdapter.convertToHistogramAndRegister(hdrHistogram, registry, "myhistogram");
         assertSame(historam, registry.histogram("myhistogram"));
     }
 
     @Test
     public void testBuildAndRegisterTimer() {
         RollingHdrHistogram hdrHistogram = builder.build();
-        Timer timer = DropwizardAdapters.convertToTimerAndRegister(hdrHistogram, registry, "mytimer");
+        Timer timer = DropwizardAdapter.convertToTimerAndRegister(hdrHistogram, registry, "mytimer");
         assertSame(timer, registry.timer("mytimer"));
     }
 

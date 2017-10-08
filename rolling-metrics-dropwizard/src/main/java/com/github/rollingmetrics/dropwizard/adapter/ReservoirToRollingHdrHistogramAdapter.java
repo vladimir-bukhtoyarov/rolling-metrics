@@ -25,7 +25,7 @@ import java.util.Objects;
 /**
  * TODO
  */
-class ReservoirToRollingHdrHistogramAdapter implements Reservoir {
+public class ReservoirToRollingHdrHistogramAdapter implements Reservoir {
 
     private final RollingHdrHistogram target;
 

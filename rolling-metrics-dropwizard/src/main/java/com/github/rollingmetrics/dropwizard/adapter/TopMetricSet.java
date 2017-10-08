@@ -53,7 +53,7 @@ import java.util.concurrent.TimeUnit;
  * The number in the gauge name represents position in the top in descending order, the "0" is the slowest query.
  *
  */
-class TopMetricSet implements MetricSet {
+public class TopMetricSet implements MetricSet {
 
     private final BigDecimal zero;
     private final Map<String, Metric> gauges;
@@ -66,7 +66,7 @@ class TopMetricSet implements MetricSet {
      * @param latencyUnit the time unit to convert latency
      * @param digitsAfterDecimalPoint the number of digits after decimal point
      */
-    TopMetricSet(String name, Top top, TimeUnit latencyUnit, int digitsAfterDecimalPoint) {
+    public TopMetricSet(String name, Top top, TimeUnit latencyUnit, int digitsAfterDecimalPoint) {
         if (name == null) {
             throw new IllegalArgumentException("name should not be null");
         }

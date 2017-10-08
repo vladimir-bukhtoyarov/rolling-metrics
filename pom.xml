@@ -27,6 +27,7 @@
         <module>rolling-metrics-benchmarks</module>
         <module>rolling-metrics-core</module>
         <module>rolling-metrics-dropwizard</module>
+        <module>rolling-metrics-microprofile</module>
         <module>rolling-metrics-jmx</module>
     </modules>
 
@@ -59,6 +60,7 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <hdr.histogram.version>2.1.8</hdr.histogram.version>
     </properties>
 
     <repositories>

@@ -1,22 +1,24 @@
 /*
- *    Copyright 2017 Vladimir Bukhtoyarov
  *
- *      Licensed under the Apache License, Version 2.0 (the "License");
- *      you may not use this file except in compliance with the License.
- *      You may obtain a copy of the License at
+ *  Copyright 2017 Vladimir Bukhtoyarov
  *
- *            http://www.apache.org/licenses/LICENSE-2.0
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
  *
- *     Unless required by applicable law or agreed to in writing, software
- *     distributed under the License is distributed on an "AS IS" BASIS,
- *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *     See the License for the specific language governing permissions and
- *     limitations under the License.
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  */
 
 package com.github.rollingmetrics.dropwizard;import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
+import com.github.rollingmetrics.dropwizard.adapter.MicroProfileAdapter;
 import com.github.rollingmetrics.top.TopTestData;
 import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.top.impl.TopTestUtil;
@@ -29,41 +31,39 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
-
-public class TopMetricSetTest {
+public class TopUtilTest {
 
     private Top top = Top.builder(3).withSnapshotCachingDuration(Duration.ZERO).build();
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNullName() {
-        DropwizardAdapter.convertTopToMetricSet(null, top, TimeUnit.MILLISECONDS, 3);
+        MicroProfileAdapter.convertTopToMetricSet(null, top, TimeUnit.MILLISECONDS, 3);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowEmptyName() {
-        DropwizardAdapter.convertTopToMetricSet("", top, TimeUnit.MILLISECONDS, 3);
+        MicroProfileAdapter.convertTopToMetricSet("", top, TimeUnit.MILLISECONDS, 3);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNullTop() {
-        DropwizardAdapter.convertTopToMetricSet("my-top", null, TimeUnit.MILLISECONDS, 3);
+        MicroProfileAdapter.convertTopToMetricSet("my-top", null, TimeUnit.MILLISECONDS, 3);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNullLatencyUnit() {
-        DropwizardAdapter.convertTopToMetricSet("my-top", top, null, 3);
+        MicroProfileAdapter.convertTopToMetricSet("my-top", top, null, 3);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNegativeDigitsAfterDecimalPoint() {
-        DropwizardAdapter.convertTopToMetricSet("my-top", top, TimeUnit.MILLISECONDS, -1);
+        MicroProfileAdapter.convertTopToMetricSet("my-top", top, TimeUnit.MILLISECONDS, -1);
     }
 
     @Test
     public void shouldAddLatencyUnitGauge() {
         for (TimeUnit timeUnit: TimeUnit.values()) {
-            MetricSet metricSet = DropwizardAdapter.convertTopToMetricSet("my-top", top, timeUnit, 3);
+            MetricSet metricSet = MicroProfileAdapter.convertTopToMetricSet("my-top", top, timeUnit, 3);
             Map<String, Metric> metrics = metricSet.getMetrics();
             Gauge<String> timeUnitGauge = (Gauge<String>) metrics.get("my-top.latencyUnit");
             Assert.assertNotNull(timeUnitGauge);
@@ -73,7 +73,7 @@ public class TopMetricSetTest {
 
     @Test
     public void testDescriptionGauges() {
-        MetricSet metricSet = DropwizardAdapter.convertTopToMetricSet("my-top", top, TimeUnit.MILLISECONDS, 3);
+        MetricSet metricSet = MicroProfileAdapter.convertTopToMetricSet("my-top", top, TimeUnit.MILLISECONDS, 3);
         checkDescriptions(metricSet, "my-top", "", "", "");
 
         TopTestUtil.update(top, TopTestData.first);
@@ -88,7 +88,7 @@ public class TopMetricSetTest {
 
     @Test
     public void testValueGauges() {
-        MetricSet metricSet = DropwizardAdapter.convertTopToMetricSet("my-top", top, TimeUnit.MILLISECONDS, 3);
+        MetricSet metricSet = MicroProfileAdapter.convertTopToMetricSet("my-top", top, TimeUnit.MILLISECONDS, 3);
         checkValues(metricSet, "my-top", 3, 0.0d, 0.0d, 0.0d);
 
         top.update(0, 13_345_456, TimeUnit.NANOSECONDS, () -> "SELECT * FROM USERS");

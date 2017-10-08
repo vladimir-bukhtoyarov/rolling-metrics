@@ -1,17 +1,18 @@
 /*
- *    Copyright 2017 Vladimir Bukhtoyarov
  *
- *      Licensed under the Apache License, Version 2.0 (the "License");
- *      you may not use this file except in compliance with the License.
- *      You may obtain a copy of the License at
+ *  Copyright 2017 Vladimir Bukhtoyarov
  *
- *            http://www.apache.org/licenses/LICENSE-2.0
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
  *
- *     Unless required by applicable law or agreed to in writing, software
- *     distributed under the License is distributed on an "AS IS" BASIS,
- *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *     See the License for the specific language governing permissions and
- *     limitations under the License.
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
  */
 
 package com.github.rollingmetrics.dropwizard.adapter;
@@ -29,7 +30,7 @@ import static junit.framework.TestCase.assertEquals;
 /**
  * Created by vladimir.bukhtoyarov on 11.09.2017.
  */
-public class ReservoirToRollingHdrHistogramAdapterTest {
+public class MicroProfileHistogramAdapterTest {
 
     private RollingHdrHistogram rollingHistogram = RollingHdrHistogram.builder()
             .withSignificantDigits(4).build();
@@ -43,13 +44,13 @@ public class ReservoirToRollingHdrHistogramAdapterTest {
 
     @Test
     public void testTimerConvertation() {
-        Timer timer = DropwizardAdapter.convertToTimer(rollingHistogram);
+        Timer timer = MicroProfileAdapter.convertToTimer(rollingHistogram);
         compareSnapshots(rollingHistogram.getSnapshot(), timer.getSnapshot());
     }
 
     @Test
     public void testHistogramConvertation() {
-        Histogram histogram = DropwizardAdapter.convertToHistogram(rollingHistogram);
+        Histogram histogram = MicroProfileAdapter.convertToHistogram(rollingHistogram);
         compareSnapshots(rollingHistogram.getSnapshot(), histogram.getSnapshot());
     }
 
