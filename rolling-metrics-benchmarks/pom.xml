@@ -26,7 +26,6 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.github.vladimir-bukhtoyarov</groupId>
     <artifactId>rolling-metrics-benchmarks</artifactId>
 
     <properties>
@@ -55,7 +54,7 @@
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-core</artifactId>
-            <version>3.1.2</version>
+            <version>${metrics-core.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
