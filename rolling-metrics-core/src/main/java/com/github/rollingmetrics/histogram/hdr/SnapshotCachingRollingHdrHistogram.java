@@ -17,15 +17,17 @@
 package com.github.rollingmetrics.histogram.hdr;
 
 import com.github.rollingmetrics.util.CachingSupplier;
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
+
+import java.time.Duration;
 
 class SnapshotCachingRollingHdrHistogram implements RollingHdrHistogram {
 
     private final CachingSupplier<RollingSnapshot> cachingSupplier;
     private final RollingHdrHistogram target;
 
-    SnapshotCachingRollingHdrHistogram(RollingHdrHistogram target, long cachingDurationMillis, Clock clock) {
-        this.cachingSupplier = new CachingSupplier<>(cachingDurationMillis, clock, target::getSnapshot);
+    SnapshotCachingRollingHdrHistogram(RollingHdrHistogram target, Duration cachingDuration, Ticker ticker) {
+        this.cachingSupplier = new CachingSupplier<>(cachingDuration, ticker, target::getSnapshot);
         this.target = target;
     }
 

@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.counter;
 
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -41,8 +41,8 @@ public class ResetPeriodicallyCounterTest {
     @Test
     public void testRotation() {
         AtomicLong timeMillis = new AtomicLong();
-        Clock clock = Clock.mock(timeMillis);
-        WindowCounter counter = new ResetPeriodicallyCounter(Duration.ofMillis(1000), clock);
+        Ticker ticker = Ticker.mock(timeMillis);
+        WindowCounter counter = new ResetPeriodicallyCounter(Duration.ofMillis(1000), ticker);
 
         counter.add(100);
         assertEquals(100, counter.getSum());

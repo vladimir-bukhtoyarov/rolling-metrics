@@ -21,7 +21,7 @@ import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Histogram;
 import com.github.rollingmetrics.histogram.OverflowResolver;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
-import com.github.rollingmetrics.util.BackgroundClock;
+import com.github.rollingmetrics.util.BackgroundTicker;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -39,7 +39,7 @@ public class HistogramRecordingBenchmark {
     @State(Scope.Benchmark)
     public static class HistogramState {
 
-        BackgroundClock backgroundClock;
+        BackgroundTicker backgroundClock;
 
         final RollingHdrHistogram chunkedHistogram = RollingHdrHistogram.builder()
                 .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(3), 3)
@@ -78,22 +78,22 @@ public class HistogramRecordingBenchmark {
 
         @Setup
         public void setup() {
-            backgroundClock = new BackgroundClock(100);
+            backgroundClock = new BackgroundTicker(100);
 
             this.chunkedHistogramWithBackgroundClock = RollingHdrHistogram.builder()
-                    .withClock(backgroundClock)
+                    .withTicker(backgroundClock)
                     .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(3), 3)
                     .build();
 
             this.upperLimitedChunkedHistogramWithBackgroundClock = RollingHdrHistogram.builder()
-                    .withClock(backgroundClock)
+                    .withTicker(backgroundClock)
                     .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(3), 3)
                     .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
                     .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                     .build();
 
             this.resetPeriodicallyHistogramWithBackgroundClock = RollingHdrHistogram.builder()
-                    .withClock(backgroundClock)
+                    .withTicker(backgroundClock)
                     .resetReservoirPeriodically(Duration.ofSeconds(300))
                     .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
                     .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)

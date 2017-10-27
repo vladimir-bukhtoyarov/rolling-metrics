@@ -20,7 +20,7 @@ package com.github.rollingmetrics.histogram.hdr.impl;
 
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.MockExecutor;
 import org.junit.Test;
 
@@ -35,9 +35,9 @@ public class ResetByChunksRollingHdrHistogramImplTest {
     @Test
     public void test() {
         AtomicLong time = new AtomicLong(0);
-        Clock wallClock = Clock.mock(time);
+        Ticker ticker = Ticker.mock(time);
         RollingHdrHistogram histogram = RollingHdrHistogram.builder()
-                .withClock(wallClock)
+                .withTicker(ticker)
                 .resetReservoirPeriodicallyByChunks(Duration.ofMillis(3000), 3)
                 .withBackgroundExecutor(MockExecutor.INSTANCE)
                 .build();

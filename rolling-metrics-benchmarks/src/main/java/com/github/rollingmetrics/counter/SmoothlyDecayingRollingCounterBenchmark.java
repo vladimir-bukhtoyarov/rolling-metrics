@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.counter;
 
-import com.github.rollingmetrics.util.BackgroundClock;
+import com.github.rollingmetrics.util.BackgroundTicker;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -34,13 +34,13 @@ public class SmoothlyDecayingRollingCounterBenchmark {
     @State(Scope.Benchmark)
     public static class CounterState {
 
-        BackgroundClock backgroundClock;
+        BackgroundTicker backgroundClock;
         public WindowCounter counter;
         public WindowCounter counterWithBackgroundClock;
 
         @Setup
         public void setup() {
-            backgroundClock = new BackgroundClock(100);
+            backgroundClock = new BackgroundTicker(100);
             counterWithBackgroundClock = new SmoothlyDecayingRollingCounter(Duration.ofMillis(1000), 10, backgroundClock);
             counter = new SmoothlyDecayingRollingCounter(Duration.ofMillis(1000), 10);
         }

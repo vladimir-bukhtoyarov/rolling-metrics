@@ -20,10 +20,9 @@ import com.github.rollingmetrics.histogram.OverflowResolver;
 import com.github.rollingmetrics.histogram.hdr.impl.*;
 import com.github.rollingmetrics.histogram.hdr.impl.ResetOnSnapshotRollingHdrHistogramImpl;
 import com.github.rollingmetrics.util.ResilientExecutionUtil;
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 
 import java.time.Duration;
-import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executor;
@@ -80,7 +79,7 @@ public class RollingHdrHistogramBuilder {
     );
 
     RollingHdrHistogramBuilder() {
-        this(Clock.defaultClock());
+        this(Ticker.defaultTicker());
     }
 
     /**
@@ -257,9 +256,9 @@ public class RollingHdrHistogramBuilder {
             throw new IllegalArgumentException(duration + " is negative");
         }
         if (duration.isZero()) {
-            this.snapshotCachingDurationMillis = Optional.empty();
+            this.snapshotCachingDuration = Optional.empty();
         } else {
-            this.snapshotCachingDurationMillis = Optional.of(duration.toMillis());
+            this.snapshotCachingDuration = Optional.of(duration);
         }
         return this;
     }
@@ -320,11 +319,11 @@ public class RollingHdrHistogramBuilder {
     /**
      * TODO
      *
-     * @param clock
+     * @param ticker
      * @return
      */
-    public RollingHdrHistogramBuilder withClock(Clock clock) {
-        this.clock = Objects.requireNonNull(clock);
+    public RollingHdrHistogramBuilder withTicker(Ticker ticker) {
+        this.ticker = Objects.requireNonNull(ticker);
         return this;
     }
 
@@ -335,7 +334,7 @@ public class RollingHdrHistogramBuilder {
      */
     public RollingHdrHistogram build() {
         recorderSettings.validateParameters();
-        RollingHdrHistogram rollingHdrHistogram = accumulationFactory.createAccumulator(recorderSettings, clock);
+        RollingHdrHistogram rollingHdrHistogram = accumulationFactory.createAccumulator(recorderSettings, ticker);
         return wrapAroundByDecorators(rollingHdrHistogram);
     }
 
@@ -354,14 +353,14 @@ public class RollingHdrHistogramBuilder {
      * @return copy of this builder
      */
     public RollingHdrHistogramBuilder deepCopy() {
-        return new RollingHdrHistogramBuilder(clock, accumulationFactory, snapshotCachingDurationMillis, recorderSettings, backgroundExecutor);
+        return new RollingHdrHistogramBuilder(ticker, accumulationFactory, snapshotCachingDuration, recorderSettings, backgroundExecutor);
     }
 
     @Override
     public String toString() {
         return "RollingHdrHistogramBuilder{" +
                 "accumulationStrategy=" + accumulationFactory +
-                ", snapshotCachingDurationMillis=" + snapshotCachingDurationMillis +
+                ", snapshotCachingDurationMillis=" + snapshotCachingDuration +
                 ", recorderSettings=" + recorderSettings +
                 '}';
     }
@@ -371,22 +370,22 @@ public class RollingHdrHistogramBuilder {
     private RecorderSettings recorderSettings;
 
     private Optional<Executor> backgroundExecutor;
-    private Optional<Long> snapshotCachingDurationMillis;
+    private Optional<Duration> snapshotCachingDuration;
 
-    private Clock clock;
+    private Ticker ticker;
 
-    public RollingHdrHistogramBuilder(Clock clock) {
-        this(clock, DEFAULT_ACCUMULATION_STRATEGY, Optional.empty(), DEFUALT_RECORDER_SETTINGS, Optional.empty());
+    public RollingHdrHistogramBuilder(Ticker ticker) {
+        this(ticker, DEFAULT_ACCUMULATION_STRATEGY, Optional.empty(), DEFUALT_RECORDER_SETTINGS, Optional.empty());
     }
 
-    private RollingHdrHistogramBuilder(Clock clock,
+    private RollingHdrHistogramBuilder(Ticker ticker,
                                        AccumulationFactory accumulationFactory,
-                                       Optional<Long> snapshotCachingDurationMillis,
+                                       Optional<Duration> snapshotCachingDurationMillis,
                                        RecorderSettings recorderSettings,
                                        Optional<Executor> backgroundExecutor) {
-        this.clock = clock;
+        this.ticker = ticker;
         this.accumulationFactory = accumulationFactory;
-        this.snapshotCachingDurationMillis = snapshotCachingDurationMillis;
+        this.snapshotCachingDuration = snapshotCachingDuration;
         this.recorderSettings = recorderSettings;
         this.backgroundExecutor = backgroundExecutor;
     }
@@ -399,7 +398,7 @@ public class RollingHdrHistogramBuilder {
             throw new IllegalArgumentException("Interval between resetting must be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis");
         }
 
-        accumulationFactory = (recorder, clock) -> new ResetByChunksRollingHdrHistogramImpl(recorder, numberHistoryChunks, resettingPeriodMillis, clock, getExecutor());
+        accumulationFactory = (recorder, ticker) -> new ResetByChunksRollingHdrHistogramImpl(recorder, numberHistoryChunks, resettingPeriodMillis, ticker, getExecutor());
         return this;
     }
 
@@ -409,19 +408,19 @@ public class RollingHdrHistogramBuilder {
 
     private RollingHdrHistogram wrapAroundByDecorators(RollingHdrHistogram histogram) {
         // wrap around by decorator if snapshotCachingDurationMillis was specified
-        if (snapshotCachingDurationMillis.isPresent()) {
-            histogram = new SnapshotCachingRollingHdrHistogram(histogram, snapshotCachingDurationMillis.get(), clock);
+        if (snapshotCachingDuration.isPresent()) {
+            histogram = new SnapshotCachingRollingHdrHistogram(histogram, snapshotCachingDuration.get(), ticker);
         }
         return histogram;
     }
 
     interface AccumulationFactory {
 
-        AccumulationFactory UNIFORM = (settings, clock) -> new UniformRollingHdrHistogramImpl(settings);
+        AccumulationFactory UNIFORM = (settings, ticker) -> new UniformRollingHdrHistogramImpl(settings);
 
-        AccumulationFactory RESET_ON_SNAPSHOT = (settings, clock) -> new ResetOnSnapshotRollingHdrHistogramImpl(settings);
+        AccumulationFactory RESET_ON_SNAPSHOT = (settings, ticker) -> new ResetOnSnapshotRollingHdrHistogramImpl(settings);
 
-        RollingHdrHistogram createAccumulator(RecorderSettings settings, Clock clock);
+        RollingHdrHistogram createAccumulator(RecorderSettings settings, Ticker ticker);
 
     }
 

@@ -24,7 +24,7 @@ import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.top.impl.collector.PositionCollector;
 import com.github.rollingmetrics.top.impl.recorder.PositionRecorder;
 import com.github.rollingmetrics.top.impl.recorder.TwoPhasePositionRecorder;
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.ResilientExecutionUtil;
 
 import java.util.List;
@@ -41,7 +41,7 @@ public class ResetByChunksTop implements Top {
     private final long creationTimestamp;
     private final ArchivedTop[] archive;
     private final boolean historySupported;
-    private final Clock clock;
+    private final Ticker ticker;
     private final PositionCollector temporarySnapshotCollector;
 
     private final Phase left;
@@ -49,10 +49,10 @@ public class ResetByChunksTop implements Top {
     private final Phase[] phases;
     private final AtomicReference<Phase> currentPhaseRef;
 
-    public ResetByChunksTop(int size, long latencyThresholdNanos, int maxDescriptionLength, long intervalBetweenResettingMillis, int numberHistoryChunks, Clock clock, Executor backgroundExecutor) {
+    public ResetByChunksTop(int size, long latencyThresholdNanos, int maxDescriptionLength, long intervalBetweenResettingMillis, int numberHistoryChunks, Ticker ticker, Executor backgroundExecutor) {
         this.intervalBetweenResettingMillis = intervalBetweenResettingMillis;
-        this.clock = clock;
-        this.creationTimestamp = clock.currentTimeMillis();
+        this.ticker = ticker;
+        this.creationTimestamp = ticker.stableMilliseconds();
         this.backgroundExecutor = backgroundExecutor;
 
         Supplier<TwoPhasePositionRecorder> recorderSupplier = () -> new TwoPhasePositionRecorder(size, latencyThresholdNanos, maxDescriptionLength);
@@ -76,7 +76,7 @@ public class ResetByChunksTop implements Top {
 
     @Override
     public void update(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
-        long currentTimeMillis = clock.currentTimeMillis();
+        long currentTimeMillis = ticker.stableMilliseconds();
         Phase currentPhase = currentPhaseRef.get();
         if (currentTimeMillis < currentPhase.proposedInvalidationTimestamp) {
             currentPhase.recorder.update(timestamp, latencyTime, latencyUnit, descriptionSupplier);
@@ -99,7 +99,7 @@ public class ResetByChunksTop implements Top {
     @Override
     synchronized public List<Position> getPositionsInDescendingOrder() {
         temporarySnapshotCollector.reset();
-        long currentTimeMillis = clock.currentTimeMillis();
+        long currentTimeMillis = ticker.stableMilliseconds();
 
         for (Phase phase : phases) {
             if (phase.isNeedToBeReportedToSnapshot(currentTimeMillis)) {
@@ -208,7 +208,7 @@ public class ResetByChunksTop implements Top {
                 "\nintervalBetweenResettingMillis=" + intervalBetweenResettingMillis +
                 ",\n creationTimestamp=" + creationTimestamp +
                 (!historySupported ? "" : ",\n archive=" + Printer.printArray(archive, "chunk")) +
-                ",\n clock=" + clock +
+                ",\n ticker=" + ticker +
                 ",\n left=" + left +
                 ",\n right=" + right +
                 ",\n currentPhase=" + (currentPhaseRef.get() == left? "left": "right") +

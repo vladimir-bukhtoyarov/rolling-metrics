@@ -16,7 +16,7 @@
 
 package com.github.rollingmetrics.histogram.hdr;
 
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -53,10 +53,10 @@ public class SnapshotCachingTest {
     @Test
     public void shouldCacheSnapshot() {
         AtomicLong time = new AtomicLong(System.currentTimeMillis());
-        Clock wallClock = Clock.mock(time);
+        Ticker ticker = Ticker.mock(time);
         RollingHdrHistogram reservoir =
                 RollingHdrHistogram.builder()
-                .withClock(wallClock)
+                .withTicker(ticker)
                 .resetReservoirOnSnapshot()
                 .withSnapshotCachingDuration(Duration.ofMillis(1000))
                 .build();

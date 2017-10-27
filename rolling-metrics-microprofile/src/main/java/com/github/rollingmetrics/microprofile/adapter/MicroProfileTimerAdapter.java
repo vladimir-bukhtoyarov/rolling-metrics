@@ -17,7 +17,7 @@
 package com.github.rollingmetrics.microprofile.adapter;
 
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import org.eclipse.microprofile.metrics.Histogram;
 import org.eclipse.microprofile.metrics.Meter;
 import org.eclipse.microprofile.metrics.Snapshot;
@@ -34,16 +34,16 @@ public class MicroProfileTimerAdapter implements Timer {
 
     private final Histogram histogram;
     private final Meter meter;
-    private final Clock clock;
+    private final Ticker ticker;
 
     public MicroProfileTimerAdapter(RollingHdrHistogram rollingHistogram, Meter meter) {
-        this(rollingHistogram, meter, Clock.defaultClock());
+        this(rollingHistogram, meter, Ticker.defaultTicker());
     }
 
-    public MicroProfileTimerAdapter(RollingHdrHistogram rollingHistogram, Meter meter, Clock clock) {
+    public MicroProfileTimerAdapter(RollingHdrHistogram rollingHistogram, Meter meter, Ticker ticker) {
         this.histogram = new MicroProfileHistogramAdapter(rollingHistogram);
         this.meter = Objects.requireNonNull(meter);
-        this.clock = Objects.requireNonNull(clock);
+        this.ticker = Objects.requireNonNull(ticker);
     }
 
     @Override
@@ -53,31 +53,31 @@ public class MicroProfileTimerAdapter implements Timer {
 
     @Override
     public <T> T time(Callable<T> callable) throws Exception {
-        final long startTime = clock.nanoTime();
+        final long startTime = ticker.nanoTime();
         try {
             return callable.call();
         } finally {
-            update(clock.nanoTime() - startTime);
+            update(ticker.nanoTime() - startTime);
         }
     }
 
     @Override
     public void time(Runnable runnable) {
-        final long startTime = clock.nanoTime();
+        final long startTime = ticker.nanoTime();
         try {
             runnable.run();
         } finally {
-            update(clock.nanoTime() - startTime);
+            update(ticker.nanoTime() - startTime);
         }
     }
 
     @Override
     public Context time() {
-        final long startTimeNanos = clock.currentTimeMillis();
+        final long startTimeNanos = ticker.nanoTime();
         return new Context() {
             @Override
             public long stop() {
-                final long elapsedNanos = clock.currentTimeMillis() - startTimeNanos;
+                final long elapsedNanos = ticker.nanoTime() - startTimeNanos;
                 update(elapsedNanos);
                 return elapsedNanos;
             }

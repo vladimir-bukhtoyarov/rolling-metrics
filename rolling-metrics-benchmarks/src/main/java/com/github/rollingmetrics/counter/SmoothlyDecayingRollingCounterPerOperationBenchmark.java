@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.counter;
 
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -40,15 +40,23 @@ public class SmoothlyDecayingRollingCounterPerOperationBenchmark {
 
     @State(Scope.Benchmark)
     public static class ResetOnSnapshotCounterWithShortResettingPeriodState {
-        private final Clock clock = new Clock() {
+        private final Ticker ticker = new Ticker() {
+
             // this timer implementation will lead to invalidate each chunk after each increment
             final AtomicLong timeMillis = new AtomicLong();
+
             @Override
-            public long currentTimeMillis() {
+            public long nanoTime() {
+                return stableMilliseconds() * 1_000_000;
+            }
+
+            @Override
+            public long stableMilliseconds() {
                 return timeMillis.addAndGet(1000L);
             }
+
         };
-        public final WindowCounter counter =  new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 10, clock);
+        public final WindowCounter counter =  new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 10, ticker);
     }
 
     @State(Scope.Benchmark)

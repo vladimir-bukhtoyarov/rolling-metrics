@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.counter;
 
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
@@ -46,7 +46,7 @@ public class ResetPeriodicallyCounter implements WindowCounter {
 
     private final AtomicLong value = new AtomicLong();
     private final long resetIntervalMillis;
-    private final Clock clock;
+    private final Ticker ticker;
     private final AtomicLong nextResetTimeMillisRef;
 
     /**
@@ -55,23 +55,23 @@ public class ResetPeriodicallyCounter implements WindowCounter {
      * @param resetInterval the interval between counter resetting
      */
     public ResetPeriodicallyCounter(Duration resetInterval) {
-        this(resetInterval, Clock.defaultClock());
+        this(resetInterval, Ticker.defaultTicker());
     }
 
-    public ResetPeriodicallyCounter(Duration resetInterval, Clock clock) {
+    public ResetPeriodicallyCounter(Duration resetInterval, Ticker ticker) {
         if (resetInterval.isNegative() || resetInterval.isZero()) {
             throw new IllegalArgumentException("intervalBetweenChunkResetting must be a positive duration");
         }
         this.resetIntervalMillis = resetInterval.toMillis();
-        this.clock = clock;
-        this.nextResetTimeMillisRef = new AtomicLong(clock.currentTimeMillis() + resetIntervalMillis);
+        this.ticker = ticker;
+        this.nextResetTimeMillisRef = new AtomicLong(ticker.stableMilliseconds() + resetIntervalMillis);
     }
 
     @Override
     public void add(long delta) {
         while (true) {
             long nextResetTimeMillis = nextResetTimeMillisRef.get();
-            long currentTimeMillis = clock.currentTimeMillis();
+            long currentTimeMillis = ticker.stableMilliseconds();
             if (currentTimeMillis < nextResetTimeMillis) {
                 value.addAndGet(delta);
                 return;
@@ -90,7 +90,7 @@ public class ResetPeriodicallyCounter implements WindowCounter {
         while (true) {
             long nextResetTimeMillis = nextResetTimeMillisRef.get();
             long currentValue = value.get();
-            long currentTimeMillis = clock.currentTimeMillis();
+            long currentTimeMillis = ticker.stableMilliseconds();
             if (currentTimeMillis < nextResetTimeMillis) {
                 return currentValue;
             }
@@ -108,7 +108,7 @@ public class ResetPeriodicallyCounter implements WindowCounter {
         return "ResetPeriodicallyCounter{" +
                 "value=" + value +
                 ", resetIntervalMillis=" + resetIntervalMillis +
-                ", clock=" + clock +
+                ", ticker=" + ticker +
                 ", nextResetTimeMillisRef=" + nextResetTimeMillisRef +
                 '}';
     }

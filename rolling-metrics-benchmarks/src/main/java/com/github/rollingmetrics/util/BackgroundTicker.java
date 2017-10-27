@@ -17,14 +17,12 @@
 
 package com.github.rollingmetrics.util;
 
-public class BackgroundClock implements Clock {
+public class BackgroundTicker implements Ticker {
 
     private volatile long cachedTimeMillis;
-    private final long precisionMillis;
     private final Thread thread;
 
-    public BackgroundClock(long precisionMillis) {
-        this.precisionMillis = precisionMillis;
+    public BackgroundTicker(long precisionMillis) {
         cachedTimeMillis = System.currentTimeMillis();
         thread = new Thread(() -> {
             while (true) {
@@ -42,11 +40,6 @@ public class BackgroundClock implements Clock {
         thread.start();
     }
 
-    @Override
-    public long currentTimeMillis() {
-        return cachedTimeMillis;
-    }
-
     public void stop() {
         thread.interrupt();
         try {
@@ -56,4 +49,13 @@ public class BackgroundClock implements Clock {
         }
     }
 
+    @Override
+    public long nanoTime() {
+        return stableMilliseconds() * 1_000_000;
+    }
+
+    @Override
+    public long stableMilliseconds() {
+        return cachedTimeMillis;
+    }
 }

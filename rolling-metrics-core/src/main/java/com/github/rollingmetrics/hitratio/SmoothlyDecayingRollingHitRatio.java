@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.hitratio;
 
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.Printer;
 
 import java.time.Duration;
@@ -72,7 +72,7 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
     private static final int TOTAL_INDEX = 1;
 
     private final long intervalBetweenResettingMillis;
-    private final Clock clock;
+    private final Ticker ticker;
     private final long creationTimestamp;
 
     private final Chunk[] chunks;
@@ -87,7 +87,7 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
      * @param numberChunks The count of chunk to split
      */
     public SmoothlyDecayingRollingHitRatio(Duration rollingWindow, int numberChunks) {
-        this(rollingWindow, numberChunks, Clock.defaultClock());
+        this(rollingWindow, numberChunks, Ticker.defaultTicker());
     }
 
     /**
@@ -104,7 +104,7 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
         return chunks.length - 1;
     }
 
-    public SmoothlyDecayingRollingHitRatio(Duration rollingWindow, int numberChunks, Clock clock) {
+    public SmoothlyDecayingRollingHitRatio(Duration rollingWindow, int numberChunks, Ticker ticker) {
         if (numberChunks < 2) {
             throw new IllegalArgumentException("numberChunks should be >= 2");
         }
@@ -119,8 +119,8 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
         }
         this.intervalBetweenResettingMillis = rollingWindowMillis / numberChunks;
 
-        this.clock = clock;
-        this.creationTimestamp = clock.currentTimeMillis();
+        this.ticker = ticker;
+        this.creationTimestamp = ticker.stableMilliseconds();
 
         this.chunks = new Chunk[numberChunks + 1];
         for (int i = 0; i < chunks.length; i++) {
@@ -130,7 +130,7 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
     @Override
     public void update(int hitCount, int totalCount) {
-        long nowMillis = clock.currentTimeMillis();
+        long nowMillis = ticker.stableMilliseconds();
         long millisSinceCreation = nowMillis - creationTimestamp;
         long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
         int chunkIndex = (int) intervalsSinceCreation % chunks.length;
@@ -139,7 +139,7 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
     @Override
     public double getHitRatio() {
-        long currentTimeMillis = clock.currentTimeMillis();
+        long currentTimeMillis = ticker.stableMilliseconds();
 
         // To get as fresh value as possible we need to calculate ratio in order from oldest to newest
         long millisSinceCreation = currentTimeMillis - creationTimestamp;
@@ -245,7 +245,7 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
     public String toString() {
         return "SmoothlyDecayingRollingHitRatio{" +
                 ", intervalBetweenResettingMillis=" + intervalBetweenResettingMillis +
-                ", clock=" + clock +
+                ", ticker=" + ticker +
                 ", creationTimestamp=" + creationTimestamp +
                 ", chunks=" + Printer.printArray(chunks, "chunk") +
                 '}';

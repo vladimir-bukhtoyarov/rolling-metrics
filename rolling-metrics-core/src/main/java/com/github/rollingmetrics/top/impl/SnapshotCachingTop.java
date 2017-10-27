@@ -21,8 +21,9 @@ package com.github.rollingmetrics.top.impl;
 import com.github.rollingmetrics.top.Position;
 import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.util.CachingSupplier;
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -32,9 +33,9 @@ public class SnapshotCachingTop implements Top {
     private final Top target;
     private final CachingSupplier<List<Position>> cache;
 
-    public SnapshotCachingTop(Top target, long cachingDurationMillis, Clock clock) {
+    public SnapshotCachingTop(Top target, Duration cachingDuration, Ticker ticker) {
         this.target = target;
-        this.cache = new CachingSupplier<>(cachingDurationMillis, clock, target::getPositionsInDescendingOrder);
+        this.cache = new CachingSupplier<>(cachingDuration, ticker, target::getPositionsInDescendingOrder);
     }
 
     @Override

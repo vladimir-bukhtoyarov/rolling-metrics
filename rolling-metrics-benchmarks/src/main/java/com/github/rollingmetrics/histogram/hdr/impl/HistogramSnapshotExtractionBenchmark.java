@@ -23,7 +23,7 @@ import com.codahale.metrics.Snapshot;
 import com.github.rollingmetrics.histogram.OverflowResolver;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -45,15 +45,15 @@ public class HistogramSnapshotExtractionBenchmark {
     public static class StateWithMockClock {
 
         final AtomicLong currentTimeMillis = new AtomicLong(System.currentTimeMillis());
-        final Clock clock = Clock.mock(currentTimeMillis);
+        final Ticker ticker = Ticker.mock(currentTimeMillis);
 
         final RollingHdrHistogram chunkedHistogram = RollingHdrHistogram.builder()
-                .withClock(clock)
+                .withTicker(ticker)
                 .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(3), 3)
                 .build();
 
         final RollingHdrHistogram upperLimitedChunkedHistogram = RollingHdrHistogram.builder()
-                .withClock(clock)
+                .withTicker(ticker)
                 .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(3), 3)
                 .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
                 .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)

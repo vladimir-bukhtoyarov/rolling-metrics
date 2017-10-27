@@ -17,36 +17,33 @@
 
 package com.github.rollingmetrics.util;
 
+import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Supplier;
 
 public class CachingSupplier<T> implements Supplier<T> {
 
     private final Supplier<T> targetSupplier;
-    private final long cachingDurationMillis;
-    private final Clock clock;
+    private final long cachingDurationNanos;
+    private final Ticker ticker;
 
     private T cachedValue;
-    private long lastSnapshotTakeTimeMillis;
+    private long lastSnapshotNanoTime;
 
-    public CachingSupplier(long cachingDurationMillis, Clock clock, Supplier<T> targetSupplier) {
-        if (cachingDurationMillis >= Long.MAX_VALUE / 2) {
-            throw new IllegalArgumentException("Too big cachingDurationMillis");
-        }
+    public CachingSupplier(Duration cachingDuration, Ticker ticker, Supplier<T> targetSupplier) {
         this.targetSupplier = targetSupplier;
-        this.cachingDurationMillis = cachingDurationMillis;
-        this.clock = Objects.requireNonNull(clock);
-        this.lastSnapshotTakeTimeMillis = -cachingDurationMillis;
+        this.cachingDurationNanos = cachingDuration.toNanos();
+        this.ticker = Objects.requireNonNull(ticker);
     }
 
     @Override
     final synchronized public T get() {
-        long nowMillis = clock.currentTimeMillis();
-        if (nowMillis - lastSnapshotTakeTimeMillis < cachingDurationMillis) {
+        long nanoTime = ticker.nanoTime();
+        if (cachedValue != null && nanoTime - lastSnapshotNanoTime < cachingDurationNanos) {
             return cachedValue;
         }
         cachedValue = targetSupplier.get();
-        lastSnapshotTakeTimeMillis = nowMillis;
+        lastSnapshotNanoTime = nanoTime;
         return cachedValue;
     }
 

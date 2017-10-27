@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.hitratio;
 
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
@@ -48,7 +48,7 @@ public class ResetPeriodicallyHitRatio implements HitRatio {
 
     private final AtomicLong ratio = new AtomicLong();
     private final long resetIntervalMillis;
-    private final Clock clock;
+    private final Ticker ticker;
     private final AtomicLong nextResetTimeMillisRef;
 
     /**
@@ -57,22 +57,22 @@ public class ResetPeriodicallyHitRatio implements HitRatio {
      * @param resetInterval the interval between counter resetting
      */
     public ResetPeriodicallyHitRatio(Duration resetInterval) {
-        this(resetInterval, Clock.defaultClock());
+        this(resetInterval, Ticker.defaultTicker());
     }
 
-    public ResetPeriodicallyHitRatio(Duration resetInterval, Clock clock) {
+    public ResetPeriodicallyHitRatio(Duration resetInterval, Ticker ticker) {
         if (resetInterval.isNegative() || resetInterval.isZero()) {
             throw new IllegalArgumentException("intervalBetweenChunkResetting must be a positive duration");
         }
         this.resetIntervalMillis = resetInterval.toMillis();
-        this.clock = clock;
-        this.nextResetTimeMillisRef = new AtomicLong(clock.currentTimeMillis() + resetIntervalMillis);
+        this.ticker = ticker;
+        this.nextResetTimeMillisRef = new AtomicLong(ticker.stableMilliseconds() + resetIntervalMillis);
     }
 
     @Override
     public void update(int hitCount, int totalCount) {
         long nextResetTimeMillis = nextResetTimeMillisRef.get();
-        long currentTimeMillis = clock.currentTimeMillis();
+        long currentTimeMillis = ticker.stableMilliseconds();
         if (currentTimeMillis >= nextResetTimeMillis) {
             if (nextResetTimeMillisRef.compareAndSet(nextResetTimeMillis, Long.MAX_VALUE)) {
                 ratio.set(0L);
@@ -85,7 +85,7 @@ public class ResetPeriodicallyHitRatio implements HitRatio {
     @Override
     public double getHitRatio() {
         long nextResetTimeMillis = nextResetTimeMillisRef.get();
-        long currentTimeMillis = clock.currentTimeMillis();
+        long currentTimeMillis = ticker.stableMilliseconds();
         if (currentTimeMillis >= nextResetTimeMillis) {
             if (nextResetTimeMillisRef.compareAndSet(nextResetTimeMillis, Long.MAX_VALUE)) {
                 ratio.set(0L);

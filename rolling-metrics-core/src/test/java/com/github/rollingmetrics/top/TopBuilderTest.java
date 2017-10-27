@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.top;
 
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.top.impl.TopTestUtil;
 import org.junit.Test;
 
@@ -70,8 +70,8 @@ public class TopBuilderTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void nullClockShouldBeDisallowed() {
-        Top.builder(1).withClock(null);
+    public void nullTickerShouldBeDisallowed() {
+        Top.builder(1).withTicker(null);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -122,10 +122,10 @@ public class TopBuilderTest {
     @Test
     public void cachingPeriodShouldBeApplied() {
         AtomicLong currentTimeMillis = new AtomicLong();
-        Clock clock = Clock.mock(currentTimeMillis);
+        Ticker ticker = Ticker.mock(currentTimeMillis);
         Top top = Top.builder(1)
                 .neverResetPositions()
-                .withClock(clock)
+                .withTicker(ticker)
                 .withSnapshotCachingDuration(Duration.ofSeconds(10))
                 .build();
 
@@ -144,10 +144,10 @@ public class TopBuilderTest {
     @Test
     public void shouldUse1SecondCachingPeriodByDefault() {
         AtomicLong currentTimeMillis = new AtomicLong();
-        Clock clock = Clock.mock(currentTimeMillis);
+        Ticker ticker = Ticker.mock(currentTimeMillis);
         Top top = Top.builder(1)
                 .neverResetPositions()
-                .withClock(clock)
+                .withTicker(ticker)
                 .build();
 
         TopTestUtil.update(top, TopTestData.first);

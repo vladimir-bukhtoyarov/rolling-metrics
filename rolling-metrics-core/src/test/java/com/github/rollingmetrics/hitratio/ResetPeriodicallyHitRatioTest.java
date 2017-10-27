@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.hitratio;
 
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -31,8 +31,8 @@ public class ResetPeriodicallyHitRatioTest {
     private static int RESET_PERIOD = 1000;
 
     AtomicLong currentTimeMillis = new AtomicLong(0);
-    Clock clock = Clock.mock(currentTimeMillis);
-    HitRatio hitRatio = new ResetPeriodicallyHitRatio(Duration.ofMillis(RESET_PERIOD), clock);
+    Ticker ticker = Ticker.mock(currentTimeMillis);
+    HitRatio hitRatio = new ResetPeriodicallyHitRatio(Duration.ofMillis(RESET_PERIOD), ticker);
 
     @Test
     public void shouldReturnNanWhenNothingREcorded() {

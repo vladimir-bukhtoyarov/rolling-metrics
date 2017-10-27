@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.counter;
 
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -31,9 +31,9 @@ public class SmoothlyDecayingRollingCounterTest {
     @Test
     public void testAddAndCalculateSum() throws Exception {
         AtomicLong timeMillis = new AtomicLong();
-        Clock clock = Clock.mock(timeMillis);
+        Ticker ticker = Ticker.mock(timeMillis);
 
-        WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(2), 2, clock);
+        WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(2), 2, ticker);
 
         counter.add(100);
         assertEquals(100, counter.getSum());

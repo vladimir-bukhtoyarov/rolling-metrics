@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.counter;
 
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.Printer;
 
 import java.time.Duration;
@@ -74,8 +74,8 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
     static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 100;
 
     private final long intervalBetweenResettingMillis;
-    private final Clock clock;
-    private final long creationTimestamp;
+    private final Ticker ticker;
+    private final long creationTime;
 
     private final Chunk[] chunks;
 
@@ -98,7 +98,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
      * @param numberChunks The count of chunk to split counter
      */
     public SmoothlyDecayingRollingCounter(Duration rollingWindow, int numberChunks) {
-        this(rollingWindow, numberChunks, Clock.defaultClock());
+        this(rollingWindow, numberChunks, Ticker.defaultTicker());
     }
 
     /**
@@ -115,7 +115,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
         return chunks.length - 1;
     }
 
-    public SmoothlyDecayingRollingCounter(Duration rollingWindow, int numberChunks, Clock clock) {
+    public SmoothlyDecayingRollingCounter(Duration rollingWindow, int numberChunks, Ticker ticker) {
         if (numberChunks < 2) {
             throw new IllegalArgumentException("numberChunks should be >= 2");
         }
@@ -130,8 +130,8 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
             throw new IllegalArgumentException("intervalBetweenResettingMillis should be >=" + MIN_CHUNK_RESETTING_INTERVAL_MILLIS);
         }
 
-        this.clock = clock;
-        this.creationTimestamp = clock.currentTimeMillis();
+        this.ticker = ticker;
+        this.creationTime = ticker.stableMilliseconds();
 
         this.chunks = new Chunk[numberChunks + 1];
         for (int i = 0; i < chunks.length; i++) {
@@ -141,8 +141,8 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
 
     @Override
     public void add(long delta) {
-        long nowMillis = clock.currentTimeMillis();
-        long millisSinceCreation = nowMillis - creationTimestamp;
+        long nowMillis = ticker.stableMilliseconds();
+        long millisSinceCreation = nowMillis - creationTime;
         long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
         int chunkIndex = (int) intervalsSinceCreation % chunks.length;
         chunks[chunkIndex].add(delta, nowMillis);
@@ -150,10 +150,10 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
 
     @Override
     public long getSum() {
-        long currentTimeMillis = clock.currentTimeMillis();
+        long currentTimeMillis = ticker.stableMilliseconds();
 
         // To get as fresh value as possible we need to calculate sum in order from oldest to newest
-        long millisSinceCreation = currentTimeMillis - creationTimestamp;
+        long millisSinceCreation = currentTimeMillis - creationTime;
         long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
         int newestChunkIndex = (int) intervalsSinceCreation % chunks.length;
 
@@ -173,8 +173,8 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
         final AtomicReference<Phase> currentPhaseRef;
 
         Chunk(int chunkIndex) {
-            long invalidationTimestamp = creationTimestamp + (chunks.length + chunkIndex) * intervalBetweenResettingMillis;
-            this.currentPhaseRef = new AtomicReference<>(new Phase(invalidationTimestamp));
+            long invalidationTime = creationTime + (chunks.length + chunkIndex) * intervalBetweenResettingMillis;
+            this.currentPhaseRef = new AtomicReference<>(new Phase(invalidationTime));
         }
 
         long getSum(long currentTimeMillis) {
@@ -183,11 +183,11 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
 
         void add(long delta, long currentTimeMillis) {
             Phase currentPhase = currentPhaseRef.get();
-            while (currentTimeMillis >= currentPhase.proposedInvalidationTimestamp) {
-                long millisSinceCreation = currentTimeMillis - creationTimestamp;
+            while (currentTimeMillis >= currentPhase.proposedInvalidationTime) {
+                long millisSinceCreation = currentTimeMillis - creationTime;
                 long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
-                long nextProposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingMillis;
-                Phase replacement = new Phase(nextProposedInvalidationTimestamp);
+                long nextProposedInvalidationTime = creationTime + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingMillis;
+                Phase replacement = new Phase(nextProposedInvalidationTime);
                 if (currentPhaseRef.compareAndSet(currentPhase, replacement)) {
                     currentPhase = replacement;
                 } else {
@@ -210,16 +210,16 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
     private final class Phase {
 
         final AtomicLong sum;
-        final long proposedInvalidationTimestamp;
+        final long proposedInvalidationTime;
 
-        Phase(long proposedInvalidationTimestamp) {
+        Phase(long proposedInvalidationTime) {
             this.sum = new AtomicLong();
-            this.proposedInvalidationTimestamp = proposedInvalidationTimestamp;
+            this.proposedInvalidationTime = proposedInvalidationTime;
         }
 
         long getSum(long currentTimeMillis) {
-            long proposedInvalidationTimestamp = this.proposedInvalidationTimestamp;
-            if (currentTimeMillis >= proposedInvalidationTimestamp) {
+            long proposedInvalidationTime = this.proposedInvalidationTime;
+            if (currentTimeMillis >= proposedInvalidationTime) {
                 // The chunk was unused by writers for a long time
                 return 0;
             }
@@ -227,7 +227,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
             long sum = this.sum.get();
 
             // if this is oldest chunk then we need to reduce its weight
-            long beforeInvalidateMillis = proposedInvalidationTimestamp - currentTimeMillis;
+            long beforeInvalidateMillis = proposedInvalidationTime - currentTimeMillis;
             if (beforeInvalidateMillis < intervalBetweenResettingMillis) {
                 double decayingCoefficient = (double) beforeInvalidateMillis / (double) intervalBetweenResettingMillis;
                 sum = (long) ((double) sum * decayingCoefficient);
@@ -240,7 +240,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
         public String toString() {
             final StringBuilder sb = new StringBuilder("Phase{");
             sb.append("sum=").append(sum);
-            sb.append(", proposedInvalidationTimestamp=").append(proposedInvalidationTimestamp);
+            sb.append(", proposedInvalidationTimestamp=").append(proposedInvalidationTime);
             sb.append('}');
             return sb.toString();
         }
@@ -250,8 +250,8 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
     public String toString() {
         return "SmoothlyDecayingRollingCounter{" +
                 ", intervalBetweenResettingMillis=" + intervalBetweenResettingMillis +
-                ", clock=" + clock +
-                ", creationTimestamp=" + creationTimestamp +
+                ", ticker=" + ticker +
+                ", creationTimestamp=" + creationTime +
                 ", chunks=" + Printer.printArray(chunks, "chunk") +
                 '}';
     }

@@ -21,7 +21,7 @@ import com.github.rollingmetrics.histogram.hdr.HdrHistogramUtil;
 import com.github.rollingmetrics.histogram.hdr.RecorderSettings;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
 import com.github.rollingmetrics.util.ResilientExecutionUtil;
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.Printer;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
@@ -37,7 +37,7 @@ public class ResetByChunksRollingHdrHistogramImpl extends AbstractRollingHdrHist
     private final long creationTimestamp;
     private final ArchivedHistogram[] archive;
     private final boolean historySupported;
-    private final Clock clock;
+    private final Ticker ticker;
     private final Histogram temporarySnapshotHistogram;
 
     private final Phase left;
@@ -45,12 +45,12 @@ public class ResetByChunksRollingHdrHistogramImpl extends AbstractRollingHdrHist
     private final Phase[] phases;
     private final AtomicReference<Phase> currentPhaseRef;
 
-    public ResetByChunksRollingHdrHistogramImpl(RecorderSettings recorderSettings, int numberHistoryChunks, long intervalBetweenResettingMillis, Clock clock, Executor backgroundExecutor) {
+    public ResetByChunksRollingHdrHistogramImpl(RecorderSettings recorderSettings, int numberHistoryChunks, long intervalBetweenResettingMillis, Ticker ticker, Executor backgroundExecutor) {
         super(recorderSettings);
 
         this.intervalBetweenResettingMillis = intervalBetweenResettingMillis;
-        this.clock = clock;
-        this.creationTimestamp = clock.currentTimeMillis();
+        this.ticker = ticker;
+        this.creationTimestamp = ticker.stableMilliseconds();
         this.backgroundExecutor = backgroundExecutor;
 
         this.left = new Phase(recorderSettings, creationTimestamp + intervalBetweenResettingMillis);
@@ -75,7 +75,7 @@ public class ResetByChunksRollingHdrHistogramImpl extends AbstractRollingHdrHist
 
     @Override
     public void recordSingleValueWithExpectedInterval(long value, long expectedIntervalBetweenValueSamples) {
-        long currentTimeMillis = clock.currentTimeMillis();
+        long currentTimeMillis = ticker.stableMilliseconds();
         Phase currentPhase = currentPhaseRef.get();
         if (currentTimeMillis < currentPhase.proposedInvalidationTimestamp) {
             currentPhase.recorder.recordValueWithExpectedInterval(value, expectedIntervalBetweenValueSamples);
@@ -120,7 +120,7 @@ public class ResetByChunksRollingHdrHistogramImpl extends AbstractRollingHdrHist
     @Override
     public final synchronized RollingSnapshot getSnapshot(Function<Histogram, RollingSnapshot> snapshotTaker) {
         HdrHistogramUtil.reset(temporarySnapshotHistogram);
-        long currentTimeMillis = clock.currentTimeMillis();
+        long currentTimeMillis = ticker.stableMilliseconds();
 
         for (Phase phase : phases) {
             if (phase.isNeedToBeReportedToSnapshot(currentTimeMillis)) {
@@ -212,7 +212,7 @@ public class ResetByChunksRollingHdrHistogramImpl extends AbstractRollingHdrHist
                 "\nintervalBetweenResettingMillis=" + intervalBetweenResettingMillis +
                 ",\n creationTimestamp=" + creationTimestamp +
                 (!historySupported ? "" : ",\n archive=" + Printer.printArray(archive, "chunk")) +
-                ",\n clock=" + clock +
+                ",\n ticker=" + ticker +
                 ",\n left=" + left +
                 ",\n right=" + right +
                 ",\n currentPhase=" + (currentPhaseRef.get() == left? "left": "right") +

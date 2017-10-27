@@ -21,7 +21,7 @@ import com.github.rollingmetrics.top.impl.ResetByChunksTop;
 import com.github.rollingmetrics.top.impl.ResetOnSnapshotConcurrentTop;
 import com.github.rollingmetrics.top.impl.SnapshotCachingTop;
 import com.github.rollingmetrics.top.impl.UniformTop;
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.ResilientExecutionUtil;
 
 import java.time.Duration;
@@ -59,16 +59,16 @@ public class TopBuilder {
     private Duration latencyThreshold;
     private Duration snapshotCachingDuration;
     private int maxDescriptionLength;
-    private Clock clock;
+    private Ticker ticker;
     private Executor backgroundExecutor;
     private TopFactory factory;
 
-    private TopBuilder(int size, Duration latencyThreshold, Duration snapshotCachingDuration, int maxDescriptionLength, Clock clock, Executor backgroundExecutor, TopFactory factory) {
+    private TopBuilder(int size, Duration latencyThreshold, Duration snapshotCachingDuration, int maxDescriptionLength, Ticker ticker, Executor backgroundExecutor, TopFactory factory) {
         this.size = size;
         this.latencyThreshold = latencyThreshold;
         this.snapshotCachingDuration = snapshotCachingDuration;
         this.maxDescriptionLength = maxDescriptionLength;
-        this.clock = clock;
+        this.ticker = ticker;
         this.backgroundExecutor = backgroundExecutor;
         this.factory = factory;
     }
@@ -79,9 +79,9 @@ public class TopBuilder {
      * @return new {@link Top} instance
      */
     public Top build() {
-        Top top = factory.create(size, latencyThreshold, maxDescriptionLength, clock);
+        Top top = factory.create(size, latencyThreshold, maxDescriptionLength, ticker);
         if (!snapshotCachingDuration.isZero()) {
-            top = new SnapshotCachingTop(top, snapshotCachingDuration.toMillis(), clock);
+            top = new SnapshotCachingTop(top, snapshotCachingDuration, ticker);
         }
         return top;
     }
@@ -94,7 +94,7 @@ public class TopBuilder {
      */
     public static TopBuilder newBuilder(int size) {
         validateSize(size);
-        return new TopBuilder(size, DEFAULT_LATENCY_THRESHOLD, DEFAULT_SNAPSHOT_CACHING_DURATION, DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION, Clock.defaultClock(), DEFAULT_BACKGROUND_EXECUTOR, DEFAULT_TOP_FACTORY);
+        return new TopBuilder(size, DEFAULT_LATENCY_THRESHOLD, DEFAULT_SNAPSHOT_CACHING_DURATION, DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION, Ticker.defaultTicker(), DEFAULT_BACKGROUND_EXECUTOR, DEFAULT_TOP_FACTORY);
     }
 
     /**
@@ -173,18 +173,18 @@ public class TopBuilder {
     }
 
     /**
-     * Replaces default clock.
+     * Replaces default ticker.
      * Most likely you should never use this method, because replacing time measuring has sense only for unit testing.
      *
-     * @param clock the abstraction over time
+     * @param ticker the abstraction over time
      *
      * @return this builder instance
      */
-    public TopBuilder withClock(Clock clock) {
-        if (clock == null) {
-            throw new IllegalArgumentException("Clock should not be null");
+    public TopBuilder withTicker(Ticker ticker) {
+        if (ticker == null) {
+            throw new IllegalArgumentException("Ticker should not be null");
         }
-        this.clock = clock;
+        this.ticker = ticker;
         return this;
     }
 
@@ -204,7 +204,7 @@ public class TopBuilder {
      */
     public TopBuilder withBackgroundExecutor(Executor backgroundExecutor) {
         if (backgroundExecutor == null) {
-            throw new IllegalArgumentException("Clock should not be null");
+            throw new IllegalArgumentException("Ticker should not be null");
         }
         this.backgroundExecutor = backgroundExecutor;
         return this;
@@ -322,18 +322,18 @@ public class TopBuilder {
 
     private interface TopFactory {
 
-        Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Clock clock);
+        Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker);
 
         TopFactory UNIFORM = new TopFactory() {
             @Override
-            public Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Clock clock) {
+            public Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
                 return new UniformTop(size, latencyThreshold.toNanos(), maxDescriptionLength);
             }
         };
 
         TopFactory RESET_ON_SNAPSHOT = new TopFactory() {
             @Override
-            public Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Clock clock) {
+            public Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
                 return new ResetOnSnapshotConcurrentTop(size, latencyThreshold.toNanos(), maxDescriptionLength);
             }
         };
@@ -352,8 +352,8 @@ public class TopBuilder {
     private TopFactory resetByChunks(final long intervalBetweenResettingMillis, int numberOfHistoryChunks) {
         return new TopFactory() {
             @Override
-            public Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Clock clock) {
-                return new ResetByChunksTop(size, latencyThreshold.toNanos(), maxDescriptionLength, intervalBetweenResettingMillis, numberOfHistoryChunks, clock, getExecutor());
+            public Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
+                return new ResetByChunksTop(size, latencyThreshold.toNanos(), maxDescriptionLength, intervalBetweenResettingMillis, numberOfHistoryChunks, ticker, getExecutor());
             }
         };
     }

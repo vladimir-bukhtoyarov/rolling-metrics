@@ -18,7 +18,7 @@
 package com.github.rollingmetrics.top.impl;
 
 import com.github.rollingmetrics.top.Top;
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.MockExecutor;
 import com.github.rollingmetrics.top.TopTestData;
 import org.junit.Test;
@@ -46,11 +46,11 @@ public class ResetByChunksTopTest {
     @Test
     public void test_size_1() throws Exception {
         AtomicLong currentTimeMillis = new AtomicLong(0L);
-        Clock clock = Clock.mock(currentTimeMillis);
+        Ticker ticker = Ticker.mock(currentTimeMillis);
         Top top = Top.builder(1)
                 .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(3), 3)
                 .withSnapshotCachingDuration(Duration.ZERO)
-                .withClock(clock)
+                .withTicker(ticker)
                 .withBackgroundExecutor(MockExecutor.INSTANCE)
                 .build();
 
@@ -120,11 +120,11 @@ public class ResetByChunksTopTest {
     @Test
     public void test_size_3() throws Exception {
         AtomicLong currentTimeMillis = new AtomicLong(0L);
-        Clock clock = Clock.mock(currentTimeMillis);
+        Ticker ticker = Ticker.mock(currentTimeMillis);
         Top top = Top.builder(3)
                 .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(3), 3)
                 .withSnapshotCachingDuration(Duration.ZERO)
-                .withClock(clock)
+                .withTicker(ticker)
                 .withBackgroundExecutor(MockExecutor.INSTANCE)
                 .build();
 

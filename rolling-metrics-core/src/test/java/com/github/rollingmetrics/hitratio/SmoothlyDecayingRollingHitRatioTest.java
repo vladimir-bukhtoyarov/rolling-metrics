@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.hitratio;
 
-import com.github.rollingmetrics.util.Clock;
+import com.github.rollingmetrics.util.Ticker;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -33,8 +33,8 @@ public class SmoothlyDecayingRollingHitRatioTest {
     private static int CHUNK_COUNT = 5;
 
     AtomicLong currentTimeMillis = new AtomicLong(0);
-    Clock clock = Clock.mock(currentTimeMillis);
-    HitRatio hitRatio = new SmoothlyDecayingRollingHitRatio(Duration.ofMillis(ROLLING_TIME_WINDOW_MILLIS), CHUNK_COUNT, clock);
+    Ticker ticker = Ticker.mock(currentTimeMillis);
+    HitRatio hitRatio = new SmoothlyDecayingRollingHitRatio(Duration.ofMillis(ROLLING_TIME_WINDOW_MILLIS), CHUNK_COUNT, ticker);
 
     @Test
     public void testChunkRotation() {
