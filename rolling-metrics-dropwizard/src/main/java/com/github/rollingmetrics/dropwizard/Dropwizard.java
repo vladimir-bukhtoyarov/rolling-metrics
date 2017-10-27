@@ -18,24 +18,27 @@
 package com.github.rollingmetrics.dropwizard;
 
 import com.codahale.metrics.*;
+import com.github.rollingmetrics.counter.WindowCounter;
 import com.github.rollingmetrics.dropwizard.adapter.ReservoirToRollingHdrHistogramAdapter;
 import com.github.rollingmetrics.dropwizard.adapter.TopMetricSet;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
+import com.github.rollingmetrics.hitratio.HitRatio;
 import com.github.rollingmetrics.top.Top;
 
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Util class which provides compatibility adapters from Rolling-Metrics to Dropwizard-Metrics.
  */
-public class DropwizardAdapter {
+public class Dropwizard {
 
     /**
      * Builds reservoir which can be useful for building monitoring primitives with higher level of abstraction.
      *
      * @return an instance of {@link com.codahale.metrics.Reservoir}
      */
-    public static Reservoir convertToReservoir(RollingHdrHistogram rollingHdrHistogram) {
+    public static Reservoir toReservoir(RollingHdrHistogram rollingHdrHistogram) {
         return new ReservoirToRollingHdrHistogramAdapter(rollingHdrHistogram);
     }
 
@@ -44,21 +47,8 @@ public class DropwizardAdapter {
      *
      * @return an instance of {@link com.codahale.metrics.Histogram}
      */
-    public static Histogram convertToHistogram(RollingHdrHistogram rollingHdrHistogram) {
-        return new Histogram(convertToReservoir(rollingHdrHistogram));
-    }
-
-    /**
-     * Builds and registers histogram.
-     *
-     * @param registry metric registry in which constructed histogram will be registered
-     * @param name     the name under with constructed histogram will be registered in the {@code registry}
-     * @return an instance of {@link com.codahale.metrics.Histogram}
-     */
-    public static Histogram convertToHistogramAndRegister(RollingHdrHistogram rollingHdrHistogram, MetricRegistry registry, String name) {
-        Histogram histogram = convertToHistogram(rollingHdrHistogram);
-        registry.register(name, histogram);
-        return histogram;
+    public static Histogram toHistogram(RollingHdrHistogram rollingHdrHistogram) {
+        return new Histogram(toReservoir(rollingHdrHistogram));
     }
 
     /**
@@ -66,21 +56,32 @@ public class DropwizardAdapter {
      *
      * @return an instance of {@link com.codahale.metrics.Timer}
      */
-    public static Timer convertToTimer(RollingHdrHistogram rollingHdrHistogram) {
-        return new Timer(convertToReservoir(rollingHdrHistogram));
+    public static Timer toTimer(RollingHdrHistogram rollingHdrHistogram) {
+        return new Timer(toReservoir(rollingHdrHistogram));
     }
 
     /**
-     * Builds and registers timer.
+     * Converts window-counter to Dropwizard Gauge
      *
-     * @param registry metric registry in which constructed histogram will be registered
-     * @param name     the name under with constructed timer will be registered in the {@code registry}
-     * @return an instance of {@link com.codahale.metrics.Timer}
+     * @param counter
+     *
+     * @return Dropwizard Gauge
      */
-    public static Timer convertToTimerAndRegister(RollingHdrHistogram rollingHdrHistogram, MetricRegistry registry, String name) {
-        Timer timer = convertToTimer(rollingHdrHistogram);
-        registry.register(name, timer);
-        return timer;
+    public static Gauge<Long> toGauge(WindowCounter counter) {
+        Objects.requireNonNull(counter);
+        return counter::getSum;
+    }
+
+    /**
+     * Converts hit-ratio to Dropwizard Gauge
+     *
+     * @param hitRatio
+     *
+     * @return Dropwizard Gauge
+     */
+    public static Gauge<Double> toGauge(HitRatio hitRatio) {
+        Objects.requireNonNull(hitRatio);
+        return hitRatio::getHitRatio;
     }
 
     /**
@@ -91,7 +92,7 @@ public class DropwizardAdapter {
      * @param latencyUnit the time unit to convert latency
      * @param digitsAfterDecimalPoint the number of digits after decimal point
      */
-    public static MetricSet convertTopToMetricSet(String name, Top top, TimeUnit latencyUnit, int digitsAfterDecimalPoint) {
+    public static MetricSet toMetricSet(String name, Top top, TimeUnit latencyUnit, int digitsAfterDecimalPoint) {
         return new TopMetricSet(name, top, latencyUnit, digitsAfterDecimalPoint);
     }
 

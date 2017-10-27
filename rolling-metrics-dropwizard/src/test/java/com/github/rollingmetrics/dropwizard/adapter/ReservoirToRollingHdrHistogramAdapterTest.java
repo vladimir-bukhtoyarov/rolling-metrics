@@ -19,10 +19,13 @@ package com.github.rollingmetrics.dropwizard.adapter;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import com.github.rollingmetrics.dropwizard.Dropwizard;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.util.concurrent.TimeUnit;
 
 import static junit.framework.TestCase.assertEquals;
 
@@ -31,26 +34,36 @@ import static junit.framework.TestCase.assertEquals;
  */
 public class ReservoirToRollingHdrHistogramAdapterTest {
 
-    private RollingHdrHistogram rollingHistogram = RollingHdrHistogram.builder()
+    RollingHdrHistogram rollingHistogram = RollingHdrHistogram.builder()
             .withSignificantDigits(4).build();
+    Histogram histogram = Dropwizard.toHistogram(rollingHistogram);
+    Timer timer = Dropwizard.toTimer(rollingHistogram);
 
     @Before
     public void initValues() {
-        for (int i = 1; i < 1000; i++) {
-            rollingHistogram.update(i);
+        for (int i = 1; i <= 1000; i++) {
+            histogram.update(i);
+            timer.update(i, TimeUnit.NANOSECONDS);
         }
     }
 
     @Test
-    public void testTimerConvertation() {
-        Timer timer = DropwizardAdapter.convertToTimer(rollingHistogram);
+    public void testTimerConversion() {
         compareSnapshots(rollingHistogram.getSnapshot(), timer.getSnapshot());
+        assertEquals(1000, timer.getCount());
     }
 
     @Test
-    public void testHistogramConvertation() {
-        Histogram histogram = DropwizardAdapter.convertToHistogram(rollingHistogram);
+    public void shouldSkipNegativeLatencyWhenUpdateTimer() {
+        timer.update(-10, TimeUnit.NANOSECONDS);
+        assertEquals(1000, timer.getCount());
+        assertEquals(1, timer.getSnapshot().getMin());
+    }
+
+    @Test
+    public void testHistogramConversion() {
         compareSnapshots(rollingHistogram.getSnapshot(), histogram.getSnapshot());
+        assertEquals(1000, histogram.getCount());
     }
 
     private void compareSnapshots(RollingSnapshot rollingSnapshot, Snapshot dropwizzardSnapshot) {

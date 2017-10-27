@@ -14,9 +14,10 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.dropwizard;import com.codahale.metrics.Gauge;
+package com.github.rollingmetrics.dropwizard.adapter;import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
+import com.github.rollingmetrics.dropwizard.Dropwizard;
 import com.github.rollingmetrics.top.TopTestData;
 import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.top.impl.TopTestUtil;
@@ -37,33 +38,33 @@ public class TopMetricSetTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNullName() {
-        DropwizardAdapter.convertTopToMetricSet(null, top, TimeUnit.MILLISECONDS, 3);
+        Dropwizard.toMetricSet(null, top, TimeUnit.MILLISECONDS, 3);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowEmptyName() {
-        DropwizardAdapter.convertTopToMetricSet("", top, TimeUnit.MILLISECONDS, 3);
+        Dropwizard.toMetricSet("", top, TimeUnit.MILLISECONDS, 3);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNullTop() {
-        DropwizardAdapter.convertTopToMetricSet("my-top", null, TimeUnit.MILLISECONDS, 3);
+        Dropwizard.toMetricSet("my-top", null, TimeUnit.MILLISECONDS, 3);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNullLatencyUnit() {
-        DropwizardAdapter.convertTopToMetricSet("my-top", top, null, 3);
+        Dropwizard.toMetricSet("my-top", top, null, 3);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNegativeDigitsAfterDecimalPoint() {
-        DropwizardAdapter.convertTopToMetricSet("my-top", top, TimeUnit.MILLISECONDS, -1);
+        Dropwizard.toMetricSet("my-top", top, TimeUnit.MILLISECONDS, -1);
     }
 
     @Test
     public void shouldAddLatencyUnitGauge() {
         for (TimeUnit timeUnit: TimeUnit.values()) {
-            MetricSet metricSet = DropwizardAdapter.convertTopToMetricSet("my-top", top, timeUnit, 3);
+            MetricSet metricSet = Dropwizard.toMetricSet("my-top", top, timeUnit, 3);
             Map<String, Metric> metrics = metricSet.getMetrics();
             Gauge<String> timeUnitGauge = (Gauge<String>) metrics.get("my-top.latencyUnit");
             Assert.assertNotNull(timeUnitGauge);
@@ -73,7 +74,7 @@ public class TopMetricSetTest {
 
     @Test
     public void testDescriptionGauges() {
-        MetricSet metricSet = DropwizardAdapter.convertTopToMetricSet("my-top", top, TimeUnit.MILLISECONDS, 3);
+        MetricSet metricSet = Dropwizard.toMetricSet("my-top", top, TimeUnit.MILLISECONDS, 3);
         checkDescriptions(metricSet, "my-top", "", "", "");
 
         TopTestUtil.update(top, TopTestData.first);
@@ -88,7 +89,7 @@ public class TopMetricSetTest {
 
     @Test
     public void testValueGauges() {
-        MetricSet metricSet = DropwizardAdapter.convertTopToMetricSet("my-top", top, TimeUnit.MILLISECONDS, 3);
+        MetricSet metricSet = Dropwizard.toMetricSet("my-top", top, TimeUnit.MILLISECONDS, 3);
         checkValues(metricSet, "my-top", 3, 0.0d, 0.0d, 0.0d);
 
         top.update(0, 13_345_456, TimeUnit.NANOSECONDS, () -> "SELECT * FROM USERS");
