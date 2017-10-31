@@ -380,7 +380,7 @@ public class RollingHdrHistogramBuilder {
 
     private RollingHdrHistogramBuilder(Ticker ticker,
                                        AccumulationFactory accumulationFactory,
-                                       Optional<Duration> snapshotCachingDurationMillis,
+                                       Optional<Duration> snapshotCachingDuration,
                                        RecorderSettings recorderSettings,
                                        Optional<Executor> backgroundExecutor) {
         this.ticker = ticker;
