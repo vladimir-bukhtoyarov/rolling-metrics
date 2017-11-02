@@ -19,31 +19,33 @@ package com.github.rollingmetrics.util;
 import java.util.concurrent.TimeUnit;
 
 /**
- * TODO javadocs
- * TODO unit tests
+ * Implementation of ticker which based on {@link System#nanoTime()}.
+ *
+ * The {@link #stableMilliseconds()} method provides correct data approximately for 394 years since creation.
  */
 public class DefaultTicker implements Ticker {
 
     static final long BORDER_ZONE = TimeUnit.MINUTES.toNanos(1);
+    static final long NANOS_IN_ONE_MILLIS = 1_000_000L;
+    static final long MAX_MILLIS = Long.MAX_VALUE / NANOS_IN_ONE_MILLIS;
 
     private static final Ticker INSTANCE = new DefaultTicker();
-    public static final long NANOS_IN_ONE_MILLIS = 1_000_000;
 
     private final long positiveShiftMillis;
     private final long negativeShiftMillis;
     private final long sourceShiftNanos;
 
-    private DefaultTicker() {
+    DefaultTicker() {
         long nanotime = nanoTime();
-        boolean nearToBorder = Long.MAX_VALUE - Math.abs(nanotime) <= BORDER_ZONE;
+        boolean nearToBorder = Long.MAX_VALUE - Math.abs(nanotime) <= BORDER_ZONE || Math.abs(nanotime) <= BORDER_ZONE;
         this.sourceShiftNanos = nearToBorder? BORDER_ZONE * 2 : 0;
         nanotime += sourceShiftNanos;
         if (nanotime >= 0) {
             positiveShiftMillis = 0;
-            negativeShiftMillis = Long.MAX_VALUE / NANOS_IN_ONE_MILLIS * 2;
+            negativeShiftMillis = MAX_MILLIS * 2;
         } else {
-            positiveShiftMillis = Long.MAX_VALUE / NANOS_IN_ONE_MILLIS;
-            negativeShiftMillis = Long.MAX_VALUE / NANOS_IN_ONE_MILLIS;
+            positiveShiftMillis = MAX_MILLIS;
+            negativeShiftMillis = MAX_MILLIS;
         }
     }
 
@@ -63,9 +65,9 @@ public class DefaultTicker implements Ticker {
     public long stableMilliseconds() {
         long nanotime = nanoTime() + sourceShiftNanos;
         if (nanotime >= 0) {
-            return sourceShiftNanos / NANOS_IN_ONE_MILLIS + positiveShiftMillis;
+            return nanotime / NANOS_IN_ONE_MILLIS + positiveShiftMillis;
         } else {
-            return sourceShiftNanos / NANOS_IN_ONE_MILLIS + negativeShiftMillis;
+            return nanotime / NANOS_IN_ONE_MILLIS + negativeShiftMillis;
         }
     }
 

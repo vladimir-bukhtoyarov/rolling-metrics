@@ -17,6 +17,8 @@
 
 package com.github.rollingmetrics.util;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 public class BackgroundTicker implements Ticker {
 
     private volatile long cachedTimeMillis;
@@ -50,7 +52,7 @@ public class BackgroundTicker implements Ticker {
     }
 
     @Override
-    public long nanoTime() {
+    public AtomicLong nanoTime() {
         return stableMilliseconds() * 1_000_000;
     }
 
