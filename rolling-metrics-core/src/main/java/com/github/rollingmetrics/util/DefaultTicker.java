@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Implementation of ticker which based on {@link System#nanoTime()}.
  *
- * The {@link #stableMilliseconds()} method provides correct data approximately for 394 years since creation.
+ * The {@link #stableMilliseconds()} method provides correct values at least for 192 years since creation.
  */
 public class DefaultTicker implements Ticker {
 

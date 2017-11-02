@@ -54,6 +54,11 @@ public class DefaultTickerTest {
     public void testStableMillisWhenChangingSignum() {
         testStableMillisWhenChangingSignum(1, Long.MAX_VALUE, DefaultTicker.BORDER_ZONE / 1_000_000 * 2  + DefaultTicker.MAX_MILLIS);
         testStableMillisWhenChangingSignum(TimeUnit.MINUTES.toNanos(45), Long.MAX_VALUE, TimeUnit.MINUTES.toMillis(45) + DefaultTicker.MAX_MILLIS);
+
+        testStableMillisWhenChangingSignum(-1 * TimeUnit.MINUTES.toNanos(45), Long.MAX_VALUE, DefaultTicker.MAX_MILLIS * 2 - TimeUnit.MINUTES.toMillis(45));
+
+        testStableMillisWhenChangingSignum(Long.MIN_VALUE + 1, Long.MAX_VALUE, DefaultTicker.BORDER_ZONE / 1_000_000 * 2  + DefaultTicker.MAX_MILLIS);
+        testStableMillisWhenChangingSignum(Long.MIN_VALUE + TimeUnit.MINUTES.toNanos(45), Long.MAX_VALUE, TimeUnit.MINUTES.toMillis(45) + DefaultTicker.MAX_MILLIS - 1);
     }
 
     private void testStableMillisWhenChangingSignum(long initialTimeNanos, long deltaNanos, long requiredStableMillisInTheEnd) {
