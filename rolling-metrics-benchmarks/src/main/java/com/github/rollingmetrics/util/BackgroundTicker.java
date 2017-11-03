@@ -52,7 +52,7 @@ public class BackgroundTicker implements Ticker {
     }
 
     @Override
-    public AtomicLong nanoTime() {
+    public long nanoTime() {
         return stableMilliseconds() * 1_000_000;
     }
 

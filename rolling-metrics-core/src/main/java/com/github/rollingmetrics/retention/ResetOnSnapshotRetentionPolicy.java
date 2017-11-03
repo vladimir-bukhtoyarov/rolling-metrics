@@ -14,28 +14,19 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.histogram.hdr;
-
-import com.github.rollingmetrics.retention.RetentionPolicy;
+package com.github.rollingmetrics.retention;
 
 /**
  * TODO
+ *
+ * Reservoir configured with this strategy will be cleared each time when snapshot taken.
+ *
+ * @return this builder instance
  */
-public interface RollingHdrHistogram {
+public class ResetOnSnapshotRetentionPolicy implements RetentionPolicy {
 
-    static RollingHdrHistogramBuilder builder(RetentionPolicy retentionPolicy) {
-        return new RollingHdrHistogramBuilder(retentionPolicy);
-    }
+    public static ResetOnSnapshotRetentionPolicy INSTANCE = new ResetOnSnapshotRetentionPolicy();
 
-    /**
-     * Provide a (conservatively high) estimate of the Reservoir's total footprint in bytes
-     *
-     * @return a (conservatively high) estimate of the Reservoir's total footprint in bytes
-     */
-    int getEstimatedFootprintInBytes();
-
-    RollingSnapshot getSnapshot();
-
-    void update(long value);
+    private ResetOnSnapshotRetentionPolicy() {}
 
 }

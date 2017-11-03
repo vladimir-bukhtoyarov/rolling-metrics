@@ -14,9 +14,9 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.top;
+package com.github.rollingmetrics.retention;
 
-public class TopSettings {
+class ResetOnConditionRetentionPolicy implements RetentionPolicy {
 
 
 

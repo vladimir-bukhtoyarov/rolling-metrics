@@ -14,34 +14,23 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics;
+package com.github.rollingmetrics.retention;
 
-import com.github.rollingmetrics.retention.ResetCondition;
+import com.github.rollingmetrics.ThreadLocalResetCondition;
 
 /**
  * TODO
  */
-public class ThreadLocalResetCondition implements ResetCondition {
+public interface ResetCondition {
 
-    private final ThreadLocal<Boolean> flag = new ThreadLocal<>();
-    private final boolean defaultFlagValue;
+    boolean needToReset();
 
-    public ThreadLocalResetCondition(boolean defaultFlagValue) {
-        this.defaultFlagValue = defaultFlagValue;
+    static ResetCondition alwaysReset() {
+        return () -> true;
     }
 
-    public void forceReset() {
-        flag.set(true);
-    }
-
-    public void doNotReset(boolean value) {
-        flag.set(false);
-    }
-
-    @Override
-    public boolean needToReset() {
-        Boolean value = flag.get();
-        return value == null? defaultFlagValue : value;
+    static ThreadLocalResetCondition newThreadLocalResetCondition(boolean defaultFlagValue) {
+        return new ThreadLocalResetCondition(defaultFlagValue);
     }
 
 }

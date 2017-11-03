@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.hitratio;
 
+import com.github.rollingmetrics.retention.ResetPeriodicallyRetentionPolicy;
 import com.github.rollingmetrics.util.Ticker;
 
 import java.time.Duration;
@@ -44,7 +45,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @see ResetPeriodicallyHitRatio
  * @see UniformHitRatio
  */
-public class ResetPeriodicallyHitRatio implements HitRatio {
+class ResetPeriodicallyHitRatio implements HitRatio {
 
     private final AtomicLong ratio = new AtomicLong();
     private final long resetIntervalMillis;
@@ -54,17 +55,12 @@ public class ResetPeriodicallyHitRatio implements HitRatio {
     /**
      * Constructs the hit-ratio which reset its state to zero each time when {@code resetInterval} is elapsed.
      *
-     * @param resetInterval the interval between counter resetting
+     * TODO
+     * @param retentionPolicy
+     * @param ticker
      */
-    public ResetPeriodicallyHitRatio(Duration resetInterval) {
-        this(resetInterval, Ticker.defaultTicker());
-    }
-
-    public ResetPeriodicallyHitRatio(Duration resetInterval, Ticker ticker) {
-        if (resetInterval.isNegative() || resetInterval.isZero()) {
-            throw new IllegalArgumentException("intervalBetweenChunkResetting must be a positive duration");
-        }
-        this.resetIntervalMillis = resetInterval.toMillis();
+    ResetPeriodicallyHitRatio(ResetPeriodicallyRetentionPolicy retentionPolicy, Ticker ticker) {
+        this.resetIntervalMillis = retentionPolicy.getResettingPeriodMillis();
         this.ticker = ticker;
         this.nextResetTimeMillisRef = new AtomicLong(ticker.stableMilliseconds() + resetIntervalMillis);
     }

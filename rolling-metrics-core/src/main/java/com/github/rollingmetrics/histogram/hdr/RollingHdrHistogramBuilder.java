@@ -17,12 +17,16 @@
 package com.github.rollingmetrics.histogram.hdr;
 
 import com.github.rollingmetrics.histogram.OverflowResolver;
-import com.github.rollingmetrics.histogram.hdr.impl.*;
+import com.github.rollingmetrics.histogram.hdr.impl.ResetByChunksRollingHdrHistogramImpl;
 import com.github.rollingmetrics.histogram.hdr.impl.ResetOnSnapshotRollingHdrHistogramImpl;
+import com.github.rollingmetrics.histogram.hdr.impl.UniformRollingHdrHistogramImpl;
+import com.github.rollingmetrics.retention.*;
 import com.github.rollingmetrics.util.ResilientExecutionUtil;
 import com.github.rollingmetrics.util.Ticker;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Executor;
@@ -33,19 +37,20 @@ import java.util.concurrent.ThreadFactory;
  *
  * <p><br> Basic examples of usage:
  * <pre><code>
+ *         TODO
  *         RollingHdrHistogramBuilder builder = RollingHdrHistogramBuilder();
  *
- *         // build and register timer
+ *         // create and register timer
  *         Timer timer1 = builder.buildAndRegisterTimer(registry, "my-timer-1");
  *
- *         // build and register timer in another way
+ *         // create and register timer in another way
  *         Timer timer2 = builder.buildTimer();
  *         registry.register(timer2, "my-timer-2");
  *
- *         // build and register histogram
+ *         // create and register histogram
  *         Histogram histogram1 = builder.buildAndRegisterHistogram(registry, "my-histogram-1");
  *
- *         // build and register histogram in another way
+ *         // create and register histogram in another way
  *         Histogram histogram2 = builder.buildHistogram();
  *         registry.register(histogram2, "my-histogram-2");
  *     </code>
@@ -62,113 +67,6 @@ import java.util.concurrent.ThreadFactory;
  */
 public class RollingHdrHistogramBuilder {
 
-    // meaningful limits to disallow user to kill performance(or memory footprint) by mistake
-    static final int MAX_CHUNKS = 60;
-    static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
-
-    static int DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS = 2;
-    static AccumulationFactory DEFAULT_ACCUMULATION_STRATEGY = AccumulationFactory.UNIFORM;
-    static double[] DEFAULT_PERCENTILES = new double[]{0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999};
-    static RecorderSettings DEFUALT_RECORDER_SETTINGS = new RecorderSettings(
-            DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS,
-            Optional.empty(),
-            Optional.of(DEFAULT_PERCENTILES),
-            Optional.empty(),
-            Optional.empty(),
-            Optional.empty()
-    );
-
-    RollingHdrHistogramBuilder() {
-        this(Ticker.defaultTicker());
-    }
-
-    /**
-     * Reservoir configured with this strategy will be cleared each time when snapshot taken.
-     *
-     * @return this builder instance
-     * @see #resetReservoirPeriodically(Duration)
-     * @see #resetReservoirPeriodicallyByChunks(Duration, int)
-     * @see #neverResetReservoir()
-     */
-    public RollingHdrHistogramBuilder resetReservoirOnSnapshot() {
-        accumulationFactory = AccumulationFactory.RESET_ON_SNAPSHOT;
-        return this;
-    }
-
-    /**
-     * Reservoir configured with this strategy will be cleared fully after each <tt>resettingPeriod</tt>.
-     * <p>
-     * The value recorded to reservoir will take affect at most <tt>resettingPeriod</tt> time.
-     * </p>
-     *
-     * <p>
-     *     If You use this strategy inside JEE environment,
-     *     then it would be better to call {@code ResilientExecutionUtil.getInstance().shutdownBackgroundExecutor()}
-     *     once in application shutdown listener,
-     *     in order to avoid leaking reference to classloader through the thread which this library creates for histogram rotation in background.
-     * </p>
-     *
-     * @param resettingPeriod specifies how often need to reset reservoir
-     * @return this builder instance
-     * @see #neverResetReservoir()
-     * @see #resetReservoirOnSnapshot()
-     * @see #resetReservoirPeriodicallyByChunks(Duration, int)
-     */
-    public RollingHdrHistogramBuilder resetReservoirPeriodically(Duration resettingPeriod) {
-        int numberOfHistoryChunks = 0;
-        return resetReservoirPeriodicallyByChunks(resettingPeriod.toMillis(), numberOfHistoryChunks);
-    }
-
-    /**
-     * Reservoir configured with this strategy will be divided to <tt>numberChunks</tt> parts,
-     * and one chunk will be cleared after each <tt>rollingTimeWindow / numberChunks</tt> elapsed.
-     * This strategy is more smoothly then <tt>resetReservoirPeriodically</tt> because reservoir never zeroed at whole,
-     * so user experience provided by <tt>resetReservoirPeriodicallyByChunks</tt> should look more pretty.
-     * <p>
-     * The value recorded to reservoir will take affect at least <tt>rollingTimeWindow</tt> and at most <tt>rollingTimeWindow *(1 + 1/numberChunks)</tt> time,
-     * for example when you configure <tt>rollingTimeWindow=60 seconds and numberChunks=6</tt> then each value recorded to reservoir will be stored at <tt>60-70 seconds</tt>
-     * </p>
-     *
-     * <p>
-     *     If You use this strategy inside JEE environment,
-     *     then it would be better to call {@code ResilientExecutionUtil.getInstance().shutdownBackgroundExecutor()}
-     *     once in application shutdown listener,
-     *     in order to avoid leaking reference to classloader through the thread which this library creates for histogram rotation in background.
-     * </p>
-     *
-     * @param rollingTimeWindow the total rolling time window, any value recorded to reservoir will not be evicted from it at least <tt>rollingTimeWindow</tt>
-     * @param numberChunks    specifies number of chunks by which reservoir will be slitted
-     * @return this builder instance
-     * @see #neverResetReservoir()
-     * @see #resetReservoirOnSnapshot()
-     * @see #resetReservoirPeriodically(Duration)
-     */
-    public RollingHdrHistogramBuilder resetReservoirPeriodicallyByChunks(Duration rollingTimeWindow, int numberChunks) {
-        if (numberChunks < 2) {
-            throw new IllegalArgumentException("numberHistoryChunks should be >= 2");
-        }
-        if (numberChunks > MAX_CHUNKS) {
-            throw new IllegalArgumentException("numberHistoryChunks should be <= " + MAX_CHUNKS);
-        }
-        long resettingPeriodMillis = rollingTimeWindow.toMillis() / numberChunks;
-        return resetReservoirPeriodicallyByChunks(resettingPeriodMillis, numberChunks);
-    }
-
-    /**
-     * Reservoir configured with this strategy will store all values since the reservoir was created.
-     *
-     * <p>This is default strategy for {@link RollingHdrHistogramBuilder}
-     *
-     * @return this builder instance
-     * @see #resetReservoirPeriodically(Duration)
-     * @see #resetReservoirOnSnapshot()
-     * @see #resetReservoirPeriodicallyByChunks(Duration, int)
-     */
-    public RollingHdrHistogramBuilder neverResetReservoir() {
-        accumulationFactory = AccumulationFactory.UNIFORM;
-        return this;
-    }
-
     /**
      * Configures the number of significant decimal digits to which the histogram will maintain value resolution and separation.
      * <p>
@@ -184,7 +82,7 @@ public class RollingHdrHistogramBuilder {
      * @see org.HdrHistogram.AbstractHistogram#AbstractHistogram(int)
      */
     public RollingHdrHistogramBuilder withSignificantDigits(int numberOfSignificantValueDigits) {
-        this.recorderSettings = recorderSettings.withSignificantDigits(numberOfSignificantValueDigits);
+        recorderSettings.setSignificantDigits(numberOfSignificantValueDigits);
         return this;
     }
 
@@ -208,7 +106,7 @@ public class RollingHdrHistogramBuilder {
      * @see org.HdrHistogram.AbstractHistogram#AbstractHistogram(long, long, int)
      */
     public RollingHdrHistogramBuilder withLowestDiscernibleValue(long lowestDiscernibleValue) {
-        this.recorderSettings = recorderSettings.withLowestDiscernibleValue(lowestDiscernibleValue);
+        recorderSettings.setLowestDiscernibleValue(lowestDiscernibleValue);
         return this;
     }
 
@@ -220,7 +118,7 @@ public class RollingHdrHistogramBuilder {
      * @return this builder instance
      */
     public RollingHdrHistogramBuilder withHighestTrackableValue(long highestTrackableValue, OverflowResolver overflowResolver) {
-        this.recorderSettings = recorderSettings.withHighestTrackableValue(highestTrackableValue, overflowResolver);
+        recorderSettings.setHighestTrackableValue(highestTrackableValue, overflowResolver);
         return this;
     }
 
@@ -241,7 +139,7 @@ public class RollingHdrHistogramBuilder {
      * @see org.HdrHistogram.AbstractHistogram#recordValueWithExpectedInterval(long, long)
      */
     public RollingHdrHistogramBuilder withExpectedIntervalBetweenValueSamples(long expectedIntervalBetweenValueSamples) {
-        this.recorderSettings = recorderSettings.withExpectedIntervalBetweenValueSamples(expectedIntervalBetweenValueSamples);
+        recorderSettings.setExpectedIntervalBetweenValueSamples(expectedIntervalBetweenValueSamples);
         return this;
     }
 
@@ -269,7 +167,7 @@ public class RollingHdrHistogramBuilder {
      * This method is useful when you already know list of percentiles which need to be stored in monitoring database,
      * then you can specify it to optimize snapshot size, as result unnecessary garbage will be avoided, memory in snapshot will allocated only for percentiles which you configure.
      * </p>
-     * <p> Moreover by default builder already configured with default list of percentiles {@link #DEFAULT_PERCENTILES}.
+     * <p> Moreover by default builder already configured with default list of percentiles {@link RecorderSettings#DEFAULT_PERCENTILES}.
      * the default percentiles are <code>double[] {0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999}</code>
      *
      * @param predefinedPercentiles list of percentiles which you plan to store in monitoring database, should be not empty array of doubles between {@literal 0..1}
@@ -277,7 +175,7 @@ public class RollingHdrHistogramBuilder {
      * @see #withoutSnapshotOptimization()
      */
     public RollingHdrHistogramBuilder withPredefinedPercentiles(double[] predefinedPercentiles) {
-        this.recorderSettings = recorderSettings.withPredefinedPercentiles(predefinedPercentiles);
+        recorderSettings.setPredefinedPercentiles(predefinedPercentiles);
         return this;
     }
 
@@ -285,17 +183,17 @@ public class RollingHdrHistogramBuilder {
      * Discards snapshot memory footprint optimization. Use this method when you do not know concrete percentiles which you need.
      * Pay attention that when you discard snapshot optimization then garbage required for take one snapshot will approximately equals to histogram size.
      * <p>
-     * This method zeroes predefinedPercentiles configured by default {@link #DEFAULT_PERCENTILES} or configured via {@link #withPredefinedPercentiles(double[])}.
+     * This method zeroes predefinedPercentiles configured by default {@link RecorderSettings#DEFAULT_PERCENTILES} or configured via {@link #withPredefinedPercentiles(double[])}.
      *
      * @return this builder instance
      */
     public RollingHdrHistogramBuilder withoutSnapshotOptimization() {
-        this.recorderSettings = recorderSettings.withoutSnapshotOptimization();
+        recorderSettings.withoutSnapshotOptimization();
         return this;
     }
 
     /**
-     * Configures the executor which will be used if any of {@link #resetReservoirPeriodically(Duration)} or {@link #resetReservoirPeriodicallyByChunks(Duration, int)} (Duration)}.
+     * Configures the executor which will be used for chunk rotation if histogram configured with {@link RetentionPolicy#resetPeriodically(Duration)} (Duration)} or {@link RetentionPolicy#resetPeriodicallyByChunks(Duration, int)}.
      *
      * <p>
      * Normally you should not use this method because of default executor provided by {@link ResilientExecutionUtil#getBackgroundExecutor()} is quietly enough for mostly use cases.
@@ -309,10 +207,7 @@ public class RollingHdrHistogramBuilder {
      * @return this builder instance
      */
     public RollingHdrHistogramBuilder withBackgroundExecutor(Executor backgroundExecutor) {
-        if (backgroundExecutor == null) {
-            throw new IllegalArgumentException("backgroundExecutor must not be null");
-        }
-        this.backgroundExecutor = Optional.of(backgroundExecutor);
+        recorderSettings.setBackgroundExecutor(backgroundExecutor);
         return this;
     }
 
@@ -334,7 +229,7 @@ public class RollingHdrHistogramBuilder {
      */
     public RollingHdrHistogram build() {
         recorderSettings.validateParameters();
-        RollingHdrHistogram rollingHdrHistogram = accumulationFactory.createAccumulator(recorderSettings, ticker);
+        RollingHdrHistogram rollingHdrHistogram = builders.get(retentionPolicy.getClass()).create(recorderSettings, retentionPolicy, ticker);
         return wrapAroundByDecorators(rollingHdrHistogram);
     }
 
@@ -347,63 +242,28 @@ public class RollingHdrHistogramBuilder {
         return build().getEstimatedFootprintInBytes();
     }
 
-    /**
-     * Creates full copy of this builder.
-     *
-     * @return copy of this builder
-     */
-    public RollingHdrHistogramBuilder deepCopy() {
-        return new RollingHdrHistogramBuilder(ticker, accumulationFactory, snapshotCachingDuration, recorderSettings, backgroundExecutor);
-    }
-
     @Override
     public String toString() {
         return "RollingHdrHistogramBuilder{" +
-                "accumulationStrategy=" + accumulationFactory +
+                "retentionPolicy=" + retentionPolicy +
                 ", snapshotCachingDurationMillis=" + snapshotCachingDuration +
                 ", recorderSettings=" + recorderSettings +
                 '}';
     }
 
-    private AccumulationFactory accumulationFactory;
-
+    private final RetentionPolicy retentionPolicy;
     private RecorderSettings recorderSettings;
-
-    private Optional<Executor> backgroundExecutor;
     private Optional<Duration> snapshotCachingDuration;
-
     private Ticker ticker;
 
-    public RollingHdrHistogramBuilder(Ticker ticker) {
-        this(ticker, DEFAULT_ACCUMULATION_STRATEGY, Optional.empty(), DEFUALT_RECORDER_SETTINGS, Optional.empty());
-    }
-
-    private RollingHdrHistogramBuilder(Ticker ticker,
-                                       AccumulationFactory accumulationFactory,
-                                       Optional<Duration> snapshotCachingDuration,
-                                       RecorderSettings recorderSettings,
-                                       Optional<Executor> backgroundExecutor) {
-        this.ticker = ticker;
-        this.accumulationFactory = accumulationFactory;
-        this.snapshotCachingDuration = snapshotCachingDuration;
-        this.recorderSettings = recorderSettings;
-        this.backgroundExecutor = backgroundExecutor;
-    }
-
-    private RollingHdrHistogramBuilder resetReservoirPeriodicallyByChunks(long resettingPeriodMillis, int numberHistoryChunks) {
-        if (resettingPeriodMillis <= 0) {
-            throw new IllegalArgumentException("resettingPeriod must be a positive duration");
+    RollingHdrHistogramBuilder(RetentionPolicy retentionPolicy) {
+        if (!builders.containsKey(retentionPolicy.getClass())) {
+            throw new IllegalArgumentException("Unknown retention policy " + retentionPolicy.getClass());
         }
-        if (resettingPeriodMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
-            throw new IllegalArgumentException("Interval between resetting must be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis");
-        }
-
-        accumulationFactory = (recorder, ticker) -> new ResetByChunksRollingHdrHistogramImpl(recorder, numberHistoryChunks, resettingPeriodMillis, ticker, getExecutor());
-        return this;
-    }
-
-    private Executor getExecutor() {
-        return backgroundExecutor.orElseGet(ResilientExecutionUtil.getInstance()::getBackgroundExecutor);
+        this.retentionPolicy =  retentionPolicy;
+        this.ticker = Ticker.defaultTicker();
+        this.snapshotCachingDuration = Optional.empty();
+        this.recorderSettings = new RecorderSettings();
     }
 
     private RollingHdrHistogram wrapAroundByDecorators(RollingHdrHistogram histogram) {
@@ -414,13 +274,19 @@ public class RollingHdrHistogramBuilder {
         return histogram;
     }
 
-    interface AccumulationFactory {
+    private static Map<Class<? extends RetentionPolicy>, HistogramFactory> builders = new HashMap<>();
+    static {
+        builders.put(UniformRetentionPolicy.class, (settings, retentionPolicy, ticker) -> new UniformRollingHdrHistogramImpl(settings));
+        builders.put(ResetOnSnapshotRetentionPolicy.class, (settings, retentionPolicy, ticker) -> new ResetOnSnapshotRollingHdrHistogramImpl(settings));
+        builders.put(ResetPeriodicallyRetentionPolicy.class, (settings, retentionPolicy, ticker) ->
+                new ResetByChunksRollingHdrHistogramImpl(settings, (ResetPeriodicallyRetentionPolicy) retentionPolicy, ticker));
+        builders.put(ResetPeriodicallyByChunksRetentionPolicy.class, (settings, retentionPolicy, ticker) ->
+                new ResetByChunksRollingHdrHistogramImpl(settings, (ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy, ticker));
+    }
 
-        AccumulationFactory UNIFORM = (settings, ticker) -> new UniformRollingHdrHistogramImpl(settings);
+    private interface HistogramFactory {
 
-        AccumulationFactory RESET_ON_SNAPSHOT = (settings, ticker) -> new ResetOnSnapshotRollingHdrHistogramImpl(settings);
-
-        RollingHdrHistogram createAccumulator(RecorderSettings settings, Ticker ticker);
+        RollingHdrHistogram create(RecorderSettings settings, RetentionPolicy retentionPolicy, Ticker ticker);
 
     }
 

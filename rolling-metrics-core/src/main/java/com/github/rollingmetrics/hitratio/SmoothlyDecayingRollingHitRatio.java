@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.hitratio;
 
+import com.github.rollingmetrics.retention.ResetPeriodicallyByChunksRetentionPolicy;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.Printer;
 
@@ -62,20 +63,34 @@ import java.util.concurrent.atomic.AtomicReference;
  * @see ResetPeriodicallyHitRatio
  * @see UniformHitRatio
  */
-public class SmoothlyDecayingRollingHitRatio implements HitRatio {
+class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
     // meaningful limits to disallow user to kill performance(or memory footprint) by mistake
-    static final int MAX_CHUNKS = 100;
-    static final long MIN_ROLLING_WINDOW_MILLIS = 1000;
+    public static final int MAX_CHUNKS = 100;
+    public static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
 
     private static final int HIT_INDEX = 0;
     private static final int TOTAL_INDEX = 1;
 
-    private final long intervalBetweenResettingMillis;
+    private final long intervalBetweenResettingOneChunkMillis;
     private final Ticker ticker;
     private final long creationTimestamp;
 
     private final Chunk[] chunks;
+
+    /**
+     * @return the rolling window duration for this hit-ratio
+     */
+    Duration getRollingWindow() {
+        return Duration.ofMillis((chunks.length - 1) * intervalBetweenResettingOneChunkMillis);
+    }
+
+    /**
+     * @return the number of chunks
+     */
+    int getChunkCount() {
+        return chunks.length - 1;
+    }
 
     /**
      * Constructs the chunked hit-ratio divided by {@code numberChunks}.
@@ -83,41 +98,18 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
      * except oldest chunk which invalidated continuously.
      * The memory consumed by hit-ratio and latency of ratio calculation depend directly from {@code numberChunks}
      *
-     * @param rollingWindow the rolling time window duration
-     * @param numberChunks The count of chunk to split
+     * @param retentionPolicy the rolling time window duration TODO The count of chunk to split
+     * @param ticker
      */
-    public SmoothlyDecayingRollingHitRatio(Duration rollingWindow, int numberChunks) {
-        this(rollingWindow, numberChunks, Ticker.defaultTicker());
-    }
-
-    /**
-     * @return the rolling window duration for this hit-ratio
-     */
-    public Duration getRollingWindow() {
-        return Duration.ofMillis((chunks.length - 1) * intervalBetweenResettingMillis);
-    }
-
-    /**
-     * @return the number of chunks
-     */
-    public int getChunkCount() {
-        return chunks.length - 1;
-    }
-
-    public SmoothlyDecayingRollingHitRatio(Duration rollingWindow, int numberChunks, Ticker ticker) {
-        if (numberChunks < 2) {
-            throw new IllegalArgumentException("numberChunks should be >= 2");
+    SmoothlyDecayingRollingHitRatio(ResetPeriodicallyByChunksRetentionPolicy retentionPolicy, Ticker ticker) {
+        int numberChunks = retentionPolicy.getNumberChunks();
+        this.intervalBetweenResettingOneChunkMillis = retentionPolicy.getIntervalBetweenResettingOneChunkMillis();
+        if (numberChunks > SmoothlyDecayingRollingHitRatio.MAX_CHUNKS) {
+            throw new IllegalArgumentException("number of chunks should be <=" + SmoothlyDecayingRollingHitRatio.MAX_CHUNKS);
         }
-
-        if (numberChunks > MAX_CHUNKS) {
-            throw new IllegalArgumentException("number of chunks should be <=" + MAX_CHUNKS);
+        if (intervalBetweenResettingOneChunkMillis < SmoothlyDecayingRollingHitRatio.MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
+            throw new IllegalArgumentException("rollingWindowMillis should be >=" + SmoothlyDecayingRollingHitRatio.MIN_CHUNK_RESETTING_INTERVAL_MILLIS);
         }
-
-        long rollingWindowMillis = rollingWindow.toMillis();
-        if (rollingWindowMillis < MIN_ROLLING_WINDOW_MILLIS) {
-            throw new IllegalArgumentException("rollingWindowMillis should be >=" + MIN_ROLLING_WINDOW_MILLIS);
-        }
-        this.intervalBetweenResettingMillis = rollingWindowMillis / numberChunks;
 
         this.ticker = ticker;
         this.creationTimestamp = ticker.stableMilliseconds();
@@ -132,7 +124,7 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
     public void update(int hitCount, int totalCount) {
         long nowMillis = ticker.stableMilliseconds();
         long millisSinceCreation = nowMillis - creationTimestamp;
-        long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
+        long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingOneChunkMillis;
         int chunkIndex = (int) intervalsSinceCreation % chunks.length;
         chunks[chunkIndex].update(hitCount, totalCount, nowMillis);
     }
@@ -143,7 +135,7 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
         // To get as fresh value as possible we need to calculate ratio in order from oldest to newest
         long millisSinceCreation = currentTimeMillis - creationTimestamp;
-        long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
+        long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingOneChunkMillis;
         int newestChunkIndex = (int) intervalsSinceCreation % chunks.length;
 
         long[] snapshot = new long[2];
@@ -162,7 +154,7 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
         final AtomicReference<Phase> currentPhaseRef;
 
         Chunk(int chunkIndex) {
-            long invalidationTimestamp = creationTimestamp + (chunks.length + chunkIndex) * intervalBetweenResettingMillis;
+            long invalidationTimestamp = creationTimestamp + (chunks.length + chunkIndex) * intervalBetweenResettingOneChunkMillis;
             this.currentPhaseRef = new AtomicReference<>(new Phase(invalidationTimestamp));
         }
 
@@ -174,8 +166,8 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
             Phase currentPhase = currentPhaseRef.get();
             while (currentTimeMillis >= currentPhase.proposedInvalidationTimestamp) {
                 long millisSinceCreation = currentTimeMillis - creationTimestamp;
-                long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
-                long nextProposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingMillis;
+                long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingOneChunkMillis;
+                long nextProposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingOneChunkMillis;
                 Phase replacement = new Phase(nextProposedInvalidationTimestamp);
                 if (currentPhaseRef.compareAndSet(currentPhase, replacement)) {
                     currentPhase = replacement;
@@ -221,8 +213,8 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
             // if this is oldest chunk then we need to reduce its weight
             long beforeInvalidateMillis = proposedInvalidationTimestamp - currentTimeMillis;
-            if (beforeInvalidateMillis < intervalBetweenResettingMillis) {
-                double decayingCoefficient = (double) beforeInvalidateMillis / (double) intervalBetweenResettingMillis;
+            if (beforeInvalidateMillis < intervalBetweenResettingOneChunkMillis) {
+                double decayingCoefficient = (double) beforeInvalidateMillis / (double) intervalBetweenResettingOneChunkMillis;
                 hitCount = (int) (hitCount * decayingCoefficient);
                 totalCount = (int) (totalCount * decayingCoefficient);
             }
@@ -244,7 +236,7 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
     @Override
     public String toString() {
         return "SmoothlyDecayingRollingHitRatio{" +
-                ", intervalBetweenResettingMillis=" + intervalBetweenResettingMillis +
+                ", intervalBetweenResettingMillis=" + intervalBetweenResettingOneChunkMillis +
                 ", ticker=" + ticker +
                 ", creationTimestamp=" + creationTimestamp +
                 ", chunks=" + Printer.printArray(chunks, "chunk") +

@@ -134,7 +134,7 @@ public class SmoothlyDecayingRollingHitRatioTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void tooShortTimeWindowShouldBeDisallowed() {
-        new SmoothlyDecayingRollingHitRatio(Duration.ofMillis(SmoothlyDecayingRollingHitRatio.MIN_ROLLING_WINDOW_MILLIS - 1), 5);
+        new SmoothlyDecayingRollingHitRatio(Duration.ofMillis(SmoothlyDecayingRollingHitRatio.MIN_CHUNK_RESETTING_INTERVAL_MILLIS - 1), 5);
     }
 
     @Test(expected = IllegalArgumentException.class)

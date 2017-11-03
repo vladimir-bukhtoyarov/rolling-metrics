@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @see ResetPeriodicallyHitRatio
  * @see UniformHitRatio
  */
-public class ResetOnSnapshotHitRatio implements HitRatio {
+class ResetOnSnapshotHitRatio implements HitRatio {
 
     private final AtomicLong ratio = new AtomicLong();
 

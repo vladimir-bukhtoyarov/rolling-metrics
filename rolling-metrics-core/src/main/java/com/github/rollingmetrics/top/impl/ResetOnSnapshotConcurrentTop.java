@@ -20,6 +20,7 @@ package com.github.rollingmetrics.top.impl;
 
 import com.github.rollingmetrics.top.Position;
 import com.github.rollingmetrics.top.Top;
+import com.github.rollingmetrics.top.TopRecorderSettings;
 import com.github.rollingmetrics.top.impl.recorder.PositionRecorder;
 import com.github.rollingmetrics.top.impl.recorder.TwoPhasePositionRecorder;
 
@@ -32,8 +33,8 @@ public class ResetOnSnapshotConcurrentTop implements Top {
     private final TwoPhasePositionRecorder recorder;
     private PositionRecorder intervalRecorder;
 
-    public ResetOnSnapshotConcurrentTop(int size, long latencyThresholdNanos, int maxDescriptionLength) {
-        this.recorder = new TwoPhasePositionRecorder(size, latencyThresholdNanos, maxDescriptionLength);
+    public ResetOnSnapshotConcurrentTop(TopRecorderSettings settings) {
+        this.recorder = new TwoPhasePositionRecorder(settings.getSize(), settings.getLatencyThreshold().toNanos(), settings.getMaxDescriptionLength());
         this.intervalRecorder = recorder.getIntervalRecorder();
     }
 

@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * @see SmoothlyDecayingRollingCounter
  */
-public class ResetOnSnapshotCounter implements WindowCounter {
+class ResetOnSnapshotCounter implements WindowCounter {
 
     private final AtomicLong value = new AtomicLong();
 

@@ -19,6 +19,7 @@ package com.github.rollingmetrics.top.impl;
 
 import com.github.rollingmetrics.top.Position;
 import com.github.rollingmetrics.top.Top;
+import com.github.rollingmetrics.top.TopRecorderSettings;
 import com.github.rollingmetrics.top.impl.collector.PositionCollector;
 import com.github.rollingmetrics.top.impl.recorder.PositionRecorder;
 import com.github.rollingmetrics.top.impl.recorder.TwoPhasePositionRecorder;
@@ -34,10 +35,10 @@ public class UniformTop implements Top {
     private final PositionCollector uniformCollector;
     private PositionRecorder intervalRecorder;
 
-    public UniformTop(int size, long latencyThresholdNanos, int maxDescriptionLength) {
-        this.phasedRecorder = new TwoPhasePositionRecorder(size, latencyThresholdNanos, maxDescriptionLength);
+    public UniformTop(TopRecorderSettings settings) {
+        this.phasedRecorder = new TwoPhasePositionRecorder(settings.getSize(), settings.getLatencyThreshold().toNanos(), settings.getMaxDescriptionLength());
         intervalRecorder = phasedRecorder.getIntervalRecorder();
-        this.uniformCollector = PositionCollector.createCollector(size);
+        this.uniformCollector = PositionCollector.createCollector(settings.getSize());
     }
 
     @Override

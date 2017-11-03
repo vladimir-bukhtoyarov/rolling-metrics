@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.counter;
 
+import com.github.rollingmetrics.retention.ResetPeriodicallyByChunksRetentionPolicy;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.Printer;
 
@@ -67,13 +68,13 @@ import java.util.concurrent.atomic.AtomicReference;
  *     </code>
  * </pre>
  */
-public class SmoothlyDecayingRollingCounter implements WindowCounter {
+class SmoothlyDecayingRollingCounter implements WindowCounter {
 
     // meaningful limits to disallow user to kill performance(or memory footprint) by mistake
-    static final int MAX_CHUNKS = 1000;
-    static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 100;
+    public static final int MAX_CHUNKS = 1000;
+    public static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 100;
 
-    private final long intervalBetweenResettingMillis;
+    private final long intervalBetweenResettingOneChunkMillis;
     private final Ticker ticker;
     private final long creationTime;
 
@@ -94,41 +95,21 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
      *     </code>
      * </pre>
      *
+     * // TODO
      * @param rollingWindow the rolling time window duration
      * @param numberChunks The count of chunk to split counter
      */
-    public SmoothlyDecayingRollingCounter(Duration rollingWindow, int numberChunks) {
-        this(rollingWindow, numberChunks, Ticker.defaultTicker());
-    }
-
-    /**
-     * @return the rolling window duration for this counter
-     */
-    public Duration getRollingWindow() {
-        return Duration.ofMillis((chunks.length - 1) * intervalBetweenResettingMillis);
-    }
-
-    /**
-     * @return the number of chunks
-     */
-    public int getChunkCount() {
-        return chunks.length - 1;
-    }
-
-    public SmoothlyDecayingRollingCounter(Duration rollingWindow, int numberChunks, Ticker ticker) {
-        if (numberChunks < 2) {
-            throw new IllegalArgumentException("numberChunks should be >= 2");
+    SmoothlyDecayingRollingCounter(ResetPeriodicallyByChunksRetentionPolicy retentionPolicy, Ticker ticker) {
+        int numberChunks = retentionPolicy.getNumberChunks();
+        if (numberChunks > SmoothlyDecayingRollingCounter.MAX_CHUNKS) {
+            throw new IllegalArgumentException("number of chunks should be <=" + SmoothlyDecayingRollingCounter.MAX_CHUNKS);
+        }
+        if (retentionPolicy.getIntervalBetweenResettingOneChunkMillis() < SmoothlyDecayingRollingCounter.MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
+            throw new IllegalArgumentException("intervalBetweenResettingMillis should be >=" + SmoothlyDecayingRollingCounter.MIN_CHUNK_RESETTING_INTERVAL_MILLIS);
         }
 
-        if (numberChunks > MAX_CHUNKS) {
-            throw new IllegalArgumentException("number of chunks should be <=" + MAX_CHUNKS);
-        }
-
-        long rollingWindowMillis = rollingWindow.toMillis();
-        this.intervalBetweenResettingMillis = rollingWindowMillis / numberChunks;
-        if (intervalBetweenResettingMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
-            throw new IllegalArgumentException("intervalBetweenResettingMillis should be >=" + MIN_CHUNK_RESETTING_INTERVAL_MILLIS);
-        }
+        long rollingWindowMillis = retentionPolicy.getRollingTimeWindow().toMillis();
+        this.intervalBetweenResettingOneChunkMillis = rollingWindowMillis / numberChunks;
 
         this.ticker = ticker;
         this.creationTime = ticker.stableMilliseconds();
@@ -139,11 +120,25 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
         }
     }
 
+    /**
+     * @return the rolling window duration for this counter
+     */
+    Duration getRollingWindow() {
+        return Duration.ofMillis((chunks.length - 1) * intervalBetweenResettingOneChunkMillis);
+    }
+
+    /**
+     * @return the number of chunks
+     */
+    int getChunkCount() {
+        return chunks.length - 1;
+    }
+
     @Override
     public void add(long delta) {
         long nowMillis = ticker.stableMilliseconds();
         long millisSinceCreation = nowMillis - creationTime;
-        long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
+        long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingOneChunkMillis;
         int chunkIndex = (int) intervalsSinceCreation % chunks.length;
         chunks[chunkIndex].add(delta, nowMillis);
     }
@@ -154,7 +149,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
 
         // To get as fresh value as possible we need to calculate sum in order from oldest to newest
         long millisSinceCreation = currentTimeMillis - creationTime;
-        long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
+        long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingOneChunkMillis;
         int newestChunkIndex = (int) intervalsSinceCreation % chunks.length;
 
         long sum = 0;
@@ -173,7 +168,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
         final AtomicReference<Phase> currentPhaseRef;
 
         Chunk(int chunkIndex) {
-            long invalidationTime = creationTime + (chunks.length + chunkIndex) * intervalBetweenResettingMillis;
+            long invalidationTime = creationTime + (chunks.length + chunkIndex) * intervalBetweenResettingOneChunkMillis;
             this.currentPhaseRef = new AtomicReference<>(new Phase(invalidationTime));
         }
 
@@ -185,8 +180,8 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
             Phase currentPhase = currentPhaseRef.get();
             while (currentTimeMillis >= currentPhase.proposedInvalidationTime) {
                 long millisSinceCreation = currentTimeMillis - creationTime;
-                long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
-                long nextProposedInvalidationTime = creationTime + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingMillis;
+                long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingOneChunkMillis;
+                long nextProposedInvalidationTime = creationTime + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingOneChunkMillis;
                 Phase replacement = new Phase(nextProposedInvalidationTime);
                 if (currentPhaseRef.compareAndSet(currentPhase, replacement)) {
                     currentPhase = replacement;
@@ -228,8 +223,8 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
 
             // if this is oldest chunk then we need to reduce its weight
             long beforeInvalidateMillis = proposedInvalidationTime - currentTimeMillis;
-            if (beforeInvalidateMillis < intervalBetweenResettingMillis) {
-                double decayingCoefficient = (double) beforeInvalidateMillis / (double) intervalBetweenResettingMillis;
+            if (beforeInvalidateMillis < intervalBetweenResettingOneChunkMillis) {
+                double decayingCoefficient = (double) beforeInvalidateMillis / (double) intervalBetweenResettingOneChunkMillis;
                 sum = (long) ((double) sum * decayingCoefficient);
             }
 
@@ -249,7 +244,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
     @Override
     public String toString() {
         return "SmoothlyDecayingRollingCounter{" +
-                ", intervalBetweenResettingMillis=" + intervalBetweenResettingMillis +
+                ", intervalBetweenResettingMillis=" + intervalBetweenResettingOneChunkMillis +
                 ", ticker=" + ticker +
                 ", creationTimestamp=" + creationTime +
                 ", chunks=" + Printer.printArray(chunks, "chunk") +

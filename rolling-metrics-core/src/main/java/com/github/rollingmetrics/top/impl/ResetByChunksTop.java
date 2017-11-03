@@ -18,6 +18,9 @@
 package com.github.rollingmetrics.top.impl;
 
 
+import com.github.rollingmetrics.retention.ResetPeriodicallyByChunksRetentionPolicy;
+import com.github.rollingmetrics.retention.ResetPeriodicallyRetentionPolicy;
+import com.github.rollingmetrics.top.TopRecorderSettings;
 import com.github.rollingmetrics.util.Printer;
 import com.github.rollingmetrics.top.Position;
 import com.github.rollingmetrics.top.Top;
@@ -36,8 +39,11 @@ import java.util.function.Supplier;
 
 public class ResetByChunksTop implements Top {
 
+    public static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
+    public static final int MAX_CHUNKS = 25;
+
     private final Executor backgroundExecutor;
-    private final long intervalBetweenResettingMillis;
+    private final long intervalBetweenResettingOneChunkMillis;
     private final long creationTimestamp;
     private final ArchivedTop[] archive;
     private final boolean historySupported;
@@ -49,19 +55,35 @@ public class ResetByChunksTop implements Top {
     private final Phase[] phases;
     private final AtomicReference<Phase> currentPhaseRef;
 
-    public ResetByChunksTop(int size, long latencyThresholdNanos, int maxDescriptionLength, long intervalBetweenResettingMillis, int numberHistoryChunks, Ticker ticker, Executor backgroundExecutor) {
-        this.intervalBetweenResettingMillis = intervalBetweenResettingMillis;
+    public ResetByChunksTop(TopRecorderSettings settings, ResetPeriodicallyRetentionPolicy retentionPolicy, Ticker ticker) {
+        this(settings, retentionPolicy.getResettingPeriodMillis(), 0, ticker);
+    }
+
+    public ResetByChunksTop(TopRecorderSettings settings, ResetPeriodicallyByChunksRetentionPolicy retentionPolicy, Ticker ticker) {
+        this(settings, retentionPolicy.getIntervalBetweenResettingOneChunkMillis(), retentionPolicy.getNumberChunks(), ticker);
+    }
+
+    private ResetByChunksTop(TopRecorderSettings settings, long intervalBetweenResettingOneChunkMillis, int numberHistoryChunks, Ticker ticker) {
+        if (intervalBetweenResettingOneChunkMillis < ResetByChunksTop.MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
+            String msg = "interval between resetting one chunk should be >= " + ResetByChunksTop.MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis";
+            throw new IllegalArgumentException(msg);
+        }
+        if (numberHistoryChunks > ResetByChunksTop.MAX_CHUNKS) {
+            throw new IllegalArgumentException("numberHistoryChunks should be <= " + ResetByChunksTop.MAX_CHUNKS);
+        }
+
+        this.intervalBetweenResettingOneChunkMillis = intervalBetweenResettingOneChunkMillis;
         this.ticker = ticker;
         this.creationTimestamp = ticker.stableMilliseconds();
-        this.backgroundExecutor = backgroundExecutor;
+        this.backgroundExecutor = settings.getBackgroundExecutor();
 
-        Supplier<TwoPhasePositionRecorder> recorderSupplier = () -> new TwoPhasePositionRecorder(size, latencyThresholdNanos, maxDescriptionLength);
-        this.left = new Phase(recorderSupplier.get(), creationTimestamp + intervalBetweenResettingMillis);
+        Supplier<TwoPhasePositionRecorder> recorderSupplier = () -> new TwoPhasePositionRecorder(settings.getSize(), settings.getLatencyThreshold().toNanos(), settings.getMaxDescriptionLength());
+        this.left = new Phase(recorderSupplier.get(), creationTimestamp + this.intervalBetweenResettingOneChunkMillis);
         this.right = new Phase(recorderSupplier.get(), Long.MAX_VALUE);
         this.phases = new Phase[] {left, right};
         this.currentPhaseRef = new AtomicReference<>(left);
 
-        Supplier<PositionCollector> collectorSupplier = () -> PositionCollector.createCollector(size);
+        Supplier<PositionCollector> collectorSupplier = () -> PositionCollector.createCollector(settings.getSize());
         this.historySupported = numberHistoryChunks > 0;
         if (historySupported) {
             this.archive = new ArchivedTop[numberHistoryChunks];
@@ -131,19 +153,19 @@ public class ResetByChunksTop implements Top {
             currentPhase.intervalRecorder.addInto(currentPhase.totalsCollector);
             if (historySupported) {
                 // move values from recorder to correspondent archived collector
-                long currentPhaseNumber = (currentPhase.proposedInvalidationTimestamp - creationTimestamp) / intervalBetweenResettingMillis;
+                long currentPhaseNumber = (currentPhase.proposedInvalidationTimestamp - creationTimestamp) / intervalBetweenResettingOneChunkMillis;
                 int correspondentArchiveIndex = (int) (currentPhaseNumber - 1) % archive.length;
                 ArchivedTop correspondentArchivedTop = archive[correspondentArchiveIndex];
                 correspondentArchivedTop.collector.reset();
                 currentPhase.totalsCollector.addInto(correspondentArchivedTop.collector);
-                correspondentArchivedTop.proposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp + archive.length * intervalBetweenResettingMillis;
+                correspondentArchivedTop.proposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp + archive.length * intervalBetweenResettingOneChunkMillis;
             }
             currentPhase.totalsCollector.reset();
         } finally {
             long millisSinceCreation = currentTimeMillis - creationTimestamp;
-            long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
+            long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingOneChunkMillis;
             currentPhase.proposedInvalidationTimestamp = Long.MAX_VALUE;
-            nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + 1) * intervalBetweenResettingMillis;
+            nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + 1) * intervalBetweenResettingOneChunkMillis;
         }
     }
 
@@ -197,7 +219,7 @@ public class ResetByChunksTop implements Top {
             if (!historySupported) {
                 return false;
             }
-            long correspondentChunkProposedInvalidationTimestamp = proposedInvalidationTimestampLocal + archive.length * intervalBetweenResettingMillis;
+            long correspondentChunkProposedInvalidationTimestamp = proposedInvalidationTimestampLocal + archive.length * intervalBetweenResettingOneChunkMillis;
             return correspondentChunkProposedInvalidationTimestamp > currentTimeMillis;
         }
     }
@@ -205,7 +227,7 @@ public class ResetByChunksTop implements Top {
     @Override
     public String toString() {
         return "ResetByChunksRollingHdrHistogramImpl{" +
-                "\nintervalBetweenResettingMillis=" + intervalBetweenResettingMillis +
+                "\nintervalBetweenResettingMillis=" + intervalBetweenResettingOneChunkMillis +
                 ",\n creationTimestamp=" + creationTimestamp +
                 (!historySupported ? "" : ",\n archive=" + Printer.printArray(archive, "chunk")) +
                 ",\n ticker=" + ticker +

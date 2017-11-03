@@ -17,35 +17,27 @@
 package com.github.rollingmetrics.histogram.hdr;
 
 import com.github.rollingmetrics.histogram.OverflowResolver;
+import com.github.rollingmetrics.util.ResilientExecutionUtil;
 import org.HdrHistogram.Recorder;
 
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.Executor;
 
 
 public class RecorderSettings {
 
-    private final int numberOfSignificantValueDigits;
-    private final Optional<Long> lowestDiscernibleValue;
-    private final Optional<double[]> predefinedPercentiles;
-    private final Optional<Long> highestTrackableValue;
-    private final Optional<OverflowResolver> overflowResolver;
-    private final Optional<Long> expectedIntervalBetweenValueSamples;
+    public static int DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS = 2;
+    public static double[] DEFAULT_PERCENTILES = new double[]{0.5, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999};
 
-    public RecorderSettings(int numberOfSignificantValueDigits,
-                            Optional<Long> lowestDiscernibleValue,
-                            Optional<double[]> predefinedPercentiles,
-                            Optional<Long> highestTrackableValue,
-                            Optional<OverflowResolver> overflowResolver,
-                            Optional<Long> expectedIntervalBetweenValueSamples) {
-        this.numberOfSignificantValueDigits = numberOfSignificantValueDigits;
-        this.lowestDiscernibleValue = lowestDiscernibleValue;
-        this.predefinedPercentiles = predefinedPercentiles;
-        this.highestTrackableValue = highestTrackableValue;
-        this.overflowResolver = overflowResolver;
-        this.expectedIntervalBetweenValueSamples = expectedIntervalBetweenValueSamples;
-    }
+    private int numberOfSignificantValueDigits = DEFAULT_NUMBER_OF_SIGNIFICANT_DIGITS;
+    private Optional<Long> lowestDiscernibleValue = Optional.empty();
+    private Optional<double[]> predefinedPercentiles = Optional.of(DEFAULT_PERCENTILES);
+    private Optional<Long> highestTrackableValue = Optional.empty();
+    private Optional<OverflowResolver> overflowResolver = Optional.empty();
+    private Optional<Long> expectedIntervalBetweenValueSamples = Optional.empty();
+    private Optional<Executor> backgroundExecutor = Optional.empty();
 
     public Optional<double[]> getPredefinedPercentiles() {
         return predefinedPercentiles;
@@ -67,7 +59,6 @@ public class RecorderSettings {
         if (highestTrackableValue.isPresent() && lowestDiscernibleValue.isPresent() && highestTrackableValue.get() < 2L * lowestDiscernibleValue.get()) {
             throw new IllegalStateException("highestTrackableValue must be >= 2 * lowestDiscernibleValue");
         }
-
         if (lowestDiscernibleValue.isPresent() && !highestTrackableValue.isPresent()) {
             throw new IllegalStateException("lowestDiscernibleValue is specified but highestTrackableValue undefined");
         }
@@ -83,60 +74,39 @@ public class RecorderSettings {
         return new Recorder(numberOfSignificantValueDigits);
     }
 
-    public RecorderSettings withLowestDiscernibleValue(long lowestDiscernibleValue) {
+    public void setLowestDiscernibleValue(long lowestDiscernibleValue) {
         if (lowestDiscernibleValue < 1) {
             throw new IllegalArgumentException("lowestDiscernibleValue must be >= 1");
         }
-        return new RecorderSettings(
-                this.numberOfSignificantValueDigits,
-                Optional.of(lowestDiscernibleValue),
-                this.predefinedPercentiles,
-                this.highestTrackableValue,
-                this.overflowResolver,
-                this.expectedIntervalBetweenValueSamples
-        );
+        this.lowestDiscernibleValue = Optional.of(lowestDiscernibleValue);
     }
 
-    public RecorderSettings withSignificantDigits(int numberOfSignificantValueDigits) {
+    public void setSignificantDigits(int numberOfSignificantValueDigits) {
         if ((numberOfSignificantValueDigits < 0) || (numberOfSignificantValueDigits > 5)) {
             throw new IllegalArgumentException("numberOfSignificantValueDigits must be between 0 and 5");
         }
-        return new RecorderSettings(
-                numberOfSignificantValueDigits,
-                this.lowestDiscernibleValue,
-                this.predefinedPercentiles,
-                this.highestTrackableValue,
-                this.overflowResolver,
-                this.expectedIntervalBetweenValueSamples
-        );
+        this.numberOfSignificantValueDigits = numberOfSignificantValueDigits;
     }
 
-    public RecorderSettings withHighestTrackableValue(long highestTrackableValue, OverflowResolver overflowResolver) {
+    public void setHighestTrackableValue(long highestTrackableValue, OverflowResolver overflowResolver) {
         if (highestTrackableValue < 2) {
             throw new IllegalArgumentException("highestTrackableValue must be >= 2");
         }
-        return new RecorderSettings(
-                this.numberOfSignificantValueDigits,
-                this.lowestDiscernibleValue,
-                this.predefinedPercentiles,
-                Optional.of(highestTrackableValue),
-                Optional.of(overflowResolver),
-                this.expectedIntervalBetweenValueSamples
-        );
+        if (overflowResolver == null) {
+            throw new IllegalArgumentException("overflowResolver must not be null");
+        }
+        this.highestTrackableValue = Optional.of(highestTrackableValue);
+        this.overflowResolver = Optional.of(overflowResolver);
     }
 
-    public RecorderSettings withExpectedIntervalBetweenValueSamples(long expectedIntervalBetweenValueSamples) {
-        return new RecorderSettings(
-                this.numberOfSignificantValueDigits,
-                this.lowestDiscernibleValue,
-                this.predefinedPercentiles,
-                this.highestTrackableValue,
-                this.overflowResolver,
-                Optional.of(expectedIntervalBetweenValueSamples)
-        );
+    public void setExpectedIntervalBetweenValueSamples(long expectedIntervalBetweenValueSamples) {
+        if (expectedIntervalBetweenValueSamples < 0) {
+            throw new IllegalArgumentException("highestTrackableValue must be >= 0");
+        }
+        this.expectedIntervalBetweenValueSamples = Optional.of(expectedIntervalBetweenValueSamples);
     }
 
-    public RecorderSettings withPredefinedPercentiles(double[] predefinedPercentiles) {
+    public void setPredefinedPercentiles(double[] predefinedPercentiles) {
         predefinedPercentiles = Objects.requireNonNull(predefinedPercentiles, "predefinedPercentiles array should not be null");
         if (predefinedPercentiles.length == 0) {
             String msg = "predefinedPercentiles.length is zero. Use withoutSnapshotOptimization() instead of passing empty array.";
@@ -150,26 +120,22 @@ public class RecorderSettings {
             }
         }
         double[] sortedPercentiles = copyAndSort(predefinedPercentiles);
-
-        return new RecorderSettings(
-                this.numberOfSignificantValueDigits,
-                this.lowestDiscernibleValue,
-                Optional.of(sortedPercentiles),
-                this.highestTrackableValue,
-                this.overflowResolver,
-                this.expectedIntervalBetweenValueSamples
-        );
+        this.predefinedPercentiles = Optional.of(sortedPercentiles);
     }
 
-    public RecorderSettings withoutSnapshotOptimization() {
-        return new RecorderSettings(
-                this.numberOfSignificantValueDigits,
-                this.lowestDiscernibleValue,
-                Optional.empty(),
-                this.highestTrackableValue,
-                this.overflowResolver,
-                this.expectedIntervalBetweenValueSamples
-        );
+    public void withoutSnapshotOptimization() {
+        this.predefinedPercentiles = Optional.empty();
+    }
+
+    public void setBackgroundExecutor(Executor backgroundExecutor) {
+        if (backgroundExecutor == null) {
+            throw new IllegalArgumentException("backgroundExecutor must not be null");
+        }
+        this.backgroundExecutor = Optional.of(backgroundExecutor);
+    }
+
+    public Executor getExecutor() {
+        return backgroundExecutor.orElseGet(ResilientExecutionUtil.getInstance()::getBackgroundExecutor);
     }
 
     private static double[] copyAndSort(double[] predefinedPercentiles) {

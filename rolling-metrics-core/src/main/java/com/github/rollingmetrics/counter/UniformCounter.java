@@ -14,21 +14,22 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics;
+package com.github.rollingmetrics.counter;
 
-/**
- * TODO
- */
-public interface ResetCondition {
+import java.util.concurrent.atomic.LongAdder;
 
-    boolean needToReset();
+class UniformCounter implements WindowCounter {
 
-    static ResetCondition alwaysReset() {
-        return () -> true;
+    private final LongAdder adder = new LongAdder();
+
+    @Override
+    public void add(long delta) {
+        adder.add(delta);
     }
 
-    static ThreadLocalResetCondition newThreadLocalResetCondition(boolean defaultFlagValue) {
-        return new ThreadLocalResetCondition(defaultFlagValue);
+    @Override
+    public long getSum() {
+        return adder.sum();
     }
 
 }

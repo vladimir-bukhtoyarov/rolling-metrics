@@ -17,6 +17,11 @@
 
 package com.github.rollingmetrics.counter;
 
+import com.github.rollingmetrics.retention.*;
+import com.github.rollingmetrics.util.Ticker;
+
+import java.util.Objects;
+
 /**
  * An incrementing and decrementing counter metric which having window semantic.
  *
@@ -40,5 +45,40 @@ public interface WindowCounter {
      * @return the counter's current value
      */
     long getSum();
+
+    /**
+     * TODO
+     *
+     * @param retentionPolicy
+     * @return
+     */
+    static WindowCounter build(RetentionPolicy retentionPolicy) {
+        return build(retentionPolicy, Ticker.defaultTicker());
+    }
+
+    /**
+     * TODO
+     *
+     * @param retentionPolicy
+     * @param ticker
+     * @return
+     */
+    static WindowCounter build(RetentionPolicy retentionPolicy, Ticker ticker) {
+        Objects.requireNonNull(retentionPolicy);
+        Objects.requireNonNull(ticker);
+        if (retentionPolicy instanceof UniformRetentionPolicy) {
+            return new UniformCounter();
+        }
+        if (retentionPolicy instanceof ResetOnSnapshotRetentionPolicy) {
+            return new ResetOnSnapshotCounter();
+        }
+        if (retentionPolicy instanceof ResetPeriodicallyRetentionPolicy) {
+            return new ResetPeriodicallyCounter((ResetPeriodicallyRetentionPolicy) retentionPolicy, ticker);
+        }
+        if (retentionPolicy instanceof ResetPeriodicallyByChunksRetentionPolicy) {
+            return new SmoothlyDecayingRollingCounter((ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy, ticker);
+        }
+        throw new IllegalArgumentException("Unknown retention policy " + retentionPolicy);
+    }
 
 }

@@ -20,6 +20,8 @@ package com.github.rollingmetrics.histogram.hdr.impl;
 import com.github.rollingmetrics.histogram.hdr.HdrHistogramUtil;
 import com.github.rollingmetrics.histogram.hdr.RecorderSettings;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
+import com.github.rollingmetrics.retention.ResetPeriodicallyByChunksRetentionPolicy;
+import com.github.rollingmetrics.retention.ResetPeriodicallyRetentionPolicy;
 import com.github.rollingmetrics.util.ResilientExecutionUtil;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.Printer;
@@ -31,6 +33,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 public class ResetByChunksRollingHdrHistogramImpl extends AbstractRollingHdrHistogram {
+
+    // meaningful limits to disallow user to kill performance(or memory footprint) by mistake
+    public static int MAX_CHUNKS = 60;
+    public static long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
 
     private final Executor backgroundExecutor;
     private final long intervalBetweenResettingMillis;
@@ -45,15 +51,31 @@ public class ResetByChunksRollingHdrHistogramImpl extends AbstractRollingHdrHist
     private final Phase[] phases;
     private final AtomicReference<Phase> currentPhaseRef;
 
-    public ResetByChunksRollingHdrHistogramImpl(RecorderSettings recorderSettings, int numberHistoryChunks, long intervalBetweenResettingMillis, Ticker ticker, Executor backgroundExecutor) {
+    public ResetByChunksRollingHdrHistogramImpl(RecorderSettings recorderSettings, ResetPeriodicallyRetentionPolicy retentionPolicy, Ticker ticker) {
+        this(recorderSettings, 0, retentionPolicy.getResettingPeriodMillis(), ticker);
+    }
+
+    public ResetByChunksRollingHdrHistogramImpl(RecorderSettings recorderSettings, ResetPeriodicallyByChunksRetentionPolicy retentionPolicy, Ticker ticker) {
+        this(recorderSettings, retentionPolicy.getNumberChunks(), retentionPolicy.getIntervalBetweenResettingOneChunkMillis(), ticker);
+    }
+
+    private ResetByChunksRollingHdrHistogramImpl(RecorderSettings recorderSettings, int numberHistoryChunks, long intervalBetweenResettingOneChunkMillis, Ticker ticker) {
         super(recorderSettings);
 
-        this.intervalBetweenResettingMillis = intervalBetweenResettingMillis;
+        if (intervalBetweenResettingOneChunkMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
+            String msg = "Interval between resetting must be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis";
+            throw new IllegalArgumentException(msg);
+        }
+        if (numberHistoryChunks > MAX_CHUNKS) {
+            throw new IllegalArgumentException("numberHistoryChunks should be <= " + ResetByChunksRollingHdrHistogramImpl.MAX_CHUNKS);
+        }
+
+        this.intervalBetweenResettingMillis = intervalBetweenResettingOneChunkMillis;
         this.ticker = ticker;
         this.creationTimestamp = ticker.stableMilliseconds();
-        this.backgroundExecutor = backgroundExecutor;
+        this.backgroundExecutor = recorderSettings.getExecutor();
 
-        this.left = new Phase(recorderSettings, creationTimestamp + intervalBetweenResettingMillis);
+        this.left = new Phase(recorderSettings, creationTimestamp + intervalBetweenResettingOneChunkMillis);
         this.right = new Phase(recorderSettings, Long.MAX_VALUE);
         this.phases = new Phase[] {left, right};
         this.currentPhaseRef = new AtomicReference<>(left);

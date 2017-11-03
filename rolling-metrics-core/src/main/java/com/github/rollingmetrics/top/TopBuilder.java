@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.top;
 
+import com.github.rollingmetrics.retention.*;
 import com.github.rollingmetrics.top.impl.ResetByChunksTop;
 import com.github.rollingmetrics.top.impl.ResetOnSnapshotConcurrentTop;
 import com.github.rollingmetrics.top.impl.SnapshotCachingTop;
@@ -25,6 +26,9 @@ import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.ResilientExecutionUtil;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
@@ -34,7 +38,7 @@ import java.util.concurrent.ThreadFactory;
  * <p><br> Basic examples of usage:
  * <pre> {@code
  *
- *  Top top = Top.builder(3).resetAllPositionsOnSnapshot().build();
+ *  Top top = Top.builder(3).resetAllPositionsOnSnapshot().create();
  *  MetricSet metricSet = new TopMetricSet("my-top", top, TimeUnit.MILLISECONDS, 5);
  *  registry.registerAll(metricSet);
  * }</pre>
@@ -43,34 +47,27 @@ import java.util.concurrent.ThreadFactory;
  */
 public class TopBuilder {
 
-    public static final int MAX_POSITION_COUNT = 1000;
-    public static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
-    public static final int MAX_CHUNKS = 25;
-    public static final int MIN_LENGTH_OF_QUERY_DESCRIPTION = 10;
-    public static final int DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION = 1000;
-
-    public static final Duration DEFAULT_LATENCY_THRESHOLD = Duration.ZERO;
     public static final Duration DEFAULT_SNAPSHOT_CACHING_DURATION = Duration.ofSeconds(1);
 
-    private static final Executor DEFAULT_BACKGROUND_EXECUTOR = null;
-    private static final TopFactory DEFAULT_TOP_FACTORY = TopFactory.UNIFORM;
+    private final RetentionPolicy retentionPolicy;
+    private final TopRecorderSettings settings;
 
-    private int size;
-    private Duration latencyThreshold;
-    private Duration snapshotCachingDuration;
-    private int maxDescriptionLength;
-    private Ticker ticker;
-    private Executor backgroundExecutor;
-    private TopFactory factory;
+    private Duration snapshotCachingDuration = DEFAULT_SNAPSHOT_CACHING_DURATION;
+    private Ticker ticker = Ticker.defaultTicker();
 
-    private TopBuilder(int size, Duration latencyThreshold, Duration snapshotCachingDuration, int maxDescriptionLength, Ticker ticker, Executor backgroundExecutor, TopFactory factory) {
-        this.size = size;
-        this.latencyThreshold = latencyThreshold;
-        this.snapshotCachingDuration = snapshotCachingDuration;
-        this.maxDescriptionLength = maxDescriptionLength;
-        this.ticker = ticker;
-        this.backgroundExecutor = backgroundExecutor;
-        this.factory = factory;
+    /**
+     * Creates new builder instance.
+     *
+     * @param size the count of positions for tops which will be constructed by this builder
+     * @param retentionPolicy policy which responsible for decisions how long any written value should be remembered
+     * @return this builder instance
+     */
+    TopBuilder(int size, RetentionPolicy retentionPolicy) {
+        this.retentionPolicy = Objects.requireNonNull(retentionPolicy);
+        if (!builders.containsKey(retentionPolicy.getClass())) {
+            throw new IllegalArgumentException("Unknown retention policy " + retentionPolicy.getClass());
+        }
+        this.settings = new TopRecorderSettings(size);
     }
 
     /**
@@ -79,22 +76,11 @@ public class TopBuilder {
      * @return new {@link Top} instance
      */
     public Top build() {
-        Top top = factory.create(size, latencyThreshold, maxDescriptionLength, ticker);
+        Top top = builders.get(retentionPolicy.getClass()).create(settings, retentionPolicy, ticker);
         if (!snapshotCachingDuration.isZero()) {
             top = new SnapshotCachingTop(top, snapshotCachingDuration, ticker);
         }
         return top;
-    }
-
-    /**
-     * Creates new builder instance.
-     *
-     * @param size the count of positions for tops which will be constructed by this builder
-     * @return this builder instance
-     */
-    public static TopBuilder newBuilder(int size) {
-        validateSize(size);
-        return new TopBuilder(size, DEFAULT_LATENCY_THRESHOLD, DEFAULT_SNAPSHOT_CACHING_DURATION, DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION, Ticker.defaultTicker(), DEFAULT_BACKGROUND_EXECUTOR, DEFAULT_TOP_FACTORY);
     }
 
     /**
@@ -104,14 +90,13 @@ public class TopBuilder {
      * @return this builder instance
      */
     public TopBuilder withPositionCount(int size) {
-        validateSize(size);
-        this.size = size;
+        settings.setSize(size);
         return this;
     }
 
     /**
      * Configures the latency threshold. The queries having latency which shorter than threshold, will not be tracked in the top.
-     * The default value is zero {@link #DEFAULT_LATENCY_THRESHOLD}, means that all queries can be recorded independent of its latency.
+     * The default value is zero {@link TopRecorderSettings#DEFAULT_LATENCY_THRESHOLD}, means that all queries can be recorded independent of its latency.
      *
      * Specify this parameter when you want not to track queries which fast,
      * in other words when you want see nothing when all going well.
@@ -120,13 +105,7 @@ public class TopBuilder {
      * @return this builder instance
      */
     public TopBuilder withLatencyThreshold(Duration latencyThreshold) {
-        if (latencyThreshold == null) {
-            throw new IllegalArgumentException("latencyThreshold should not be null");
-        }
-        if (latencyThreshold.isNegative()) {
-            throw new IllegalArgumentException("latencyThreshold should not be negative");
-        }
-        this.latencyThreshold = latencyThreshold;
+        settings.setLatencyThreshold(latencyThreshold);
         return this;
     }
 
@@ -155,20 +134,14 @@ public class TopBuilder {
      * Specifies the max length of description position int the top. The characters upper {@code maxLengthOfQueryDescription} limit will be truncated
      *
      * <p>
-     * The default value is 1000 symbol {@link #DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION}.
+     * The default value is 1000 symbol {@link TopRecorderSettings#DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION}.
      *
      * @param maxLengthOfQueryDescription the max length of description position int the top.
      *
      * @return this builder instance
      */
     public TopBuilder withMaxLengthOfQueryDescription(int maxLengthOfQueryDescription) {
-        if (maxLengthOfQueryDescription < MIN_LENGTH_OF_QUERY_DESCRIPTION) {
-            String msg = "The requested maxDescriptionLength=" + maxLengthOfQueryDescription + " is wrong " +
-                    "because of maxDescriptionLength should be >=" + MIN_LENGTH_OF_QUERY_DESCRIPTION + "." +
-                    "How do you plan to distinguish one query from another with so short description?";
-            throw new IllegalArgumentException(msg);
-        }
-        this.maxDescriptionLength = maxLengthOfQueryDescription;
+        settings.setMaxLengthOfQueryDescription(maxLengthOfQueryDescription);
         return this;
     }
 
@@ -189,7 +162,7 @@ public class TopBuilder {
     }
 
     /**
-     * Configures the executor which will be used if any of {@link #resetAllPositionsPeriodically(Duration)} (Duration)} or {@link #resetPositionsPeriodicallyByChunks(Duration, int)} (Duration, int)} (Duration)}.
+     * Configures the executor which will be used for chunk rotation if top configured with {@link RetentionPolicy#resetPeriodically(Duration)} (Duration)} or {@link RetentionPolicy#resetPeriodicallyByChunks(Duration, int)}.
      *
      * <p>
      * Normally you should not use this method because of default executor provided by {@link ResilientExecutionUtil#getBackgroundExecutor()} is quietly enough for mostly use cases.
@@ -203,163 +176,24 @@ public class TopBuilder {
      * @return this builder instance
      */
     public TopBuilder withBackgroundExecutor(Executor backgroundExecutor) {
-        if (backgroundExecutor == null) {
-            throw new IllegalArgumentException("Ticker should not be null");
-        }
-        this.backgroundExecutor = backgroundExecutor;
+        settings.setBackgroundExecutor(backgroundExecutor);
         return this;
     }
 
-    /**
-     * Top configured with this strategy will store all values since the top was created.
-     *
-     * <p>This is default strategy for {@link TopBuilder}.
-     * This strategy is useless for long running applications, because very slow queries happen in the past
-     * will not provide chances to fresh queries to take place in the top.
-     * So, it is strongly recommended to switch eviction strategy to one of:
-     * <ul>
-     *     <li>{@link #resetAllPositionsPeriodically(Duration)}</li>
-     *     <li>{@link #resetPositionsPeriodicallyByChunks(Duration, int)}</li>
-     *     <li>{@link #resetAllPositionsOnSnapshot()}</li>
-     * </ul>
-     *
-     * @return this builder instance
-     *
-     * @see #resetPositionsPeriodicallyByChunks(Duration, int)
-     * @see #resetAllPositionsPeriodically(Duration)
-     * @see #resetAllPositionsOnSnapshot()
-     */
-    public TopBuilder neverResetPositions() {
-        this.factory = TopFactory.UNIFORM;
-        return this;
+    private static Map<Class<? extends RetentionPolicy>, TopFactory> builders = new HashMap<>();
+    static {
+        builders.put(UniformRetentionPolicy.class, (settings, retentionPolicy, ticker) -> new UniformTop(settings));
+        builders.put(ResetOnSnapshotRetentionPolicy.class, (settings, retentionPolicy, ticker) -> new ResetOnSnapshotConcurrentTop(settings));
+        builders.put(ResetPeriodicallyRetentionPolicy.class, (settings, retentionPolicy, ticker) ->
+                new ResetByChunksTop(settings, (ResetPeriodicallyRetentionPolicy) retentionPolicy, ticker));
+        builders.put(ResetPeriodicallyByChunksRetentionPolicy.class, (settings, retentionPolicy, ticker) ->
+                new ResetByChunksTop(settings, (ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy, ticker));
     }
-
-    /**
-     * Top configured with this strategy will be cleared each time when {@link Top#getPositionsInDescendingOrder()} invoked.
-     *
-     * @return this builder instance
-     * @see #resetPositionsPeriodicallyByChunks(Duration, int)
-     * @see #resetAllPositionsPeriodically(Duration)
-     */
-    public TopBuilder resetAllPositionsOnSnapshot() {
-        this.factory = TopFactory.RESET_ON_SNAPSHOT;
-        return this;
-    }
-
-    /**
-     * Top configured with this strategy will be cleared at all after each {@code intervalBetweenResetting} elapsed.
-     *
-     * <p>
-     *     If You use this strategy inside JEE environment,
-     *     then it would be better to call {@code ResilientExecutionUtil.getInstance().shutdownBackgroundExecutor()}
-     *     once in application shutdown listener,
-     *     in order to avoid leaking reference to classloader through the thread which this library creates for resetting of top in background.
-     * </p>
-     *
-     * @param intervalBetweenResetting specifies how often need to reset the top
-     * @return this builder instance
-     */
-    public TopBuilder resetAllPositionsPeriodically(Duration intervalBetweenResetting) {
-        if (intervalBetweenResetting == null) {
-            throw new IllegalArgumentException("intervalBetweenResetting should not be null");
-        }
-        if (intervalBetweenResetting.isNegative()) {
-            throw new IllegalArgumentException("intervalBetweenResetting should not be negative");
-        }
-        long intervalBetweenResettingMillis = intervalBetweenResetting.toMillis();
-        if (intervalBetweenResettingMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
-            String msg = "interval between resetting one chunk should be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis";
-            throw new IllegalArgumentException(msg);
-        }
-        this.factory = resetByChunks(intervalBetweenResettingMillis, 0);
-        return this;
-    }
-
-    /**
-     * Top configured with this strategy will be divided to <tt>numberChunks</tt> parts,
-     * and one chunk will be cleared after each <tt>rollingTimeWindow / numberChunks</tt> elapsed.
-     * This strategy is more smoothly then <tt>resetAllPositionsPeriodically</tt> because top never zeroed at whole,
-     * so user experience provided by <tt>resetPositionsPeriodicallyByChunks</tt> should look more pretty.
-     * <p>
-     * The value recorded to top will take affect at least <tt>rollingTimeWindow</tt> and at most <tt>rollingTimeWindow *(1 + 1/numberChunks)</tt> time,
-     * for example when you configure <tt>rollingTimeWindow=60 seconds and numberChunks=6</tt> then each value recorded to top will be stored at <tt>60-70 seconds</tt>
-     * </p>
-     *
-     * <p>
-     *     If You use this strategy inside JEE environment,
-     *     then it would be better to call {@code ResilientExecutionUtil.getInstance().shutdownBackgroundExecutor()}
-     *     once in application shutdown listener,
-     *     in order to avoid leaking reference to classloader through the thread which this library creates for rotation of top in background.
-     * </p>
-     *
-     * @param rollingTimeWindow the total rolling time window, any value recorded to top will not be evicted from it at least <tt>rollingTimeWindow</tt>
-     * @param numberChunks specifies number of chunks by which the top will be slitted
-     * @return this builder instance
-     */
-    public TopBuilder resetPositionsPeriodicallyByChunks(Duration rollingTimeWindow, int numberChunks) {
-        if (numberChunks > MAX_CHUNKS) {
-            throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
-        }
-        if (numberChunks < 2) {
-            throw new IllegalArgumentException("numberChunks should be >= 1");
-        }
-        if (rollingTimeWindow == null) {
-            throw new IllegalArgumentException("rollingTimeWindow should not be null");
-        }
-        if (rollingTimeWindow.isNegative()) {
-            throw new IllegalArgumentException("rollingTimeWindow should not be negative");
-        }
-
-        long intervalBetweenResettingMillis = rollingTimeWindow.toMillis() / numberChunks;
-        if (intervalBetweenResettingMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
-            String msg = "interval between resetting one chunk should be >= " + MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis";
-            throw new IllegalArgumentException(msg);
-        }
-        this.factory = resetByChunks(intervalBetweenResettingMillis, numberChunks);
-        return this;
-    }
-
 
     private interface TopFactory {
 
-        Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker);
+        Top create(TopRecorderSettings settings, RetentionPolicy retentionPolicy, Ticker ticker);
 
-        TopFactory UNIFORM = new TopFactory() {
-            @Override
-            public Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
-                return new UniformTop(size, latencyThreshold.toNanos(), maxDescriptionLength);
-            }
-        };
-
-        TopFactory RESET_ON_SNAPSHOT = new TopFactory() {
-            @Override
-            public Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
-                return new ResetOnSnapshotConcurrentTop(size, latencyThreshold.toNanos(), maxDescriptionLength);
-            }
-        };
-
-    }
-
-    private static void validateSize(int size) {
-        if (size < 1) {
-            throw new IllegalArgumentException("size should be >=1");
-        }
-        if (size > MAX_POSITION_COUNT) {
-            throw new IllegalArgumentException("size should be <= " + MAX_POSITION_COUNT);
-        }
-    }
-
-    private TopFactory resetByChunks(final long intervalBetweenResettingMillis, int numberOfHistoryChunks) {
-        return new TopFactory() {
-            @Override
-            public Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
-                return new ResetByChunksTop(size, latencyThreshold.toNanos(), maxDescriptionLength, intervalBetweenResettingMillis, numberOfHistoryChunks, ticker, getExecutor());
-            }
-        };
-    }
-
-    private Executor getExecutor() {
-        return backgroundExecutor != null ? backgroundExecutor : ResilientExecutionUtil.getInstance().getBackgroundExecutor();
     }
 
 }

@@ -18,6 +18,8 @@
 package com.github.rollingmetrics.top;
 
 
+import com.github.rollingmetrics.retention.RetentionPolicy;
+
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -36,8 +38,8 @@ public interface Top {
      *
      * @return new instance of {@link TopBuilder}
      */
-    static TopBuilder builder(int size) {
-        return TopBuilder.newBuilder(size);
+    static TopBuilder builder(int size, RetentionPolicy retentionPolicy) {
+        return new TopBuilder(size, retentionPolicy);
     }
 
     /**
