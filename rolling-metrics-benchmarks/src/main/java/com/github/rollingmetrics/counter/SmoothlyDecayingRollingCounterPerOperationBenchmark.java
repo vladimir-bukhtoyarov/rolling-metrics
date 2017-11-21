@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.counter;
 
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.util.Ticker;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
@@ -35,7 +36,9 @@ public class SmoothlyDecayingRollingCounterPerOperationBenchmark {
     @State(Scope.Benchmark)
     public static class ResetOnSnapshotCounterWithLongResettingPeriodState {
 
-        public final WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(3600), 7);
+        public final WindowCounter counter = RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofSeconds(3600), 7)
+                .newCounter();
     }
 
     @State(Scope.Benchmark)
@@ -56,7 +59,9 @@ public class SmoothlyDecayingRollingCounterPerOperationBenchmark {
             }
 
         };
-        public final WindowCounter counter =  new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 10, ticker);
+        public final WindowCounter counter =  RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofSeconds(1), 10)
+                .newCounter(ticker);
     }
 
     @State(Scope.Benchmark)
@@ -92,7 +97,7 @@ public class SmoothlyDecayingRollingCounterPerOperationBenchmark {
     public static class OneThread {
         public static void main(String[] args) throws RunnerException {
             Options opt = new OptionsBuilder()
-                    .include(((Class) SmoothlyDecayingRollingCounterPerOperationBenchmark.class).getSimpleName())
+                    .include(SmoothlyDecayingRollingCounterPerOperationBenchmark.class.getSimpleName())
                     .warmupIterations(5)
                     .measurementIterations(5)
                     .threads(1)
@@ -109,7 +114,7 @@ public class SmoothlyDecayingRollingCounterPerOperationBenchmark {
     public static class FourThread {
         public static void main(String[] args) throws RunnerException {
             Options opt = new OptionsBuilder()
-                    .include(((Class) SmoothlyDecayingRollingCounterPerOperationBenchmark.class).getSimpleName())
+                    .include(SmoothlyDecayingRollingCounterPerOperationBenchmark.class.getSimpleName())
                     .warmupIterations(5)
                     .measurementIterations(5)
                     .threads(4)

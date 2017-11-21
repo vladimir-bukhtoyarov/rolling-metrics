@@ -45,6 +45,10 @@ class ResetOnSnapshotCounter implements WindowCounter {
 
     private final AtomicLong value = new AtomicLong();
 
+    ResetOnSnapshotCounter() {
+        // package-private constructor to avoid initialization without builder infrastructure
+    }
+
     @Override
     public void add(long delta) {
         this.value.addAndGet(delta);

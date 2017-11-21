@@ -47,6 +47,10 @@ class ResetOnSnapshotHitRatio implements HitRatio {
 
     private final AtomicLong ratio = new AtomicLong();
 
+    ResetOnSnapshotHitRatio() {
+        // package-private constructor to avoid initialization without builder infrastructure
+    }
+
     @Override
     public void update(int hitCount, int totalCount) {
         HitRatioUtil.updateRatio(ratio, hitCount, totalCount);

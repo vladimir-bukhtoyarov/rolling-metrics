@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.counter;
 
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.util.BackgroundTicker;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
@@ -41,8 +42,13 @@ public class SmoothlyDecayingRollingCounterBenchmark {
         @Setup
         public void setup() {
             backgroundClock = new BackgroundTicker(100);
-            counterWithBackgroundClock = new SmoothlyDecayingRollingCounter(Duration.ofMillis(1000), 10, backgroundClock);
-            counter = new SmoothlyDecayingRollingCounter(Duration.ofMillis(1000), 10);
+            counterWithBackgroundClock = RetentionPolicy
+                    .resetPeriodicallyByChunks(Duration.ofMillis(1000), 10)
+                    .newCounter(backgroundClock)
+            ;
+            counter = RetentionPolicy
+                    .resetPeriodicallyByChunks(Duration.ofMillis(1000), 10)
+                    .newCounter();
         }
 
         @TearDown

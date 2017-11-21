@@ -17,8 +17,8 @@
 
 package examples;
 
-import com.github.rollingmetrics.counter.SmoothlyDecayingRollingCounter;
 import com.github.rollingmetrics.counter.WindowCounter;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 
 import java.time.Duration;
 import java.util.Timer;
@@ -32,7 +32,9 @@ public class SmoothlyDecayingRollingCounterPrecisionDemo {
 
     public static void main(String[] args) throws InterruptedException {
         // the counter which storing measurements for last 10 seconds and split counter by 4 chunks
-        final WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(10), 4);
+        final WindowCounter counter = RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofSeconds(10), 4)
+                .newCounter();
 
         // report sum each second
         AtomicLong previousSumRef = new AtomicLong(Long.MIN_VALUE);

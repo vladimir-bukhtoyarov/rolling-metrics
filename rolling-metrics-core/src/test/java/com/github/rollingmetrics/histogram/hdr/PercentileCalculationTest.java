@@ -16,6 +16,7 @@
 
 package com.github.rollingmetrics.histogram.hdr;
 
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.HistogramIterationValue;
 import org.junit.Test;
@@ -46,7 +47,8 @@ public class PercentileCalculationTest {
     @Test
     public void testSmartSnapshotCalculation() {
         double[] predefinedPercentiles = {0.5, 0.6, 0.75, 0.9, 0.95, 0.98, 0.99, 0.999};
-        RollingHdrHistogram reservoir = RollingHdrHistogram.builder()
+        RollingHdrHistogram reservoir = RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .withPredefinedPercentiles(predefinedPercentiles)
                 .build();
         RollingSnapshot snapshot = snapshotTaker.apply(reservoir);
@@ -88,7 +90,8 @@ public class PercentileCalculationTest {
 
     @Test
     public void testFullSnapshotCalculation() {
-        RollingHdrHistogram reservoir = RollingHdrHistogram.builder()
+        RollingHdrHistogram reservoir = RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .withoutSnapshotOptimization()
                 .build();
         RollingSnapshot snapshot = snapshotTaker.apply(reservoir);

@@ -57,8 +57,8 @@ public class ResetPeriodicallyByChunksRetentionPolicy implements RetentionPolicy
         if (rollingTimeWindow.isNegative() || rollingTimeWindow.isZero()) {
             throw new IllegalArgumentException("resettingPeriod must be a positive duration");
         }
-        if (numberChunks < 2) {
-            throw new IllegalArgumentException("numberChunks must be >= 2");
+        if (numberChunks < 1) {
+            throw new IllegalArgumentException("numberChunks must be >= 1");
         }
 
         this.rollingTimeWindow = rollingTimeWindow;

@@ -21,6 +21,7 @@ import com.codahale.metrics.ExponentiallyDecayingReservoir;
 import com.codahale.metrics.Histogram;
 import com.github.rollingmetrics.histogram.OverflowResolver;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.util.BackgroundTicker;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
@@ -41,31 +42,36 @@ public class HistogramRecordingBenchmark {
 
         BackgroundTicker backgroundClock;
 
-        final RollingHdrHistogram chunkedHistogram = RollingHdrHistogram.builder()
-                .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(3), 3)
+        final RollingHdrHistogram chunkedHistogram = RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofSeconds(3), 3)
+                .newRollingHdrHistogramBuilder()
                 .build()
                 ;
 
-        final RollingHdrHistogram upperLimitedChunkedHistogram = RollingHdrHistogram.builder()
-                .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(3), 3)
+        final RollingHdrHistogram upperLimitedChunkedHistogram = RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofSeconds(3), 3)
+                .newRollingHdrHistogramBuilder()
                 .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
                 .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .build();
 
-        final RollingHdrHistogram resetOnSnapshotHistogram = RollingHdrHistogram.builder()
-                .resetReservoirOnSnapshot()
+        final RollingHdrHistogram resetOnSnapshotHistogram = RetentionPolicy
+                .resetOnSnapshot()
+                .newRollingHdrHistogramBuilder()
                 .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
                 .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .build();
 
-        final RollingHdrHistogram resetPeriodicallyHistogram = RollingHdrHistogram.builder()
-                .resetReservoirPeriodically(Duration.ofSeconds(300))
+        final RollingHdrHistogram resetPeriodicallyHistogram = RetentionPolicy
+                .resetPeriodically(Duration.ofSeconds(300))
+                .newRollingHdrHistogramBuilder()
                 .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
                 .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .build();
 
-        final RollingHdrHistogram uniformHistogram = RollingHdrHistogram.builder()
-                .neverResetReservoir()
+        final RollingHdrHistogram uniformHistogram = RetentionPolicy
+                .uniform()
+                .newRollingHdrHistogramBuilder()
                 .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
                 .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .build();
@@ -80,21 +86,24 @@ public class HistogramRecordingBenchmark {
         public void setup() {
             backgroundClock = new BackgroundTicker(100);
 
-            this.chunkedHistogramWithBackgroundClock = RollingHdrHistogram.builder()
+            this.chunkedHistogramWithBackgroundClock = RetentionPolicy
+                    .resetPeriodicallyByChunks(Duration.ofSeconds(3), 3)
+                    .newRollingHdrHistogramBuilder()
                     .withTicker(backgroundClock)
-                    .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(3), 3)
                     .build();
 
-            this.upperLimitedChunkedHistogramWithBackgroundClock = RollingHdrHistogram.builder()
+            this.upperLimitedChunkedHistogramWithBackgroundClock = RetentionPolicy
+                    .resetPeriodicallyByChunks(Duration.ofSeconds(3), 3)
+                    .newRollingHdrHistogramBuilder()
                     .withTicker(backgroundClock)
-                    .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(3), 3)
                     .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
                     .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                     .build();
 
-            this.resetPeriodicallyHistogramWithBackgroundClock = RollingHdrHistogram.builder()
+            this.resetPeriodicallyHistogramWithBackgroundClock = RetentionPolicy
+                    .resetPeriodically(Duration.ofSeconds(300))
+                    .newRollingHdrHistogramBuilder()
                     .withTicker(backgroundClock)
-                    .resetReservoirPeriodically(Duration.ofSeconds(300))
                     .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
                     .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                     .build();

@@ -44,6 +44,10 @@ public class UniformHitRatio implements HitRatio {
 
     private final AtomicLong ratio = new AtomicLong();
 
+    UniformHitRatio() {
+        // package-private constructor to avoid initialization without builder infrastructure
+    }
+
     @Override
     public void update(int hitCount, int totalCount) {
         HitRatioUtil.updateRatio(ratio, hitCount, totalCount);

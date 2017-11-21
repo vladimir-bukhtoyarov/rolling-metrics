@@ -22,6 +22,10 @@ class UniformCounter implements WindowCounter {
 
     private final LongAdder adder = new LongAdder();
 
+    UniformCounter() {
+        // package-private constructor to avoid initialization without builder infrastructure
+    }
+
     @Override
     public void add(long delta) {
         adder.add(delta);

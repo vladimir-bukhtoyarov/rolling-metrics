@@ -23,6 +23,7 @@ import com.codahale.metrics.Snapshot;
 import com.github.rollingmetrics.histogram.OverflowResolver;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.util.Ticker;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
@@ -47,9 +48,10 @@ public class HistogramSnapshotExtractionBenchmark {
         final AtomicLong currentTimeMillis = new AtomicLong(System.currentTimeMillis());
         final Ticker ticker = Ticker.mock(currentTimeMillis);
 
-        final RollingHdrHistogram chunkedHistogram = RollingHdrHistogram.builder()
+        final RollingHdrHistogram chunkedHistogram = RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofSeconds(3), 3)
+                .newRollingHdrHistogramBuilder()
                 .withTicker(ticker)
-                .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(3), 3)
                 .build();
 
         final RollingHdrHistogram upperLimitedChunkedHistogram = RollingHdrHistogram.builder()

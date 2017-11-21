@@ -57,7 +57,7 @@ class ResetPeriodicallyCounter implements WindowCounter {
      * @param retentionPolicy
      * @param ticker
      */
-    public ResetPeriodicallyCounter(ResetPeriodicallyRetentionPolicy retentionPolicy, Ticker ticker) {
+    ResetPeriodicallyCounter(ResetPeriodicallyRetentionPolicy retentionPolicy, Ticker ticker) {
         this.resetIntervalMillis = retentionPolicy.getResettingPeriodMillis();
         this.ticker = ticker;
         this.nextResetTimeMillisRef = new AtomicLong(ticker.stableMilliseconds() + resetIntervalMillis);

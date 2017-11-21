@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.counter;
 
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -32,7 +33,9 @@ public class ResetPeriodicallyCounterBenchmark {
 
     @State(Scope.Benchmark)
     public static class CounterState {
-        public final WindowCounter counter = new ResetPeriodicallyCounter(Duration.ofMillis(100));
+        public final WindowCounter counter = RetentionPolicy
+                .resetPeriodically(Duration.ofMillis(100))
+                .newCounter();
     }
 
     @Benchmark

@@ -16,6 +16,14 @@
 
 package com.github.rollingmetrics.retention;
 
+import com.github.rollingmetrics.counter.WindowCounter;
+import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
+import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramBuilder;
+import com.github.rollingmetrics.hitratio.HitRatio;
+import com.github.rollingmetrics.top.Top;
+import com.github.rollingmetrics.top.TopBuilder;
+import com.github.rollingmetrics.util.Ticker;
+
 import java.time.Duration;
 
 /**
@@ -37,6 +45,30 @@ public interface RetentionPolicy {
 
     static RetentionPolicy resetPeriodicallyByChunks(Duration rollingTimeWindow, int numberChunks) {
         return new ResetPeriodicallyByChunksRetentionPolicy(numberChunks, rollingTimeWindow);
+    }
+
+    default WindowCounter newCounter() {
+        return WindowCounter.build(this);
+    }
+
+    default WindowCounter newCounter(Ticker ticker) {
+        return WindowCounter.build(this, ticker);
+    }
+
+    default HitRatio newHitRatio() {
+        return HitRatio.build(this);
+    }
+
+    default HitRatio newHitRatio(Ticker ticker) {
+        return HitRatio.build(this, ticker);
+    }
+
+    default RollingHdrHistogramBuilder newRollingHdrHistogramBuilder() {
+        return RollingHdrHistogram.builder(this);
+    }
+
+    default TopBuilder newTopBuilder(int size) {
+        return Top.builder(size,this);
     }
 
 }
