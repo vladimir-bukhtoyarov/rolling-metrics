@@ -31,10 +31,6 @@ public interface RetentionPolicy {
         return ResetOnSnapshotRetentionPolicy.INSTANCE;
     }
 
-    static RetentionPolicy resetOnCondition(ResetCondition condition) {
-        return new ResetOnConditionRetentionPolicy();
-    }
-
     static RetentionPolicy resetPeriodically(Duration resettingPeriod) {
         return new ResetPeriodicallyRetentionPolicy(resettingPeriod);
     }
