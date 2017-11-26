@@ -18,17 +18,10 @@
 package com.github.rollingmetrics.top;
 
 import com.github.rollingmetrics.retention.*;
-import com.github.rollingmetrics.top.impl.ResetByChunksTop;
-import com.github.rollingmetrics.top.impl.ResetOnSnapshotConcurrentTop;
-import com.github.rollingmetrics.top.impl.SnapshotCachingTop;
-import com.github.rollingmetrics.top.impl.UniformTop;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.ResilientExecutionUtil;
 
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
@@ -45,43 +38,17 @@ import java.util.concurrent.ThreadFactory;
  *
  * @see Top
  */
-public class TopBuilder {
+public interface TopBuilder {
 
-    public static final Duration DEFAULT_SNAPSHOT_CACHING_DURATION = Duration.ofSeconds(1);
-
-    private final RetentionPolicy retentionPolicy;
-    private final TopRecorderSettings settings;
-
-    private Duration snapshotCachingDuration = DEFAULT_SNAPSHOT_CACHING_DURATION;
-    private Ticker ticker = Ticker.defaultTicker();
-
-    /**
-     * Creates new builder instance.
-     *
-     * @param size the count of positions for tops which will be constructed by this builder
-     * @param retentionPolicy policy which responsible for decisions how long any written value should be remembered
-     * @return this builder instance
-     */
-    TopBuilder(int size, RetentionPolicy retentionPolicy) {
-        this.retentionPolicy = Objects.requireNonNull(retentionPolicy);
-        if (!builders.containsKey(retentionPolicy.getClass())) {
-            throw new IllegalArgumentException("Unknown retention policy " + retentionPolicy.getClass());
-        }
-        this.settings = new TopRecorderSettings(size);
-    }
+    Duration DEFAULT_SNAPSHOT_CACHING_DURATION = Duration.ofSeconds(1);
 
     /**
      * Constructs new {@link Top} instance
      *
      * @return new {@link Top} instance
      */
-    public Top build() {
-        Top top = builders.get(retentionPolicy.getClass()).create(settings, retentionPolicy, ticker);
-        if (!snapshotCachingDuration.isZero()) {
-            top = new SnapshotCachingTop(top, snapshotCachingDuration, ticker);
-        }
-        return top;
-    }
+    Top build();
+
 
     /**
      * Configures the maximum count of positions for tops which will be constructed by this builder.
@@ -89,10 +56,7 @@ public class TopBuilder {
      * @param size the maximum count of positions
      * @return this builder instance
      */
-    public TopBuilder withPositionCount(int size) {
-        settings.setSize(size);
-        return this;
-    }
+    TopBuilder withPositionCount(int size);
 
     /**
      * Configures the latency threshold. The queries having latency which shorter than threshold, will not be tracked in the top.
@@ -100,14 +64,11 @@ public class TopBuilder {
      *
      * Specify this parameter when you want not to track queries which fast,
      * in other words when you want see nothing when all going well.
-     * 
+     *
      * @param latencyThreshold
      * @return this builder instance
      */
-    public TopBuilder withLatencyThreshold(Duration latencyThreshold) {
-        settings.setLatencyThreshold(latencyThreshold);
-        return this;
-    }
+    TopBuilder withLatencyThreshold(Duration latencyThreshold);
 
     /**
      * Configures the duration for caching the results of invocation of {@link Top#getPositionsInDescendingOrder()}.
@@ -119,16 +80,7 @@ public class TopBuilder {
      * @param snapshotCachingDuration
      * @return this builder instance
      */
-    public TopBuilder withSnapshotCachingDuration(Duration snapshotCachingDuration) {
-        if (snapshotCachingDuration == null) {
-            throw new IllegalArgumentException("snapshotCachingDuration should not be null");
-        }
-        if (snapshotCachingDuration.isNegative()) {
-            throw new IllegalArgumentException("snapshotCachingDuration can not be negative");
-        }
-        this.snapshotCachingDuration = snapshotCachingDuration;
-        return this;
-    }
+    TopBuilder withSnapshotCachingDuration(Duration snapshotCachingDuration);
 
     /**
      * Specifies the max length of description position int the top. The characters upper {@code maxLengthOfQueryDescription} limit will be truncated
@@ -140,10 +92,7 @@ public class TopBuilder {
      *
      * @return this builder instance
      */
-    public TopBuilder withMaxLengthOfQueryDescription(int maxLengthOfQueryDescription) {
-        settings.setMaxLengthOfQueryDescription(maxLengthOfQueryDescription);
-        return this;
-    }
+    TopBuilder withMaxLengthOfQueryDescription(int maxLengthOfQueryDescription);
 
     /**
      * Replaces default ticker.
@@ -153,13 +102,7 @@ public class TopBuilder {
      *
      * @return this builder instance
      */
-    public TopBuilder withTicker(Ticker ticker) {
-        if (ticker == null) {
-            throw new IllegalArgumentException("Ticker should not be null");
-        }
-        this.ticker = ticker;
-        return this;
-    }
+    TopBuilder withTicker(Ticker ticker);
 
     /**
      * Configures the executor which will be used for chunk rotation if top configured with {@link RetentionPolicy#resetPeriodically(Duration)} (Duration)} or {@link RetentionPolicy#resetPeriodicallyByChunks(Duration, int)}.
@@ -175,25 +118,6 @@ public class TopBuilder {
      *
      * @return this builder instance
      */
-    public TopBuilder withBackgroundExecutor(Executor backgroundExecutor) {
-        settings.setBackgroundExecutor(backgroundExecutor);
-        return this;
-    }
-
-    private static Map<Class<? extends RetentionPolicy>, TopFactory> builders = new HashMap<>();
-    static {
-        builders.put(UniformRetentionPolicy.class, (settings, retentionPolicy, ticker) -> new UniformTop(settings));
-        builders.put(ResetOnSnapshotRetentionPolicy.class, (settings, retentionPolicy, ticker) -> new ResetOnSnapshotConcurrentTop(settings));
-        builders.put(ResetPeriodicallyRetentionPolicy.class, (settings, retentionPolicy, ticker) ->
-                new ResetByChunksTop(settings, (ResetPeriodicallyRetentionPolicy) retentionPolicy, ticker));
-        builders.put(ResetPeriodicallyByChunksRetentionPolicy.class, (settings, retentionPolicy, ticker) ->
-                new ResetByChunksTop(settings, (ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy, ticker));
-    }
-
-    private interface TopFactory {
-
-        Top create(TopRecorderSettings settings, RetentionPolicy retentionPolicy, Ticker ticker);
-
-    }
+    TopBuilder withBackgroundExecutor(Executor backgroundExecutor);
 
 }

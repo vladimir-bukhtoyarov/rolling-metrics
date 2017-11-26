@@ -14,7 +14,7 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.histogram.hdr;
+package com.github.rollingmetrics.histogram.hdr.impl;
 
 import com.github.rollingmetrics.histogram.OverflowResolver;
 import com.github.rollingmetrics.util.ResilientExecutionUtil;

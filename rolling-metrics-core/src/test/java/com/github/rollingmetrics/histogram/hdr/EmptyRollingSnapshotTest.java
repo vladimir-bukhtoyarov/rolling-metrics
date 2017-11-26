@@ -16,6 +16,7 @@
 
 package com.github.rollingmetrics.histogram.hdr;
 
+import com.github.rollingmetrics.histogram.hdr.impl.EmptyRollingSnapshot;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;

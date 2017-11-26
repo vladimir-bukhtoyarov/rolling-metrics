@@ -20,7 +20,6 @@ package com.github.rollingmetrics.histogram.hdr.impl;
 import com.github.rollingmetrics.histogram.OverflowResolver;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramBuilder;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
-import com.github.rollingmetrics.histogram.hdr.RecorderSettings;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.HistogramIterationValue;

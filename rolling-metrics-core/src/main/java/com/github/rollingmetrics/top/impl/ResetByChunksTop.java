@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 
-public class ResetByChunksTop implements Top {
+class ResetByChunksTop implements Top {
 
     public static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
     public static final int MAX_CHUNKS = 25;
@@ -55,11 +55,11 @@ public class ResetByChunksTop implements Top {
     private final Phase[] phases;
     private final AtomicReference<Phase> currentPhaseRef;
 
-    public ResetByChunksTop(TopRecorderSettings settings, ResetPeriodicallyRetentionPolicy retentionPolicy, Ticker ticker) {
+    ResetByChunksTop(TopRecorderSettings settings, ResetPeriodicallyRetentionPolicy retentionPolicy, Ticker ticker) {
         this(settings, retentionPolicy.getResettingPeriodMillis(), 0, ticker);
     }
 
-    public ResetByChunksTop(TopRecorderSettings settings, ResetPeriodicallyByChunksRetentionPolicy retentionPolicy, Ticker ticker) {
+    ResetByChunksTop(TopRecorderSettings settings, ResetPeriodicallyByChunksRetentionPolicy retentionPolicy, Ticker ticker) {
         this(settings, retentionPolicy.getIntervalBetweenResettingOneChunkMillis(), retentionPolicy.getNumberChunks(), ticker);
     }
 

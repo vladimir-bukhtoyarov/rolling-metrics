@@ -17,8 +17,6 @@
 
 package com.github.rollingmetrics.histogram.hdr.impl;
 
-import com.github.rollingmetrics.histogram.hdr.HdrHistogramUtil;
-import com.github.rollingmetrics.histogram.hdr.RecorderSettings;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;

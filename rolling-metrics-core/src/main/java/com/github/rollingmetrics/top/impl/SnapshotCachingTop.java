@@ -28,12 +28,12 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-public class SnapshotCachingTop implements Top {
+class SnapshotCachingTop implements Top {
 
     private final Top target;
     private final CachingSupplier<List<Position>> cache;
 
-    public SnapshotCachingTop(Top target, Duration cachingDuration, Ticker ticker) {
+    SnapshotCachingTop(Top target, Duration cachingDuration, Ticker ticker) {
         this.target = target;
         this.cache = new CachingSupplier<>(cachingDuration, ticker, target::getPositionsInDescendingOrder);
     }

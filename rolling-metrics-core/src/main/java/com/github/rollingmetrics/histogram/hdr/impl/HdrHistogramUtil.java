@@ -14,9 +14,11 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.histogram.hdr;
+package com.github.rollingmetrics.histogram.hdr.impl;
 
 
+import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
+import com.github.rollingmetrics.histogram.hdr.impl.EmptyRollingSnapshot;
 import org.HdrHistogram.AtomicHistogram;
 import org.HdrHistogram.ConcurrentHistogram;
 import org.HdrHistogram.Histogram;

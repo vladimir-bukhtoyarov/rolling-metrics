@@ -29,13 +29,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 
-public class UniformTop implements Top {
+class UniformTop implements Top {
 
     private final TwoPhasePositionRecorder phasedRecorder;
     private final PositionCollector uniformCollector;
     private PositionRecorder intervalRecorder;
 
-    public UniformTop(TopRecorderSettings settings) {
+    UniformTop(TopRecorderSettings settings) {
         this.phasedRecorder = new TwoPhasePositionRecorder(settings.getSize(), settings.getLatencyThreshold().toNanos(), settings.getMaxDescriptionLength());
         intervalRecorder = phasedRecorder.getIntervalRecorder();
         this.uniformCollector = PositionCollector.createCollector(settings.getSize());

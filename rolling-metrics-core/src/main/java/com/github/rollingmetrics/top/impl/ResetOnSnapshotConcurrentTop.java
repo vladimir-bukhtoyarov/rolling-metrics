@@ -28,12 +28,12 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-public class ResetOnSnapshotConcurrentTop implements Top {
+class ResetOnSnapshotConcurrentTop implements Top {
 
     private final TwoPhasePositionRecorder recorder;
     private PositionRecorder intervalRecorder;
 
-    public ResetOnSnapshotConcurrentTop(TopRecorderSettings settings) {
+    ResetOnSnapshotConcurrentTop(TopRecorderSettings settings) {
         this.recorder = new TwoPhasePositionRecorder(settings.getSize(), settings.getLatencyThreshold().toNanos(), settings.getMaxDescriptionLength());
         this.intervalRecorder = recorder.getIntervalRecorder();
     }

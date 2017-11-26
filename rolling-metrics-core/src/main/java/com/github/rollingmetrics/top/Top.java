@@ -32,17 +32,6 @@ import java.util.function.Supplier;
 public interface Top {
 
     /**
-     * Creates new instance of {@link TopBuilder}
-     *
-     * @param size maximum count of positions in the top
-     *
-     * @return new instance of {@link TopBuilder}
-     */
-    static TopBuilder builder(int size, RetentionPolicy retentionPolicy) {
-        return new TopBuilder(size, retentionPolicy);
-    }
-
-    /**
      * Registers latency of query. To avoid unnecessary memory allocation for Strings the descriptionSupplier will be called only if latency is greater then "SlowQueryThreshold"
      * and latency is greater than any other query in the top.
      *

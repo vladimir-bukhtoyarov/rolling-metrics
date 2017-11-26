@@ -17,8 +17,6 @@
 
 package com.github.rollingmetrics.histogram.hdr.impl;
 
-import com.github.rollingmetrics.histogram.hdr.HdrHistogramUtil;
-import com.github.rollingmetrics.histogram.hdr.RecorderSettings;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
 import com.github.rollingmetrics.retention.ResetPeriodicallyByChunksRetentionPolicy;
 import com.github.rollingmetrics.retention.ResetPeriodicallyRetentionPolicy;

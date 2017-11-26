@@ -14,8 +14,10 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.histogram.hdr;
+package com.github.rollingmetrics.histogram.hdr.impl;
 
+import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
+import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
 import com.github.rollingmetrics.util.CachingSupplier;
 import com.github.rollingmetrics.util.Ticker;
 

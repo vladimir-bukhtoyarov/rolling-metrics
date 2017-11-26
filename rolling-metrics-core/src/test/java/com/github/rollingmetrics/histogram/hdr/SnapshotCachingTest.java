@@ -16,6 +16,7 @@
 
 package com.github.rollingmetrics.histogram.hdr;
 
+import com.github.rollingmetrics.histogram.hdr.impl.SnapshotCachingRollingHdrHistogram;
 import com.github.rollingmetrics.util.Ticker;
 import org.junit.Test;
 

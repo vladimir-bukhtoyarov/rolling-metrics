@@ -23,10 +23,6 @@ import com.github.rollingmetrics.retention.RetentionPolicy;
  */
 public interface RollingHdrHistogram {
 
-    static RollingHdrHistogramBuilder builder(RetentionPolicy retentionPolicy) {
-        return new RollingHdrHistogramBuilder(retentionPolicy);
-    }
-
     /**
      * Provide a (conservatively high) estimate of the Reservoir's total footprint in bytes
      *

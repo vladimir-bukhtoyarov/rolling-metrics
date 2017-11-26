@@ -67,6 +67,13 @@ public interface RetentionPolicy {
         return RollingHdrHistogram.builder(this);
     }
 
+    /**
+     * Creates new instance of {@link TopBuilder}
+     *
+     * @param size maximum count of positions in the top
+     *
+     * @return new instance of {@link TopBuilder}
+     */
     default TopBuilder newTopBuilder(int size) {
         return Top.builder(size,this);
     }
