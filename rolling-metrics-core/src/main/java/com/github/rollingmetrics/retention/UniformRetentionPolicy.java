@@ -30,8 +30,6 @@ import com.github.rollingmetrics.top.TopBuilder;
  *
  * @return this builder instance
  */
-public class UniformRetentionPolicy implements RetentionPolicy {
-
-    public static UniformRetentionPolicy INSTANCE = new UniformRetentionPolicy();
+public class UniformRetentionPolicy extends DefaultRetentionPolicy {
 
 }

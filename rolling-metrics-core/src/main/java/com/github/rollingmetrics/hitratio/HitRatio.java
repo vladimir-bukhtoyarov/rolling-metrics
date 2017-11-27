@@ -17,9 +17,7 @@
 
 package com.github.rollingmetrics.hitratio;
 
-import com.github.rollingmetrics.counter.*;
 import com.github.rollingmetrics.retention.*;
-import com.github.rollingmetrics.util.Ticker;
 
 import java.util.Objects;
 
@@ -105,19 +103,8 @@ public interface HitRatio {
      * @return
      */
     static HitRatio build(RetentionPolicy retentionPolicy) {
-        return build(retentionPolicy, Ticker.defaultTicker());
-    }
-
-    /**
-     * TODO
-     *
-     * @param retentionPolicy
-     * @param ticker
-     * @return
-     */
-    static HitRatio build(RetentionPolicy retentionPolicy, Ticker ticker) {
+        // TODO implement caching
         Objects.requireNonNull(retentionPolicy);
-        Objects.requireNonNull(ticker);
         if (retentionPolicy instanceof UniformRetentionPolicy) {
             return new UniformHitRatio();
         }
@@ -125,10 +112,10 @@ public interface HitRatio {
             return new ResetOnSnapshotHitRatio();
         }
         if (retentionPolicy instanceof ResetPeriodicallyRetentionPolicy) {
-            return new ResetPeriodicallyHitRatio((ResetPeriodicallyRetentionPolicy) retentionPolicy, ticker);
+            return new ResetPeriodicallyHitRatio((ResetPeriodicallyRetentionPolicy) retentionPolicy, retentionPolicy.getTicker());
         }
         if (retentionPolicy instanceof ResetPeriodicallyByChunksRetentionPolicy) {
-            return new SmoothlyDecayingRollingHitRatio((ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy, ticker);
+            return new SmoothlyDecayingRollingHitRatio((ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy, retentionPolicy.getTicker());
         }
         throw new IllegalArgumentException("Unknown retention policy " + retentionPolicy);
     }

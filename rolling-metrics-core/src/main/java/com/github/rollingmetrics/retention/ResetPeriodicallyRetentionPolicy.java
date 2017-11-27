@@ -17,6 +17,8 @@
 package com.github.rollingmetrics.retention;
 
 import java.time.Duration;
+import java.util.Optional;
+import java.util.concurrent.Executor;
 
 
 /**
@@ -34,7 +36,7 @@ import java.time.Duration;
  *     in order to avoid leaking reference to classloader through the thread which this library creates for histogram rotation in background.
  * </p>
  */
-public class ResetPeriodicallyRetentionPolicy implements RetentionPolicy {
+public class ResetPeriodicallyRetentionPolicy extends DefaultRetentionPolicy {
 
     private final Duration resettingPeriod;
 

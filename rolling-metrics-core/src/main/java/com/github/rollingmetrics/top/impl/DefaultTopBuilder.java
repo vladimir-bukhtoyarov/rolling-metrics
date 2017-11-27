@@ -4,21 +4,16 @@ import com.github.rollingmetrics.retention.*;
 import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.top.TopBuilder;
 import com.github.rollingmetrics.top.TopRecorderSettings;
-import com.github.rollingmetrics.util.Ticker;
 
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.Executor;
 
 public class DefaultTopBuilder implements TopBuilder {
 
     private final RetentionPolicy retentionPolicy;
     private final TopRecorderSettings settings;
-
-    private Duration snapshotCachingDuration = DEFAULT_SNAPSHOT_CACHING_DURATION;
-    private Ticker ticker = Ticker.defaultTicker();
 
     /**
      * Creates new builder instance.
@@ -38,9 +33,9 @@ public class DefaultTopBuilder implements TopBuilder {
 
     @Override
     public Top build() {
-        Top top = builders.get(retentionPolicy.getClass()).create(settings, retentionPolicy, ticker);
-        if (!snapshotCachingDuration.isZero()) {
-            top = new SnapshotCachingTop(top, snapshotCachingDuration, ticker);
+        Top top = builders.get(retentionPolicy.getClass()).create(settings, retentionPolicy);
+        if (!retentionPolicy.getSnapshotCachingDuration().isZero()) {
+            top = new SnapshotCachingTop(top, retentionPolicy.getSnapshotCachingDuration(), retentionPolicy.getTicker());
         }
         return top;
     }
@@ -58,51 +53,24 @@ public class DefaultTopBuilder implements TopBuilder {
     }
 
     @Override
-    public TopBuilder withSnapshotCachingDuration(Duration snapshotCachingDuration) {
-        if (snapshotCachingDuration == null) {
-            throw new IllegalArgumentException("snapshotCachingDuration should not be null");
-        }
-        if (snapshotCachingDuration.isNegative()) {
-            throw new IllegalArgumentException("snapshotCachingDuration can not be negative");
-        }
-        this.snapshotCachingDuration = snapshotCachingDuration;
-        return this;
-    }
-
-    @Override
     public TopBuilder withMaxLengthOfQueryDescription(int maxLengthOfQueryDescription) {
         settings.setMaxLengthOfQueryDescription(maxLengthOfQueryDescription);
         return this;
     }
 
-    @Override
-    public TopBuilder withTicker(Ticker ticker) {
-        if (ticker == null) {
-            throw new IllegalArgumentException("Ticker should not be null");
-        }
-        this.ticker = ticker;
-        return this;
-    }
-
-    @Override
-    public TopBuilder withBackgroundExecutor(Executor backgroundExecutor) {
-        settings.setBackgroundExecutor(backgroundExecutor);
-        return this;
-    }
-
     private static Map<Class<? extends RetentionPolicy>, TopFactory> builders = new HashMap<>();
     static {
-        builders.put(UniformRetentionPolicy.class, (settings, retentionPolicy, ticker) -> new UniformTop(settings));
-        builders.put(ResetOnSnapshotRetentionPolicy.class, (settings, retentionPolicy, ticker) -> new ResetOnSnapshotConcurrentTop(settings));
-        builders.put(ResetPeriodicallyRetentionPolicy.class, (settings, retentionPolicy, ticker) ->
-                new ResetByChunksTop(settings, (ResetPeriodicallyRetentionPolicy) retentionPolicy, ticker));
-        builders.put(ResetPeriodicallyByChunksRetentionPolicy.class, (settings, retentionPolicy, ticker) ->
-                new ResetByChunksTop(settings, (ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy, ticker));
+        builders.put(UniformRetentionPolicy.class, (settings, retentionPolicy) -> new UniformTop(settings));
+        builders.put(ResetOnSnapshotRetentionPolicy.class, (settings, retentionPolicy) -> new ResetOnSnapshotConcurrentTop(settings));
+        builders.put(ResetPeriodicallyRetentionPolicy.class, (settings, retentionPolicy) ->
+                new ResetByChunksTop(settings, (ResetPeriodicallyRetentionPolicy) retentionPolicy));
+        builders.put(ResetPeriodicallyByChunksRetentionPolicy.class, (settings, retentionPolicy) ->
+                new ResetByChunksTop(settings, (ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy));
     }
 
     private interface TopFactory {
 
-        Top create(TopRecorderSettings settings, RetentionPolicy retentionPolicy, Ticker ticker);
+        Top create(TopRecorderSettings settings, RetentionPolicy retentionPolicy);
 
     }
 

@@ -17,9 +17,6 @@
 
 package com.github.rollingmetrics.top;
 
-
-import com.github.rollingmetrics.retention.RetentionPolicy;
-
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;

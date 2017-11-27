@@ -38,7 +38,7 @@ import java.time.Duration;
  * </p>
  *
  */
-public class ResetPeriodicallyByChunksRetentionPolicy implements RetentionPolicy {
+public class ResetPeriodicallyByChunksRetentionPolicy extends DefaultRetentionPolicy {
 
     private final int numberChunks;
     private final long intervalBetweenResettingOneChunkMillis;

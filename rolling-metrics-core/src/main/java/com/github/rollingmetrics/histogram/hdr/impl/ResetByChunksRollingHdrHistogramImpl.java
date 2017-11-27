@@ -49,15 +49,15 @@ public class ResetByChunksRollingHdrHistogramImpl extends AbstractRollingHdrHist
     private final Phase[] phases;
     private final AtomicReference<Phase> currentPhaseRef;
 
-    public ResetByChunksRollingHdrHistogramImpl(RecorderSettings recorderSettings, ResetPeriodicallyRetentionPolicy retentionPolicy, Ticker ticker) {
-        this(recorderSettings, 0, retentionPolicy.getResettingPeriodMillis(), ticker);
+    public ResetByChunksRollingHdrHistogramImpl(RecorderSettings recorderSettings, ResetPeriodicallyRetentionPolicy retentionPolicy) {
+        this(recorderSettings, 0, retentionPolicy.getResettingPeriodMillis(), retentionPolicy.getTicker(), retentionPolicy.getExecutor());
     }
 
-    public ResetByChunksRollingHdrHistogramImpl(RecorderSettings recorderSettings, ResetPeriodicallyByChunksRetentionPolicy retentionPolicy, Ticker ticker) {
-        this(recorderSettings, retentionPolicy.getNumberChunks(), retentionPolicy.getIntervalBetweenResettingOneChunkMillis(), ticker);
+    public ResetByChunksRollingHdrHistogramImpl(RecorderSettings recorderSettings, ResetPeriodicallyByChunksRetentionPolicy retentionPolicy) {
+        this(recorderSettings, retentionPolicy.getNumberChunks(), retentionPolicy.getIntervalBetweenResettingOneChunkMillis(), retentionPolicy.getTicker(), retentionPolicy.getExecutor());
     }
 
-    private ResetByChunksRollingHdrHistogramImpl(RecorderSettings recorderSettings, int numberHistoryChunks, long intervalBetweenResettingOneChunkMillis, Ticker ticker) {
+    private ResetByChunksRollingHdrHistogramImpl(RecorderSettings recorderSettings, int numberHistoryChunks, long intervalBetweenResettingOneChunkMillis, Ticker ticker, Executor backgroundExecutor) {
         super(recorderSettings);
 
         if (intervalBetweenResettingOneChunkMillis < MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
@@ -71,7 +71,7 @@ public class ResetByChunksRollingHdrHistogramImpl extends AbstractRollingHdrHist
         this.intervalBetweenResettingMillis = intervalBetweenResettingOneChunkMillis;
         this.ticker = ticker;
         this.creationTimestamp = ticker.stableMilliseconds();
-        this.backgroundExecutor = recorderSettings.getExecutor();
+        this.backgroundExecutor = backgroundExecutor;
 
         this.left = new Phase(recorderSettings, creationTimestamp + intervalBetweenResettingOneChunkMillis);
         this.right = new Phase(recorderSettings, Long.MAX_VALUE);

@@ -16,14 +16,10 @@
 
 package com.github.rollingmetrics.top;
 
-import com.github.rollingmetrics.util.ResilientExecutionUtil;
-
 import java.time.Duration;
-import java.util.concurrent.Executor;
 
 public class TopRecorderSettings {
 
-    private static final Executor DEFAULT_BACKGROUND_EXECUTOR = null;
     public static final int MAX_POSITION_COUNT = 1000;
     public static final int DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION = 1000;
     public static final Duration DEFAULT_LATENCY_THRESHOLD = Duration.ZERO;
@@ -32,19 +28,12 @@ public class TopRecorderSettings {
     private int size;
     private Duration latencyThreshold;
     private int maxDescriptionLength;
-    private Executor backgroundExecutor;
-    private int maxLengthOfQueryDescription;
 
     public TopRecorderSettings(int size) {
         validateSize(size);
         this.size = size;
         this.latencyThreshold = DEFAULT_LATENCY_THRESHOLD;
         this.maxDescriptionLength = DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION;
-        this.backgroundExecutor = DEFAULT_BACKGROUND_EXECUTOR;
-    }
-
-    public Executor getExecutor() {
-        return backgroundExecutor != null ? backgroundExecutor : ResilientExecutionUtil.getInstance().getBackgroundExecutor();
     }
 
     public int getSize() {
@@ -57,17 +46,6 @@ public class TopRecorderSettings {
 
     public int getMaxDescriptionLength() {
         return maxDescriptionLength;
-    }
-
-    public Executor getBackgroundExecutor() {
-        return backgroundExecutor;
-    }
-
-    public void setBackgroundExecutor(Executor backgroundExecutor) {
-        if (backgroundExecutor == null) {
-            throw new IllegalArgumentException("backgroundExecutor should not be null");
-        }
-        this.backgroundExecutor = backgroundExecutor;
     }
 
     public void setLatencyThreshold(Duration latencyThreshold) {

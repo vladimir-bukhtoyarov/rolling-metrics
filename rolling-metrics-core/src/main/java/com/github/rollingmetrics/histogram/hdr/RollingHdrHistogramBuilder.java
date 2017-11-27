@@ -18,20 +18,6 @@ package com.github.rollingmetrics.histogram.hdr;
 
 import com.github.rollingmetrics.histogram.OverflowResolver;
 import com.github.rollingmetrics.histogram.hdr.impl.RecorderSettings;
-import com.github.rollingmetrics.histogram.hdr.impl.ResetByChunksRollingHdrHistogramImpl;
-import com.github.rollingmetrics.histogram.hdr.impl.ResetOnSnapshotRollingHdrHistogramImpl;
-import com.github.rollingmetrics.histogram.hdr.impl.UniformRollingHdrHistogramImpl;
-import com.github.rollingmetrics.retention.*;
-import com.github.rollingmetrics.util.ResilientExecutionUtil;
-import com.github.rollingmetrics.util.Ticker;
-
-import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadFactory;
 
 /**
  * The builder for creation and registration histograms, timers and reservoirs.
@@ -67,7 +53,6 @@ import java.util.concurrent.ThreadFactory;
  * @see org.HdrHistogram.Histogram
  */
 public interface RollingHdrHistogramBuilder {
-
 
     /**
      * Configures the number of significant decimal digits to which the histogram will maintain value resolution and separation.
@@ -134,14 +119,6 @@ public interface RollingHdrHistogramBuilder {
     RollingHdrHistogramBuilder withExpectedIntervalBetweenValueSamples(long expectedIntervalBetweenValueSamples);
 
     /**
-     * Configures the period for which taken snapshot will be cached.
-     *
-     * @param duration the period for which taken snapshot will be cached, should be a positive duration.
-     * @return this builder instance
-     */
-    RollingHdrHistogramBuilder withSnapshotCachingDuration(Duration duration);
-
-    /**
      * Configures list of percentiles which you plan to store in monitoring database.
      * <p>
      * This method is useful when you already know list of percentiles which need to be stored in monitoring database,
@@ -167,20 +144,11 @@ public interface RollingHdrHistogramBuilder {
     RollingHdrHistogramBuilder withoutSnapshotOptimization();
 
     /**
-     * Configures the executor which will be used for chunk rotation if histogram configured with {@link RetentionPolicy#resetPeriodically(Duration)} (Duration)} or {@link RetentionPolicy#resetPeriodicallyByChunks(Duration, int)}.
+     * TODO
      *
-     * <p>
-     * Normally you should not use this method because of default executor provided by {@link ResilientExecutionUtil#getBackgroundExecutor()} is quietly enough for mostly use cases.
-     * </p>
-     *
-     * <p>
-     * You can use this method for example inside JEE environments with enabled SecurityManager,
-     * in case of {@link ResilientExecutionUtil#setThreadFactory(ThreadFactory)} is not enough to meat security rules.
-     * </p>
-     *
-     * @return this builder instance
+     * @return
      */
-    RollingHdrHistogramBuilder withBackgroundExecutor(Executor backgroundExecutor);
+    RollingHdrHistogram build();
 
     /**
      * Provide a (conservatively high) estimate of the Reservoir's total footprint in bytes

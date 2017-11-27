@@ -23,10 +23,6 @@ package com.github.rollingmetrics.retention;
  *
  * @return this builder instance
  */
-public class ResetOnSnapshotRetentionPolicy implements RetentionPolicy {
-
-    public static ResetOnSnapshotRetentionPolicy INSTANCE = new ResetOnSnapshotRetentionPolicy();
-
-    private ResetOnSnapshotRetentionPolicy() {}
+public class ResetOnSnapshotRetentionPolicy extends DefaultRetentionPolicy {
 
 }

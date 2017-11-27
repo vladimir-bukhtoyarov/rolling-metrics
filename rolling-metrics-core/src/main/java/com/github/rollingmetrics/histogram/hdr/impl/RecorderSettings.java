@@ -17,13 +17,11 @@
 package com.github.rollingmetrics.histogram.hdr.impl;
 
 import com.github.rollingmetrics.histogram.OverflowResolver;
-import com.github.rollingmetrics.util.ResilientExecutionUtil;
 import org.HdrHistogram.Recorder;
 
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.Executor;
 
 
 public class RecorderSettings {
@@ -37,7 +35,6 @@ public class RecorderSettings {
     private Optional<Long> highestTrackableValue = Optional.empty();
     private Optional<OverflowResolver> overflowResolver = Optional.empty();
     private Optional<Long> expectedIntervalBetweenValueSamples = Optional.empty();
-    private Optional<Executor> backgroundExecutor = Optional.empty();
 
     public Optional<double[]> getPredefinedPercentiles() {
         return predefinedPercentiles;
@@ -125,17 +122,6 @@ public class RecorderSettings {
 
     public void withoutSnapshotOptimization() {
         this.predefinedPercentiles = Optional.empty();
-    }
-
-    public void setBackgroundExecutor(Executor backgroundExecutor) {
-        if (backgroundExecutor == null) {
-            throw new IllegalArgumentException("backgroundExecutor must not be null");
-        }
-        this.backgroundExecutor = Optional.of(backgroundExecutor);
-    }
-
-    public Executor getExecutor() {
-        return backgroundExecutor.orElseGet(ResilientExecutionUtil.getInstance()::getBackgroundExecutor);
     }
 
     private static double[] copyAndSort(double[] predefinedPercentiles) {

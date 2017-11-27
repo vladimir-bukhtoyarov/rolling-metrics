@@ -16,8 +16,6 @@
 
 package com.github.rollingmetrics.histogram.hdr;
 
-import com.github.rollingmetrics.retention.RetentionPolicy;
-
 /**
  * TODO
  */

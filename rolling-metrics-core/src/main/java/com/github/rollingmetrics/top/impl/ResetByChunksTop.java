@@ -55,15 +55,15 @@ class ResetByChunksTop implements Top {
     private final Phase[] phases;
     private final AtomicReference<Phase> currentPhaseRef;
 
-    ResetByChunksTop(TopRecorderSettings settings, ResetPeriodicallyRetentionPolicy retentionPolicy, Ticker ticker) {
-        this(settings, retentionPolicy.getResettingPeriodMillis(), 0, ticker);
+    ResetByChunksTop(TopRecorderSettings settings, ResetPeriodicallyRetentionPolicy retentionPolicy) {
+        this(settings, retentionPolicy.getResettingPeriodMillis(), 0, retentionPolicy.getExecutor(),  retentionPolicy.getTicker());
     }
 
-    ResetByChunksTop(TopRecorderSettings settings, ResetPeriodicallyByChunksRetentionPolicy retentionPolicy, Ticker ticker) {
-        this(settings, retentionPolicy.getIntervalBetweenResettingOneChunkMillis(), retentionPolicy.getNumberChunks(), ticker);
+    ResetByChunksTop(TopRecorderSettings settings, ResetPeriodicallyByChunksRetentionPolicy retentionPolicy) {
+        this(settings, retentionPolicy.getIntervalBetweenResettingOneChunkMillis(), retentionPolicy.getNumberChunks(), retentionPolicy.getExecutor(),  retentionPolicy.getTicker());
     }
 
-    private ResetByChunksTop(TopRecorderSettings settings, long intervalBetweenResettingOneChunkMillis, int numberHistoryChunks, Ticker ticker) {
+    private ResetByChunksTop(TopRecorderSettings settings, long intervalBetweenResettingOneChunkMillis, int numberHistoryChunks, Executor backgroundExecutor, Ticker ticker) {
         if (intervalBetweenResettingOneChunkMillis < ResetByChunksTop.MIN_CHUNK_RESETTING_INTERVAL_MILLIS) {
             String msg = "interval between resetting one chunk should be >= " + ResetByChunksTop.MIN_CHUNK_RESETTING_INTERVAL_MILLIS + " millis";
             throw new IllegalArgumentException(msg);
@@ -75,7 +75,7 @@ class ResetByChunksTop implements Top {
         this.intervalBetweenResettingOneChunkMillis = intervalBetweenResettingOneChunkMillis;
         this.ticker = ticker;
         this.creationTimestamp = ticker.stableMilliseconds();
-        this.backgroundExecutor = settings.getBackgroundExecutor();
+        this.backgroundExecutor = backgroundExecutor;
 
         Supplier<TwoPhasePositionRecorder> recorderSupplier = () -> new TwoPhasePositionRecorder(settings.getSize(), settings.getLatencyThreshold().toNanos(), settings.getMaxDescriptionLength());
         this.left = new Phase(recorderSupplier.get(), creationTimestamp + this.intervalBetweenResettingOneChunkMillis);

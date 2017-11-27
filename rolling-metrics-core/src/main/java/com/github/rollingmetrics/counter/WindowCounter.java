@@ -53,19 +53,9 @@ public interface WindowCounter {
      * @return
      */
     static WindowCounter build(RetentionPolicy retentionPolicy) {
-        return build(retentionPolicy, Ticker.defaultTicker());
-    }
+        // TODO implement caching
 
-    /**
-     * TODO
-     *
-     * @param retentionPolicy
-     * @param ticker
-     * @return
-     */
-    static WindowCounter build(RetentionPolicy retentionPolicy, Ticker ticker) {
         Objects.requireNonNull(retentionPolicy);
-        Objects.requireNonNull(ticker);
         if (retentionPolicy instanceof UniformRetentionPolicy) {
             return new UniformCounter();
         }
@@ -73,10 +63,10 @@ public interface WindowCounter {
             return new ResetOnSnapshotCounter();
         }
         if (retentionPolicy instanceof ResetPeriodicallyRetentionPolicy) {
-            return new ResetPeriodicallyCounter((ResetPeriodicallyRetentionPolicy) retentionPolicy, ticker);
+            return new ResetPeriodicallyCounter((ResetPeriodicallyRetentionPolicy) retentionPolicy, retentionPolicy.getTicker());
         }
         if (retentionPolicy instanceof ResetPeriodicallyByChunksRetentionPolicy) {
-            return new SmoothlyDecayingRollingCounter((ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy, ticker);
+            return new SmoothlyDecayingRollingCounter((ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy, retentionPolicy.getTicker());
         }
         throw new IllegalArgumentException("Unknown retention policy " + retentionPolicy);
     }

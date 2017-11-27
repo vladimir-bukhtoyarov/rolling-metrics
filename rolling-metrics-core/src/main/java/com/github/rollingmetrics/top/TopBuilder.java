@@ -17,13 +17,7 @@
 
 package com.github.rollingmetrics.top;
 
-import com.github.rollingmetrics.retention.*;
-import com.github.rollingmetrics.util.Ticker;
-import com.github.rollingmetrics.util.ResilientExecutionUtil;
-
 import java.time.Duration;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ThreadFactory;
 
 /**
  * The builder for {@link Top}.
@@ -40,15 +34,12 @@ import java.util.concurrent.ThreadFactory;
  */
 public interface TopBuilder {
 
-    Duration DEFAULT_SNAPSHOT_CACHING_DURATION = Duration.ofSeconds(1);
-
     /**
      * Constructs new {@link Top} instance
      *
      * @return new {@link Top} instance
      */
     Top build();
-
 
     /**
      * Configures the maximum count of positions for tops which will be constructed by this builder.
@@ -71,18 +62,6 @@ public interface TopBuilder {
     TopBuilder withLatencyThreshold(Duration latencyThreshold);
 
     /**
-     * Configures the duration for caching the results of invocation of {@link Top#getPositionsInDescendingOrder()}.
-     * Currently the caching is only one way to solve <a href="https://github.com/dropwizard/metrics/issues/1016">atomicity read problem</a>.
-     * The default value is one second {@link #DEFAULT_SNAPSHOT_CACHING_DURATION}.
-     * You can specify zero duration to discard caching at all, but theoretically,
-     * you should not disable cache until Dropwizard-Metrics reporting pipeline will be rewritten <a href="https://github.com/marshallpierce/metrics-thoughts">in scope of v-4-0</a>
-     *
-     * @param snapshotCachingDuration
-     * @return this builder instance
-     */
-    TopBuilder withSnapshotCachingDuration(Duration snapshotCachingDuration);
-
-    /**
      * Specifies the max length of description position int the top. The characters upper {@code maxLengthOfQueryDescription} limit will be truncated
      *
      * <p>
@@ -93,31 +72,5 @@ public interface TopBuilder {
      * @return this builder instance
      */
     TopBuilder withMaxLengthOfQueryDescription(int maxLengthOfQueryDescription);
-
-    /**
-     * Replaces default ticker.
-     * Most likely you should never use this method, because replacing time measuring has sense only for unit testing.
-     *
-     * @param ticker the abstraction over time
-     *
-     * @return this builder instance
-     */
-    TopBuilder withTicker(Ticker ticker);
-
-    /**
-     * Configures the executor which will be used for chunk rotation if top configured with {@link RetentionPolicy#resetPeriodically(Duration)} (Duration)} or {@link RetentionPolicy#resetPeriodicallyByChunks(Duration, int)}.
-     *
-     * <p>
-     * Normally you should not use this method because of default executor provided by {@link ResilientExecutionUtil#getBackgroundExecutor()} is quietly enough for mostly use cases.
-     * </p>
-     *
-     * <p>
-     * You can use this method for example inside JEE environments with enabled SecurityManager,
-     * in case of {@link ResilientExecutionUtil#setThreadFactory(ThreadFactory)} is not enough to meat security rules.
-     * </p>
-     *
-     * @return this builder instance
-     */
-    TopBuilder withBackgroundExecutor(Executor backgroundExecutor);
 
 }
