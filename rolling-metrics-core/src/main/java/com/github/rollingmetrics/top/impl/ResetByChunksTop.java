@@ -20,7 +20,6 @@ package com.github.rollingmetrics.top.impl;
 
 import com.github.rollingmetrics.retention.ResetPeriodicallyByChunksRetentionPolicy;
 import com.github.rollingmetrics.retention.ResetPeriodicallyRetentionPolicy;
-import com.github.rollingmetrics.top.TopRecorderSettings;
 import com.github.rollingmetrics.util.Printer;
 import com.github.rollingmetrics.top.Position;
 import com.github.rollingmetrics.top.Top;

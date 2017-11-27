@@ -14,9 +14,11 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.histogram.hdr;
+package com.github.rollingmetrics.histogram.hdr.impl;
 
-import com.github.rollingmetrics.histogram.hdr.impl.SnapshotCachingRollingHdrHistogram;
+import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
+import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.util.Ticker;
 import org.junit.Test;
 
@@ -30,23 +32,26 @@ public class SnapshotCachingTest {
 
     @Test
     public void whenCachingDurationSpecifiedThenReservoirShouldBeDecoratedByProxy() {
-        RollingHdrHistogram histogram = RollingHdrHistogram.builder()
+        RollingHdrHistogram histogram = RetentionPolicy.uniform()
                 .withSnapshotCachingDuration(Duration.ofSeconds(5))
+                .newRollingHdrHistogramBuilder()
                 .build();
         assertTrue(histogram instanceof SnapshotCachingRollingHdrHistogram);
     }
 
     @Test
     public void zeroDurationShouldNotLeadToCreateDecorator() {
-        RollingHdrHistogram reservoir = RollingHdrHistogram.builder()
+        RollingHdrHistogram reservoir = RetentionPolicy.uniform()
                 .withSnapshotCachingDuration(Duration.ZERO)
+                .newRollingHdrHistogramBuilder()
                 .build();
         assertFalse(reservoir instanceof SnapshotCachingRollingHdrHistogram);
     }
 
     @Test
     public void byDefaultCachingShouldBeTurnedOf() {
-        RollingHdrHistogram reservoir = RollingHdrHistogram.builder()
+        RollingHdrHistogram reservoir = RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .build();
         assertFalse(reservoir instanceof SnapshotCachingRollingHdrHistogram);
     }
@@ -55,11 +60,10 @@ public class SnapshotCachingTest {
     public void shouldCacheSnapshot() {
         AtomicLong time = new AtomicLong(System.currentTimeMillis());
         Ticker ticker = Ticker.mock(time);
-        RollingHdrHistogram reservoir =
-                RollingHdrHistogram.builder()
-                .withTicker(ticker)
-                .resetReservoirOnSnapshot()
+        RollingHdrHistogram reservoir = RetentionPolicy.resetOnSnapshot()
                 .withSnapshotCachingDuration(Duration.ofMillis(1000))
+                .withTicker(ticker)
+                .newRollingHdrHistogramBuilder()
                 .build();
 
         reservoir.update(10);

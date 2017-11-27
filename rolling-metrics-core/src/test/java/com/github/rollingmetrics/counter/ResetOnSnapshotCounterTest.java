@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.counter;
 
+import com.github.rollingmetrics.counter.impl.ResetOnSnapshotCounter;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

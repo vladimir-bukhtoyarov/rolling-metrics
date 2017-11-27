@@ -17,12 +17,13 @@
 
 package com.github.rollingmetrics.hitratio;
 
-import com.github.rollingmetrics.retention.*;
-
-import java.util.Objects;
+import com.github.rollingmetrics.hitratio.impl.UniformHitRatio;
 
 /**
  * The metric for hit ratio measurement.
+ *
+ *
+ * TODO
  *
  * @see SmoothlyDecayingRollingHitRatio
  * @see ResetOnSnapshotHitRatio
@@ -95,29 +96,5 @@ public interface HitRatio {
      * @return the ratio between hits and misses
      */
     double getHitRatio();
-
-    /**
-     * TODO
-     *
-     * @param retentionPolicy
-     * @return
-     */
-    static HitRatio build(RetentionPolicy retentionPolicy) {
-        // TODO implement caching
-        Objects.requireNonNull(retentionPolicy);
-        if (retentionPolicy instanceof UniformRetentionPolicy) {
-            return new UniformHitRatio();
-        }
-        if (retentionPolicy instanceof ResetOnSnapshotRetentionPolicy) {
-            return new ResetOnSnapshotHitRatio();
-        }
-        if (retentionPolicy instanceof ResetPeriodicallyRetentionPolicy) {
-            return new ResetPeriodicallyHitRatio((ResetPeriodicallyRetentionPolicy) retentionPolicy, retentionPolicy.getTicker());
-        }
-        if (retentionPolicy instanceof ResetPeriodicallyByChunksRetentionPolicy) {
-            return new SmoothlyDecayingRollingHitRatio((ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy, retentionPolicy.getTicker());
-        }
-        throw new IllegalArgumentException("Unknown retention policy " + retentionPolicy);
-    }
 
 }

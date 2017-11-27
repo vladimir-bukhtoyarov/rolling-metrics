@@ -3,7 +3,6 @@ package com.github.rollingmetrics.top.impl;
 import com.github.rollingmetrics.retention.*;
 import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.top.TopBuilder;
-import com.github.rollingmetrics.top.TopRecorderSettings;
 
 import java.time.Duration;
 import java.util.HashMap;

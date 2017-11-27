@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.hitratio;
 
+import com.github.rollingmetrics.hitratio.impl.ResetPeriodicallyHitRatio;
 import com.github.rollingmetrics.util.Ticker;
 import org.junit.Test;
 

@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.hitratio;
 
+import com.github.rollingmetrics.hitratio.impl.UniformHitRatio;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;

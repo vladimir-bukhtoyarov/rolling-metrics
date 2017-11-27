@@ -17,9 +17,11 @@
 package com.github.rollingmetrics.retention;
 
 import com.github.rollingmetrics.counter.WindowCounter;
+import com.github.rollingmetrics.counter.impl.WindowCounterUtil;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramBuilder;
 import com.github.rollingmetrics.histogram.hdr.impl.DefaultRollingHdrHistogramBuilder;
 import com.github.rollingmetrics.hitratio.HitRatio;
+import com.github.rollingmetrics.hitratio.impl.HitRatioUtil;
 import com.github.rollingmetrics.top.TopBuilder;
 import com.github.rollingmetrics.top.impl.DefaultTopBuilder;
 import com.github.rollingmetrics.util.ResilientExecutionUtil;
@@ -108,12 +110,12 @@ public abstract class DefaultRetentionPolicy implements RetentionPolicy {
 
     @Override
     public WindowCounter newCounter() {
-        return WindowCounter.build(this);
+        return WindowCounterUtil.build(this);
     }
 
     @Override
     public HitRatio newHitRatio() {
-        return HitRatio.build(this);
+        return HitRatioUtil.build(this);
     }
 
     @Override

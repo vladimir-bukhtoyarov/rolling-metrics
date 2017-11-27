@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.counter;
 
+import com.github.rollingmetrics.counter.impl.ResetOnSnapshotCounter;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;

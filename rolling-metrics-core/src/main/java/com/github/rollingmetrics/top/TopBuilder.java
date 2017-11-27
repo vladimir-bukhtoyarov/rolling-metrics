@@ -17,6 +17,8 @@
 
 package com.github.rollingmetrics.top;
 
+import com.github.rollingmetrics.top.impl.TopRecorderSettings;
+
 import java.time.Duration;
 
 /**

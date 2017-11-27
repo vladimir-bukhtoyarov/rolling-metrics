@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.counter;
 
+import com.github.rollingmetrics.counter.impl.ResetPeriodicallyCounter;
 import com.github.rollingmetrics.util.Ticker;
 import org.junit.Test;
 

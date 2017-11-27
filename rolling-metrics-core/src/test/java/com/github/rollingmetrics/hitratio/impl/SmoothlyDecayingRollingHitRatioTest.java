@@ -1,22 +1,24 @@
 /*
+ *    Copyright 2017 Vladimir Bukhtoyarov
  *
- *  Copyright 2017 Vladimir Bukhtoyarov
+ *      Licensed under the Apache License, Version 2.0 (the "License");
+ *      you may not use this file except in compliance with the License.
+ *      You may obtain a copy of the License at
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *            http://www.apache.org/licenses/LICENSE-2.0
  *
- *          http://www.apache.org/licenses/LICENSE-2.0
- *
- *   Unless required by applicable law or agreed to in writing, software
- *   distributed under the License is distributed on an "AS IS" BASIS,
- *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *   See the License for the specific language governing permissions and
- *   limitations under the License.
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
  */
 
-package com.github.rollingmetrics.hitratio;
+package com.github.rollingmetrics.hitratio.impl;
 
+import com.github.rollingmetrics.hitratio.HitRatio;
+import com.github.rollingmetrics.hitratio.HitRationTestUtil;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.util.Ticker;
 import org.junit.Test;
 
@@ -34,7 +36,10 @@ public class SmoothlyDecayingRollingHitRatioTest {
 
     AtomicLong currentTimeMillis = new AtomicLong(0);
     Ticker ticker = Ticker.mock(currentTimeMillis);
-    HitRatio hitRatio = new SmoothlyDecayingRollingHitRatio(Duration.ofMillis(ROLLING_TIME_WINDOW_MILLIS), CHUNK_COUNT, ticker);
+    HitRatio hitRatio = RetentionPolicy
+            .resetPeriodicallyByChunks(Duration.ofMillis(ROLLING_TIME_WINDOW_MILLIS), CHUNK_COUNT)
+            .withTicker(ticker)
+            .newHitRatio();
 
     @Test
     public void testChunkRotation() {
@@ -134,35 +139,31 @@ public class SmoothlyDecayingRollingHitRatioTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void tooShortTimeWindowShouldBeDisallowed() {
-        new SmoothlyDecayingRollingHitRatio(Duration.ofMillis(SmoothlyDecayingRollingHitRatio.MIN_CHUNK_RESETTING_INTERVAL_MILLIS - 1), 5);
+        RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofMillis(SmoothlyDecayingRollingHitRatio.MIN_CHUNK_RESETTING_INTERVAL_MILLIS - 1), 5)
+                .newHitRatio();
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void tooManyChunksShouldBeDisallowed() {
-        new SmoothlyDecayingRollingHitRatio(Duration.ofMinutes(1), SmoothlyDecayingRollingHitRatio.MAX_CHUNKS + 1);
-    }
-
-    @Test
-    public void getRollingWindow() throws Exception {
-        SmoothlyDecayingRollingHitRatio hitRatio = new SmoothlyDecayingRollingHitRatio(Duration.ofMinutes(1), 6);
-        assertEquals(Duration.ofMinutes(1), hitRatio.getRollingWindow());
-    }
-
-    @Test
-    public void getChunkCount() throws Exception {
-        SmoothlyDecayingRollingHitRatio hitRatio = new SmoothlyDecayingRollingHitRatio(Duration.ofMinutes(1), 6);
-        assertEquals(6, hitRatio.getChunkCount());
+        RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofMinutes(1), SmoothlyDecayingRollingHitRatio.MAX_CHUNKS + 1)
+                .newHitRatio();
     }
 
     @Test
     public void testToString() throws Exception {
-        SmoothlyDecayingRollingHitRatio hitRatio = new SmoothlyDecayingRollingHitRatio(Duration.ofMinutes(1), 6);
+        HitRatio hitRatio = RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofMinutes(1), 6)
+                .newHitRatio();
         System.out.println(hitRatio.toString());
     }
 
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
-        SmoothlyDecayingRollingHitRatio hitRatio = new SmoothlyDecayingRollingHitRatio(Duration.ofSeconds(1), 100);
+        HitRatio hitRatio = RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofSeconds(1), 100)
+                .newHitRatio();
         HitRationTestUtil.runInParallel(hitRatio, TimeUnit.SECONDS.toMillis(30));
     }
 

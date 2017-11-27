@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.hitratio;
 
+import com.github.rollingmetrics.hitratio.impl.SmoothlyDecayingRollingHitRatio;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;

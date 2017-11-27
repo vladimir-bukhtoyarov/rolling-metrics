@@ -14,7 +14,9 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.counter;
+package com.github.rollingmetrics.counter.impl;
+
+import com.github.rollingmetrics.counter.WindowCounter;
 
 import java.util.concurrent.atomic.LongAdder;
 

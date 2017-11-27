@@ -20,7 +20,6 @@ package com.github.rollingmetrics.top.impl;
 
 import com.github.rollingmetrics.top.Position;
 import com.github.rollingmetrics.top.Top;
-import com.github.rollingmetrics.top.TopRecorderSettings;
 import com.github.rollingmetrics.top.impl.recorder.PositionRecorder;
 import com.github.rollingmetrics.top.impl.recorder.TwoPhasePositionRecorder;
 
