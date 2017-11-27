@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.top.impl;
 
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.top.TopTestData;
 import org.junit.Test;
@@ -30,9 +31,9 @@ public class UniformTopTest {
     @Test
     public void testCommonAspects() {
         for (int i = 1; i <= 2; i++) {
-            Top top = Top.builder(i)
-                    .neverResetPositions()
+            Top top = RetentionPolicy.uniform()
                     .withSnapshotCachingDuration(Duration.ZERO)
+                    .newTopBuilder(i)
                     .withLatencyThreshold(Duration.ofMillis(100))
                     .withMaxLengthOfQueryDescription(1000)
                     .build();
@@ -42,9 +43,8 @@ public class UniformTopTest {
 
     @Test
     public void test_size_1() throws Exception {
-        Top top = Top.builder(1)
-                .neverResetPositions()
-                .withSnapshotCachingDuration(Duration.ZERO)
+        Top top = RetentionPolicy.uniform()
+                .newTopBuilder(1)
                 .build();
 
         TopTestUtil.assertEmpty(top);
@@ -61,9 +61,8 @@ public class UniformTopTest {
 
     @Test
     public void test_size_3() throws Exception {
-        Top top = Top.builder(3)
-                .neverResetPositions()
-                .withSnapshotCachingDuration(Duration.ZERO)
+        Top top = RetentionPolicy.uniform()
+                .newTopBuilder(1)
                 .build();
 
         TopTestUtil.assertEmpty(top);
@@ -93,18 +92,14 @@ public class UniformTopTest {
     @Test
     public void testToString() {
         for (int i = 1; i <= 2; i++) {
-            System.out.println(Top.builder(i)
-                    .neverResetPositions()
-                    .build());
+            Top top = RetentionPolicy.uniform().newTopBuilder(i).build();
+            System.out.println(top);
         }
     }
 
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
-        Top top = Top.builder(1)
-                .neverResetPositions()
-                .withSnapshotCachingDuration(Duration.ZERO)
-                .build();
+        Top top = RetentionPolicy.uniform().newTopBuilder(1).build();
         TopTestUtil.runInParallel(top, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
     }
 

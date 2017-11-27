@@ -1,23 +1,23 @@
 /*
+ *    Copyright 2017 Vladimir Bukhtoyarov
  *
- *  Copyright 2017 Vladimir Bukhtoyarov
+ *      Licensed under the Apache License, Version 2.0 (the "License");
+ *      you may not use this file except in compliance with the License.
+ *      You may obtain a copy of the License at
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *            http://www.apache.org/licenses/LICENSE-2.0
  *
- *          http://www.apache.org/licenses/LICENSE-2.0
- *
- *   Unless required by applicable law or agreed to in writing, software
- *   distributed under the License is distributed on an "AS IS" BASIS,
- *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *   See the License for the specific language governing permissions and
- *   limitations under the License.
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
  */
 
-package com.github.rollingmetrics.hitratio;
+package com.github.rollingmetrics.hitratio.impl;
 
-import com.github.rollingmetrics.hitratio.impl.ResetPeriodicallyHitRatio;
+import com.github.rollingmetrics.hitratio.HitRatio;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.util.Ticker;
 import org.junit.Test;
 
@@ -33,7 +33,10 @@ public class ResetPeriodicallyHitRatioTest {
 
     AtomicLong currentTimeMillis = new AtomicLong(0);
     Ticker ticker = Ticker.mock(currentTimeMillis);
-    HitRatio hitRatio = new ResetPeriodicallyHitRatio(Duration.ofMillis(RESET_PERIOD), ticker);
+    HitRatio hitRatio = RetentionPolicy
+            .resetPeriodically(Duration.ofMillis(RESET_PERIOD))
+            .withTicker(ticker)
+            .newHitRatio();
 
     @Test
     public void shouldReturnNanWhenNothingREcorded() {
@@ -82,19 +85,10 @@ public class ResetPeriodicallyHitRatioTest {
         HitRationTestUtil.checkIllegalApiUsageDetection(hitRatio);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldCheckThatResettingPeriodCanNotBeNegative() {
-        new ResetPeriodicallyHitRatio(Duration.ofMillis(-1));
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void shouldCheckThatResettingPeriodCanNotBeZero() {
-        new ResetPeriodicallyHitRatio(Duration.ZERO);
-    }
-
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
-        HitRationTestUtil.runInParallel(new ResetPeriodicallyHitRatio(Duration.ofMillis(1)), TimeUnit.SECONDS.toMillis(30));
+        HitRatio hitRatio = RetentionPolicy.resetPeriodically(Duration.ofMillis(1)).newHitRatio();
+        HitRationTestUtil.runInParallel(hitRatio, TimeUnit.SECONDS.toMillis(30));
     }
 
 }

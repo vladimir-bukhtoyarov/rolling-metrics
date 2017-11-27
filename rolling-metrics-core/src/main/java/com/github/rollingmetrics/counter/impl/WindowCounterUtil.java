@@ -19,19 +19,20 @@ package com.github.rollingmetrics.counter.impl;
 import com.github.rollingmetrics.counter.WindowCounter;
 import com.github.rollingmetrics.retention.*;
 
+import java.time.Duration;
 import java.util.Objects;
 
+/**
+ * This is not part of public API.
+ */
 public class WindowCounterUtil {
 
-    /**
-     * TODO
-     *
-     * @param retentionPolicy
-     * @return
-     */
     public static WindowCounter build(RetentionPolicy retentionPolicy) {
-        // TODO implement caching
+        WindowCounter counter = createCounter(retentionPolicy);
+        return decorate(counter, retentionPolicy);
+    }
 
+    private static WindowCounter createCounter(RetentionPolicy retentionPolicy) {
         Objects.requireNonNull(retentionPolicy);
         if (retentionPolicy instanceof UniformRetentionPolicy) {
             return new UniformCounter();
@@ -46,6 +47,15 @@ public class WindowCounterUtil {
             return new SmoothlyDecayingRollingCounter((ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy, retentionPolicy.getTicker());
         }
         throw new IllegalArgumentException("Unknown retention policy " + retentionPolicy);
+    }
+
+    private static WindowCounter decorate(WindowCounter counter, RetentionPolicy retentionPolicy) {
+        Duration snapshotCachingDuration = retentionPolicy.getSnapshotCachingDuration();
+        if (snapshotCachingDuration.isZero()) {
+            return counter;
+        }
+        // TODO unit test
+        return new SnapshotCachingWindowCounter(retentionPolicy, counter);
     }
 
 }

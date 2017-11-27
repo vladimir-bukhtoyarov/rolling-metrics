@@ -17,18 +17,10 @@
 
 package com.github.rollingmetrics.hitratio;
 
-import com.github.rollingmetrics.hitratio.impl.UniformHitRatio;
-
 /**
  * The metric for hit ratio measurement.
  *
- *
  * TODO
- *
- * @see SmoothlyDecayingRollingHitRatio
- * @see ResetOnSnapshotHitRatio
- * @see ResetPeriodicallyHitRatio
- * @see UniformHitRatio
  */
 public interface HitRatio {
 

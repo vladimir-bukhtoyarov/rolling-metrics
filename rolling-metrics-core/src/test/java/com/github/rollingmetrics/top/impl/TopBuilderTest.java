@@ -1,77 +1,80 @@
 /*
+ *    Copyright 2017 Vladimir Bukhtoyarov
  *
- *  Copyright 2017 Vladimir Bukhtoyarov
+ *      Licensed under the Apache License, Version 2.0 (the "License");
+ *      you may not use this file except in compliance with the License.
+ *      You may obtain a copy of the License at
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *            http://www.apache.org/licenses/LICENSE-2.0
  *
- *          http://www.apache.org/licenses/LICENSE-2.0
- *
- *   Unless required by applicable law or agreed to in writing, software
- *   distributed under the License is distributed on an "AS IS" BASIS,
- *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *   See the License for the specific language governing permissions and
- *   limitations under the License.
+ *     Unless required by applicable law or agreed to in writing, software
+ *     distributed under the License is distributed on an "AS IS" BASIS,
+ *     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *     See the License for the specific language governing permissions and
+ *     limitations under the License.
  */
 
-package com.github.rollingmetrics.top;
+package com.github.rollingmetrics.top.impl;
 
+import com.github.rollingmetrics.retention.RetentionPolicy;
+import com.github.rollingmetrics.top.Top;
+import com.github.rollingmetrics.top.TopBuilder;
+import com.github.rollingmetrics.top.TopTestData;
 import com.github.rollingmetrics.util.Ticker;
-import com.github.rollingmetrics.top.impl.TopTestUtil;
 import org.junit.Test;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.github.rollingmetrics.top.TopBuilder.MIN_CHUNK_RESETTING_INTERVAL_MILLIS;
 import static junit.framework.TestCase.assertEquals;
 
 public class TopBuilderTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void tooManyPositionsShouldBeDisallowed() {
-        Top.builder(TopBuilder.MAX_POSITION_COUNT + 1);
+        RetentionPolicy.uniform()
+                .newTopBuilder(TopRecorderSettings.MAX_POSITION_COUNT + 1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void tooManyPositionsShouldBeDisallowed2() {
-        Top.builder(1).withPositionCount(TopBuilder.MAX_POSITION_COUNT + 1);
+        RetentionPolicy.uniform()
+                .newTopBuilder(1)
+                .withPositionCount(TopRecorderSettings.MAX_POSITION_COUNT + 1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void zeroPositionsShouldBeDisallowed() {
-        Top.builder(0);
+        RetentionPolicy.uniform()
+                .newTopBuilder(0);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void zeroPositionsShouldBeDisallowed2() {
-        Top.builder(1).withPositionCount(0);
+        RetentionPolicy.uniform()
+                .newTopBuilder(1)
+                .withPositionCount(0);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void nullSlowQueryThresholdShouldBeDisallowed() {
-        Top.builder(1).withLatencyThreshold(null);
+        RetentionPolicy.uniform()
+                .newTopBuilder(1)
+                .withLatencyThreshold(null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void negativeSlowQueryThresholdShouldBeDisallowed() {
-        Top.builder(1).withLatencyThreshold(Duration.ofMillis(-1));
+        RetentionPolicy.uniform()
+                .newTopBuilder(1)
+                .withLatencyThreshold(Duration.ofMillis(-1));
     }
 
     @Test
     public void zeroSlowQueryThresholdShouldBeAllowed() {
-        Top.builder(1).withLatencyThreshold(Duration.ZERO);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void nullBackgroundExecutorShouldBeDisallowed() {
-        Top.builder(1).withBackgroundExecutor(null);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void nullTickerShouldBeDisallowed() {
-        Top.builder(1).withTicker(null);
+        RetentionPolicy.uniform()
+                .newTopBuilder(1)
+                .withLatencyThreshold(Duration.ZERO);
     }
 
     @Test(expected = IllegalArgumentException.class)

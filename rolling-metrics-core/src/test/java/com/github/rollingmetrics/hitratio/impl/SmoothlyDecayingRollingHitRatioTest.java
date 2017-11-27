@@ -17,7 +17,6 @@
 package com.github.rollingmetrics.hitratio.impl;
 
 import com.github.rollingmetrics.hitratio.HitRatio;
-import com.github.rollingmetrics.hitratio.HitRationTestUtil;
 import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.util.Ticker;
 import org.junit.Test;

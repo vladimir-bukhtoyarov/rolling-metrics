@@ -27,28 +27,9 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class HitRatioUtil {
 
-    /**
-     * TODO
-     *
-     * @param retentionPolicy
-     * @return
-     */
     public static HitRatio build(RetentionPolicy retentionPolicy) {
-        // TODO implement caching
-        Objects.requireNonNull(retentionPolicy);
-        if (retentionPolicy instanceof UniformRetentionPolicy) {
-            return new UniformHitRatio();
-        }
-        if (retentionPolicy instanceof ResetOnSnapshotRetentionPolicy) {
-            return new ResetOnSnapshotHitRatio();
-        }
-        if (retentionPolicy instanceof ResetPeriodicallyRetentionPolicy) {
-            return new ResetPeriodicallyHitRatio((ResetPeriodicallyRetentionPolicy) retentionPolicy, retentionPolicy.getTicker());
-        }
-        if (retentionPolicy instanceof ResetPeriodicallyByChunksRetentionPolicy) {
-            return new SmoothlyDecayingRollingHitRatio((ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy, retentionPolicy.getTicker());
-        }
-        throw new IllegalArgumentException("Unknown retention policy " + retentionPolicy);
+        HitRatio hitRatio = createHitRatio(retentionPolicy);
+        return decorate(hitRatio, retentionPolicy);
     }
 
     static double getRatio(long compositeRatio) {
@@ -96,6 +77,31 @@ public class HitRatioUtil {
 
     static long toLong(int first, int second) {
         return (long) first << 32 | second & 0xFFFFFFFFL;
+    }
+
+    private static HitRatio decorate(HitRatio hitRatio, RetentionPolicy retentionPolicy) {
+        if (retentionPolicy.getSnapshotCachingDuration().isZero()) {
+            return hitRatio;
+        }
+        // TODO unit test
+        return new SnapshotCachingHitRatio(retentionPolicy, hitRatio);
+    }
+
+    private static HitRatio createHitRatio(RetentionPolicy retentionPolicy) {
+        Objects.requireNonNull(retentionPolicy);
+        if (retentionPolicy instanceof UniformRetentionPolicy) {
+            return new UniformHitRatio();
+        }
+        if (retentionPolicy instanceof ResetOnSnapshotRetentionPolicy) {
+            return new ResetOnSnapshotHitRatio();
+        }
+        if (retentionPolicy instanceof ResetPeriodicallyRetentionPolicy) {
+            return new ResetPeriodicallyHitRatio((ResetPeriodicallyRetentionPolicy) retentionPolicy, retentionPolicy.getTicker());
+        }
+        if (retentionPolicy instanceof ResetPeriodicallyByChunksRetentionPolicy) {
+            return new SmoothlyDecayingRollingHitRatio((ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy, retentionPolicy.getTicker());
+        }
+        throw new IllegalArgumentException("Unknown retention policy " + retentionPolicy);
     }
 
 }
