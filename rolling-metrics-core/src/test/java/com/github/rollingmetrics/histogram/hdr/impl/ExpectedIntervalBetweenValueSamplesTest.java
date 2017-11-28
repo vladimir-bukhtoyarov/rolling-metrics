@@ -14,8 +14,10 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.histogram.hdr;
+package com.github.rollingmetrics.histogram.hdr.impl;
 
+import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
@@ -25,7 +27,8 @@ public class ExpectedIntervalBetweenValueSamplesTest {
 
     @Test
     public void expectedIntervalBetweenValueSamples() {
-        RollingHdrHistogram histogram = RollingHdrHistogram.builder()
+        RollingHdrHistogram histogram = RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .withExpectedIntervalBetweenValueSamples(100)
                 .build();
         for (int i = 1; i <= 100; i++) {

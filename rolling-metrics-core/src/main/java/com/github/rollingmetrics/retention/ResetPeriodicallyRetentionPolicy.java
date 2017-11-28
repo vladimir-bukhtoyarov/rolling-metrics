@@ -47,7 +47,7 @@ public class ResetPeriodicallyRetentionPolicy extends DefaultRetentionPolicy {
      */
     public ResetPeriodicallyRetentionPolicy(Duration resettingPeriod) {
         if (resettingPeriod == null) {
-            throw new IllegalArgumentException("resettingPeriod must be a positive duration");
+            throw new IllegalArgumentException("resettingPeriod must not be null");
         }
         if (resettingPeriod.isNegative() || resettingPeriod.isZero()) {
             throw new IllegalArgumentException("resettingPeriod must be a positive duration");

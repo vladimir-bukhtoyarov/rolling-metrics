@@ -14,9 +14,12 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.histogram.hdr;
+package com.github.rollingmetrics.histogram.hdr.impl;
 
 import com.github.rollingmetrics.histogram.OverflowResolver;
+import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
+import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
@@ -25,7 +28,8 @@ public class OverflowResolverTest {
 
     @Test
     public void testSkipBigValues() {
-        RollingHdrHistogram histogram = RollingHdrHistogram.builder()
+        RollingHdrHistogram histogram = RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .withHighestTrackableValue(100, OverflowResolver.SKIP).
                 build();
 
@@ -44,7 +48,8 @@ public class OverflowResolverTest {
 
     @Test
     public void testReduceBigValuesToMax() {
-        RollingHdrHistogram histogram = RollingHdrHistogram.builder()
+        RollingHdrHistogram histogram = RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .withHighestTrackableValue(100, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .build();
 
@@ -63,7 +68,8 @@ public class OverflowResolverTest {
 
     @Test(expected = ArrayIndexOutOfBoundsException.class)
     public void testPassThruBigValues() {
-        RollingHdrHistogram histogram = RollingHdrHistogram.builder()
+        RollingHdrHistogram histogram = RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .withHighestTrackableValue(100, OverflowResolver.PASS_THRU)
                 .build();
         histogram.update(100000);
@@ -71,7 +77,8 @@ public class OverflowResolverTest {
 
     @Test
     public void testPassThruBigValues2() {
-        RollingHdrHistogram histogram = RollingHdrHistogram.builder()
+        RollingHdrHistogram histogram = RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .withHighestTrackableValue(100, OverflowResolver.PASS_THRU)
                 .build();
         histogram.update(101);

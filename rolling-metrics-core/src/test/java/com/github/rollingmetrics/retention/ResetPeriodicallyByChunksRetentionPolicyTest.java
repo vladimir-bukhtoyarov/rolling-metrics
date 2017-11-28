@@ -16,6 +16,9 @@
 
 package com.github.rollingmetrics.retention;
 
+import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
+import com.github.rollingmetrics.top.Top;
+import com.github.rollingmetrics.top.TopBuilder;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -23,13 +26,34 @@ import java.time.Duration;
 public class ResetPeriodicallyByChunksRetentionPolicyTest {
 
     @Test(expected = IllegalArgumentException.class)
-    public void shouldDisAllowLessThenTwoChunks() {
-        new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 1);
+    public void shouldDisAllowLessThenOneChunks() {
+        new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 0);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void nullRollingWindowShouldBeDisallowed() {
+        Top.builder(1).resetPositionsPeriodicallyByChunks(null, TopBuilder.MAX_CHUNKS);
+    }
+
+    @Test
+    public void shouldAllowOneChunk() {
+        new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 0);
     }
 
     @Test
     public void shouldAllowTwoChunks() {
         new SmoothlyDecayingRollingCounter(Duration.ofSeconds(1), 2);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldDisallowNegativeDuration() {
+        RollingHdrHistogram.builder()
+                .resetReservoirPeriodicallyByChunks(Duration.ofMillis(-1), 2);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void negativeChunkTtlShouldBeDisallowed() {
+        Top.builder(1).resetPositionsPeriodicallyByChunks(Duration.ofMillis(-2000), 2);
     }
 
 }

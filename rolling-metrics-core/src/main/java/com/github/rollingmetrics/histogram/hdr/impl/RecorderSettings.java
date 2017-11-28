@@ -36,23 +36,23 @@ public class RecorderSettings {
     private Optional<OverflowResolver> overflowResolver = Optional.empty();
     private Optional<Long> expectedIntervalBetweenValueSamples = Optional.empty();
 
-    public Optional<double[]> getPredefinedPercentiles() {
+    Optional<double[]> getPredefinedPercentiles() {
         return predefinedPercentiles;
     }
 
-    public Optional<Long> getExpectedIntervalBetweenValueSamples() {
+    Optional<Long> getExpectedIntervalBetweenValueSamples() {
         return expectedIntervalBetweenValueSamples;
     }
 
-    public Optional<Long> getHighestTrackableValue() {
+    Optional<Long> getHighestTrackableValue() {
         return highestTrackableValue;
     }
 
-    public Optional<OverflowResolver> getOverflowResolver() {
+    Optional<OverflowResolver> getOverflowResolver() {
         return overflowResolver;
     }
 
-    public void validateParameters() {
+    void validateParameters() {
         if (highestTrackableValue.isPresent() && lowestDiscernibleValue.isPresent() && highestTrackableValue.get() < 2L * lowestDiscernibleValue.get()) {
             throw new IllegalStateException("highestTrackableValue must be >= 2 * lowestDiscernibleValue");
         }
@@ -61,7 +61,7 @@ public class RecorderSettings {
         }
     }
 
-    public Recorder buildRecorder() {
+    Recorder buildRecorder() {
         if (lowestDiscernibleValue.isPresent()) {
             return new Recorder(lowestDiscernibleValue.get(), highestTrackableValue.get(), numberOfSignificantValueDigits);
         }
@@ -71,21 +71,21 @@ public class RecorderSettings {
         return new Recorder(numberOfSignificantValueDigits);
     }
 
-    public void setLowestDiscernibleValue(long lowestDiscernibleValue) {
+    void setLowestDiscernibleValue(long lowestDiscernibleValue) {
         if (lowestDiscernibleValue < 1) {
             throw new IllegalArgumentException("lowestDiscernibleValue must be >= 1");
         }
         this.lowestDiscernibleValue = Optional.of(lowestDiscernibleValue);
     }
 
-    public void setSignificantDigits(int numberOfSignificantValueDigits) {
+    void setSignificantDigits(int numberOfSignificantValueDigits) {
         if ((numberOfSignificantValueDigits < 0) || (numberOfSignificantValueDigits > 5)) {
             throw new IllegalArgumentException("numberOfSignificantValueDigits must be between 0 and 5");
         }
         this.numberOfSignificantValueDigits = numberOfSignificantValueDigits;
     }
 
-    public void setHighestTrackableValue(long highestTrackableValue, OverflowResolver overflowResolver) {
+    void setHighestTrackableValue(long highestTrackableValue, OverflowResolver overflowResolver) {
         if (highestTrackableValue < 2) {
             throw new IllegalArgumentException("highestTrackableValue must be >= 2");
         }
@@ -96,14 +96,14 @@ public class RecorderSettings {
         this.overflowResolver = Optional.of(overflowResolver);
     }
 
-    public void setExpectedIntervalBetweenValueSamples(long expectedIntervalBetweenValueSamples) {
+    void setExpectedIntervalBetweenValueSamples(long expectedIntervalBetweenValueSamples) {
         if (expectedIntervalBetweenValueSamples < 0) {
             throw new IllegalArgumentException("highestTrackableValue must be >= 0");
         }
         this.expectedIntervalBetweenValueSamples = Optional.of(expectedIntervalBetweenValueSamples);
     }
 
-    public void setPredefinedPercentiles(double[] predefinedPercentiles) {
+    void setPredefinedPercentiles(double[] predefinedPercentiles) {
         predefinedPercentiles = Objects.requireNonNull(predefinedPercentiles, "predefinedPercentiles array should not be null");
         if (predefinedPercentiles.length == 0) {
             String msg = "predefinedPercentiles.length is zero. Use withoutSnapshotOptimization() instead of passing empty array.";
@@ -120,7 +120,7 @@ public class RecorderSettings {
         this.predefinedPercentiles = Optional.of(sortedPercentiles);
     }
 
-    public void withoutSnapshotOptimization() {
+    void withoutSnapshotOptimization() {
         this.predefinedPercentiles = Optional.empty();
     }
 

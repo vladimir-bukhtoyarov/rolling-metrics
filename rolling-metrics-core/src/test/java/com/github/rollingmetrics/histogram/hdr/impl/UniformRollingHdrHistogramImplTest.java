@@ -19,6 +19,7 @@ package com.github.rollingmetrics.histogram.hdr.impl;
 
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -28,8 +29,9 @@ public class UniformRollingHdrHistogramImplTest {
 
     @Test
     public void shouldCacheSnapshot() {
-        RollingHdrHistogram histogram = RollingHdrHistogram.builder()
-                .neverResetReservoir()
+        RollingHdrHistogram histogram = RetentionPolicy
+                .uniform()
+                .newRollingHdrHistogramBuilder()
                 .build();
 
         histogram.update(10);
@@ -53,8 +55,9 @@ public class UniformRollingHdrHistogramImplTest {
 
     @Test
     public void testToString() {
-        RollingHdrHistogram.builder()
-                .neverResetReservoir()
+        RetentionPolicy
+                .uniform()
+                .newRollingHdrHistogramBuilder()
                 .build()
                 .toString();
     }

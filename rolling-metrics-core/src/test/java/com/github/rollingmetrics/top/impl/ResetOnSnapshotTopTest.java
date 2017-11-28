@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.top.impl;
 
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.top.TopTestData;
 import org.junit.Test;
@@ -30,9 +31,9 @@ public class ResetOnSnapshotTopTest {
     @Test
     public void testCommonAspects() {
         for (int i = 1; i <= 2; i++) {
-            Top top = Top.builder(i)
-                    .resetAllPositionsOnSnapshot()
+            Top top = RetentionPolicy.resetOnSnapshot()
                     .withSnapshotCachingDuration(Duration.ZERO)
+                    .newTopBuilder(i)
                     .withLatencyThreshold(Duration.ofMillis(100))
                     .withMaxLengthOfQueryDescription(1000)
                     .build();
@@ -42,9 +43,8 @@ public class ResetOnSnapshotTopTest {
 
     @Test
     public void test_size_1() throws Exception {
-        Top top = Top.builder(1)
-                .resetAllPositionsOnSnapshot()
-                .withSnapshotCachingDuration(Duration.ZERO)
+        Top top = RetentionPolicy.resetOnSnapshot()
+                .newTopBuilder(1)
                 .build();
 
         TopTestUtil.assertEmpty(top);
@@ -70,9 +70,9 @@ public class ResetOnSnapshotTopTest {
 
     @Test
     public void test_size_3() throws Exception {
-        Top top = Top.builder(3)
-                .resetAllPositionsOnSnapshot()
+        Top top = RetentionPolicy.resetOnSnapshot()
                 .withSnapshotCachingDuration(Duration.ZERO)
+                .newTopBuilder(3)
                 .build();
 
         TopTestUtil.assertEmpty(top);
@@ -96,7 +96,9 @@ public class ResetOnSnapshotTopTest {
     @Test
     public void testToString() {
         for (int i = 1; i <= 2; i++) {
-            System.out.println(Top.builder(i)
+            System.out.println(
+                    RetentionPolicy.resetOnSnapshot()
+                    Top.builder(i)
                     .resetAllPositionsOnSnapshot()
                     .build());
         }

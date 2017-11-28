@@ -14,14 +14,16 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.histogram.hdr;
+package com.github.rollingmetrics.histogram.hdr.impl;
 
 import com.github.rollingmetrics.histogram.OverflowResolver;
+import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
+import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramBuilder;
+import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.junit.Test;
 import java.time.Duration;
 import java.util.function.Function;
-
-import static junit.framework.TestCase.assertEquals;
 
 public class PrintingTest {
 
@@ -34,14 +36,17 @@ public class PrintingTest {
 
     @Test
     public void testSmartSnapshotPrinting() {
-        RollingHdrHistogram histogram = RollingHdrHistogram.builder().build();
+        RollingHdrHistogram histogram = RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
+                .build();
         RollingSnapshot snapshot = snapshotTaker.apply(histogram);
         System.out.println(snapshot);
     }
 
     @Test
     public void testFullSnapshotPrinting() {
-        RollingHdrHistogram histogram = RollingHdrHistogram.builder()
+        RollingHdrHistogram histogram = RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .withoutSnapshotOptimization().build();
         RollingSnapshot snapshot = snapshotTaker.apply(histogram);
         System.out.println(snapshot);
@@ -49,16 +54,14 @@ public class PrintingTest {
 
     @Test
     public void testBuilderPrinting() {
-        RollingHdrHistogramBuilder builder = RollingHdrHistogram.builder()
+        RollingHdrHistogramBuilder builder = RetentionPolicy.uniform()
+                .withSnapshotCachingDuration(Duration.ofDays(1))
+                .newRollingHdrHistogramBuilder()
                 .withHighestTrackableValue(2, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .withLowestDiscernibleValue(1);
         System.out.println(builder.toString());
-        System.out.println(builder.withSnapshotCachingDuration(Duration.ofDays(1)).toString());
-        System.out.println(builder.withSnapshotCachingDuration(Duration.ZERO).toString());
         System.out.println(builder.withoutSnapshotOptimization().toString());
         System.out.println(builder.withPredefinedPercentiles(new double[] {0.5, 0.99}).toString());
-
-        assertEquals(builder.toString(), builder.deepCopy().toString());
     }
 
 }

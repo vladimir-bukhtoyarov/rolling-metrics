@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.top.impl;
 
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.MockExecutor;
@@ -33,9 +34,10 @@ public class ResetByChunksTopTest {
     @Test
     public void testCommonAspects() {
         for (int i = 1; i <= 2; i++) {
-            Top top = Top.builder(i)
-                    .resetPositionsPeriodicallyByChunks(Duration.ofDays(1), 3)
+            Top top = RetentionPolicy
+                    .resetPeriodicallyByChunks(Duration.ofDays(1), 3)
                     .withSnapshotCachingDuration(Duration.ZERO)
+                    .newTopBuilder(i)
                     .withLatencyThreshold(Duration.ofMillis(100))
                     .withMaxLengthOfQueryDescription(1000)
                     .build();
@@ -47,11 +49,12 @@ public class ResetByChunksTopTest {
     public void test_size_1() throws Exception {
         AtomicLong currentTimeMillis = new AtomicLong(0L);
         Ticker ticker = Ticker.mock(currentTimeMillis);
-        Top top = Top.builder(1)
-                .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(3), 3)
-                .withSnapshotCachingDuration(Duration.ZERO)
-                .withTicker(ticker)
+        Top top =  RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofDays(1), 3)
                 .withBackgroundExecutor(MockExecutor.INSTANCE)
+                .withTicker(ticker)
+                .withSnapshotCachingDuration(Duration.ZERO)
+                .newTopBuilder(1)
                 .build();
 
         TopTestUtil.assertEmpty(top);
@@ -121,11 +124,11 @@ public class ResetByChunksTopTest {
     public void test_size_3() throws Exception {
         AtomicLong currentTimeMillis = new AtomicLong(0L);
         Ticker ticker = Ticker.mock(currentTimeMillis);
-        Top top = Top.builder(3)
-                .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(3), 3)
+        Top top = RetentionPolicy.resetPeriodicallyByChunks(Duration.ofSeconds(3), 3)
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .withTicker(ticker)
                 .withBackgroundExecutor(MockExecutor.INSTANCE)
+                .newTopBuilder(3)
                 .build();
 
         TopTestUtil.assertEmpty(top);
@@ -194,26 +197,29 @@ public class ResetByChunksTopTest {
     @Test
     public void testToString() {
         for (int i = 1; i <= 2; i++) {
-            System.out.println(Top.builder(i)
-                    .resetPositionsPeriodicallyByChunks(Duration.ofDays(1), 3)
+            System.out.println(RetentionPolicy
+                    .resetPeriodicallyByChunks(Duration.ofDays(1), 3)
+                    .newTopBuilder(i)
                     .build());
         }
     }
 
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung_1() throws InterruptedException {
-        Top top = Top.builder(1)
-                .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(2), 2)
+        Top top = RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofSeconds(2), 2)
                 .withSnapshotCachingDuration(Duration.ZERO)
+                .newTopBuilder(1)
                 .build();
         TopTestUtil.runInParallel(top, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
     }
 
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung_3() throws InterruptedException {
-        Top top = Top.builder(3)
-                .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(2), 2)
+        Top top = RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofSeconds(2), 2)
                 .withSnapshotCachingDuration(Duration.ZERO)
+                .newTopBuilder(3)
                 .build();
         TopTestUtil.runInParallel(top, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
     }

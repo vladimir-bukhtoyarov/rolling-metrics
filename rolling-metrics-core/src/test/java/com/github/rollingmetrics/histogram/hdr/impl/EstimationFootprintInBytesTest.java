@@ -14,10 +14,9 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.histogram.hdr;
+package com.github.rollingmetrics.histogram.hdr.impl;
 import com.github.rollingmetrics.histogram.OverflowResolver;
-import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
-import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramBuilder;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.HdrHistogram.Recorder;
 import org.junit.Test;
 
@@ -25,21 +24,25 @@ import java.time.Duration;
 
 import static org.junit.Assert.assertEquals;
 
-public class EstimationFootprintInBytesTest {
 
-    private RollingHdrHistogramBuilder builder = RollingHdrHistogram.builder()
-            .withHighestTrackableValue(3600, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
-            .withLowestDiscernibleValue(10)
-            .withSignificantDigits(3);
+public class EstimationFootprintInBytesTest {
 
     private int histogramEquivalentEstimate = new Recorder(10, 3600, 3).getIntervalHistogram().getEstimatedFootprintInBytes();
 
     @Test
     public void testEstimationFootprintInBytes() {
-        assertEquals(histogramEquivalentEstimate * 3, builder.neverResetReservoir().getEstimatedFootprintInBytes());
-        assertEquals(histogramEquivalentEstimate * 2, builder.resetReservoirOnSnapshot().getEstimatedFootprintInBytes());
-        assertEquals(histogramEquivalentEstimate * 7, builder.resetReservoirPeriodically(Duration.ofMinutes(1)).getEstimatedFootprintInBytes());
-        assertEquals(histogramEquivalentEstimate * (10 + 6 + 1), builder.resetReservoirPeriodicallyByChunks(Duration.ofMinutes(1), 10).getEstimatedFootprintInBytes());
+        assertEquals(histogramEquivalentEstimate * 3, footprint(RetentionPolicy.uniform()));
+        assertEquals(histogramEquivalentEstimate * 2, footprint(RetentionPolicy.resetOnSnapshot()));
+        assertEquals(histogramEquivalentEstimate * 7, footprint(RetentionPolicy.resetPeriodically(Duration.ofMinutes(1))));
+        assertEquals(histogramEquivalentEstimate * (10 + 6 + 1), footprint(RetentionPolicy.resetPeriodicallyByChunks(Duration.ofMinutes(1), 10)));
+    }
+
+    private int footprint(RetentionPolicy policy) {
+        return policy.newRollingHdrHistogramBuilder()
+                .withHighestTrackableValue(3600, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
+                .withLowestDiscernibleValue(10)
+                .withSignificantDigits(3)
+                .getEstimatedFootprintInBytes();
     }
 
 }

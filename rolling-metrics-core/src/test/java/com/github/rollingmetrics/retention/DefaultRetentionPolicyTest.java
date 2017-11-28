@@ -16,10 +16,11 @@
 
 package com.github.rollingmetrics.retention;
 
+import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.top.Top;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
+import java.time.Duration;
 
 public class DefaultRetentionPolicyTest {
 
@@ -29,8 +30,36 @@ public class DefaultRetentionPolicyTest {
     }
 
     @Test(expected = IllegalArgumentException.class)
+    public void nullExecutorShouldBeDeprecated() {
+        RollingHdrHistogram.builder()
+                .withBackgroundExecutor(null);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
     public void nullTickerShouldBeDisallowed() {
         Top.builder(1).withTicker(null);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldNotAllowNegativeCachingDuration() {
+        RollingHdrHistogram.builder()
+                .withSnapshotCachingDuration(Duration.ofMillis(-1000));
+    }
+
+    @Test
+    public void shouldAllowZeroCachingDuration() {
+        RollingHdrHistogram.builder()
+                .withSnapshotCachingDuration(Duration.ZERO);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void negativeCachingDurationShouldBeDisallowed() {
+        Top.builder(1).withSnapshotCachingDuration(Duration.ofMillis(-2000));
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void nullCachingDurationShouldBeDisallowed() {
+        Top.builder(1).withSnapshotCachingDuration(null);
     }
 
 }

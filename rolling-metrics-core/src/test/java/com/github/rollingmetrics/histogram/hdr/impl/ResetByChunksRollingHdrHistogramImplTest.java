@@ -20,6 +20,7 @@ package com.github.rollingmetrics.histogram.hdr.impl;
 
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.MockExecutor;
 import org.junit.Test;
@@ -36,10 +37,11 @@ public class ResetByChunksRollingHdrHistogramImplTest {
     public void test() {
         AtomicLong time = new AtomicLong(0);
         Ticker ticker = Ticker.mock(time);
-        RollingHdrHistogram histogram = RollingHdrHistogram.builder()
+        RollingHdrHistogram histogram = RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofMillis(3000), 3)
                 .withTicker(ticker)
-                .resetReservoirPeriodicallyByChunks(Duration.ofMillis(3000), 3)
                 .withBackgroundExecutor(MockExecutor.INSTANCE)
+                .newRollingHdrHistogramBuilder()
                 .build();
 
         histogram.update(10);
@@ -108,15 +110,17 @@ public class ResetByChunksRollingHdrHistogramImplTest {
 
     @Test
     public void testToString() {
-        RollingHdrHistogram.builder()
-                .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(60), 3)
+        RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofSeconds(60), 3)
+                .newRollingHdrHistogramBuilder()
                 .build().toString();
     }
 
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHungWithThreeChunks() throws InterruptedException {
-        RollingHdrHistogram histogram = RollingHdrHistogram.builder()
-                .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(3), 3)
+        RollingHdrHistogram histogram = RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofSeconds(3), 3)
+                .newRollingHdrHistogramBuilder()
                 .build();
 
         HistogramTestUtil.runInParallel(histogram, TimeUnit.SECONDS.toMillis(30));

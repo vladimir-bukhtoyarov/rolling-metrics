@@ -33,4 +33,9 @@ public class ResetPeriodicallyRetentionPolicyTest {
         RetentionPolicy.resetPeriodically(Duration.ZERO);
     }
 
+    @Test(expected = IllegalArgumentException.class)
+    public void nullIntervalBetweenResettingShouldBeDisallowed() {
+        RetentionPolicy.resetPeriodically(null);
+    }
+
 }

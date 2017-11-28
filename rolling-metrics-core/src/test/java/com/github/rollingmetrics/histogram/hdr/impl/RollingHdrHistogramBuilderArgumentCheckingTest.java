@@ -14,15 +14,16 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.histogram.hdr;
+package com.github.rollingmetrics.histogram.hdr.impl;
 
 import com.github.rollingmetrics.histogram.OverflowResolver;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.junit.Test;
 
 import java.time.Duration;
 
-import static com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramBuilder.MAX_CHUNKS;
-import static com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramBuilder.MIN_CHUNK_RESETTING_INTERVAL_MILLIS;
+import static com.github.rollingmetrics.histogram.hdr.impl.ResetByChunksRollingHdrHistogramImpl.MAX_CHUNKS;
+import static com.github.rollingmetrics.histogram.hdr.impl.ResetByChunksRollingHdrHistogramImpl.MIN_CHUNK_RESETTING_INTERVAL_MILLIS;
 import static org.junit.Assert.fail;
 
 
@@ -30,18 +31,24 @@ public class RollingHdrHistogramBuilderArgumentCheckingTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldNotAllowNegativeSignificantDigits() {
-        RollingHdrHistogram.builder().withSignificantDigits(-1);
+        RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
+                .withSignificantDigits(-1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldNotAllowTooBigSignificantDigits() {
-        RollingHdrHistogram.builder().withSignificantDigits(6);
+        RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
+                .withSignificantDigits(6);
     }
 
     @Test
     public void shouldAllowSignificantDigitsBetweenZeroAndFive() {
         for (int digits = 0; digits < 6; digits++) {
-            RollingHdrHistogram.builder().withSignificantDigits(digits);
+            RetentionPolicy.uniform()
+                    .newRollingHdrHistogramBuilder()
+                    .withSignificantDigits(digits);
         }
     }
 
@@ -49,7 +56,9 @@ public class RollingHdrHistogramBuilderArgumentCheckingTest {
     public void shouldNotAllowTooSmallSignificantDigitsLowestDiscernibleValue() {
         for (int value : new int[] {0, -1}) {
             try {
-                RollingHdrHistogram.builder().withLowestDiscernibleValue(value);
+                RetentionPolicy.uniform()
+                        .newRollingHdrHistogramBuilder()
+                        .withLowestDiscernibleValue(value);
                 fail();
             } catch (IllegalArgumentException e) {
                 // ok
@@ -61,7 +70,8 @@ public class RollingHdrHistogramBuilderArgumentCheckingTest {
     public void shouldNotAllowTooSmallHighestTrackableValue() {
         for (int value : new int[] {0, -1, 1}) {
             try {
-                RollingHdrHistogram.builder()
+                RetentionPolicy.uniform()
+                        .newRollingHdrHistogramBuilder()
                         .withHighestTrackableValue(value, OverflowResolver.PASS_THRU);
                 fail();
             } catch (IllegalArgumentException e) {
@@ -72,7 +82,8 @@ public class RollingHdrHistogramBuilderArgumentCheckingTest {
 
     @Test(expected = IllegalStateException.class)
     public void shouldCheckThatHighestValueShouldBeTwoTimesGreaterThenLowest() {
-        RollingHdrHistogram.builder()
+        RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .withLowestDiscernibleValue(10)
                 .withHighestTrackableValue(11, OverflowResolver.PASS_THRU)
                 .build();
@@ -80,107 +91,76 @@ public class RollingHdrHistogramBuilderArgumentCheckingTest {
 
     @Test(expected = IllegalStateException.class)
     public void shouldRequireHighestValueIfLowestSpecified() {
-        RollingHdrHistogram.builder()
+        RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .withLowestDiscernibleValue(10)
                 .build();
     }
 
     @Test(expected = NullPointerException.class)
     public void shouldNotAllowNullOverflowHandlingStrategy() {
-        RollingHdrHistogram.builder()
+        RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .withHighestTrackableValue(42, null);
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void shouldNotAllowNegativeCachingDuration() {
-        RollingHdrHistogram.builder()
-                .withSnapshotCachingDuration(Duration.ofMillis(-1000));
-    }
-
-    @Test
-    public void shouldAllowZeroCachingDuration() {
-        RollingHdrHistogram.builder()
-                .withSnapshotCachingDuration(Duration.ZERO);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
     public void shouldNotAllowNegativePercentiles() {
-        RollingHdrHistogram.builder()
+        RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .withPredefinedPercentiles(new double[] {0.1, -0.2, 0.4});
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldNotAllowTooBigPercentiles() {
-        RollingHdrHistogram.builder()
+        RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .withPredefinedPercentiles(new double[] {0.1, 0.2, 1.1});
     }
 
     @Test(expected = NullPointerException.class)
     public void shouldNotAllowNullPercentiles() {
-        RollingHdrHistogram.builder()
+        RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .withPredefinedPercentiles(null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldNotAllowEmptyPercentiles() {
-        RollingHdrHistogram.builder()
+        RetentionPolicy.uniform()
+                .newRollingHdrHistogramBuilder()
                 .withPredefinedPercentiles(new double[0]);
     }
 
     @Test
     public void shouldSuccessfullyBuild() {
-        RollingHdrHistogram.builder()
+        RetentionPolicy.uniform()
+                .withSnapshotCachingDuration(Duration.ofMinutes(1))
+                .newRollingHdrHistogramBuilder()
                 .withLowestDiscernibleValue(3).withLowestDiscernibleValue(1000)
                 .withHighestTrackableValue(3600000L, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .withPredefinedPercentiles(new double[] {0.9, 0.95, 0.99})
-                .withSnapshotCachingDuration(Duration.ofMinutes(1))
                 .build();
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void negativeResetPeriodShouldNotAllowedForResetReservoirPeriodically() {
-        RollingHdrHistogram.builder()
-                .resetReservoirPeriodically(Duration.ofMinutes(-5));
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void zeroResetPeriodShouldNotAllowedForResetReservoirPeriodically() {
-        RollingHdrHistogram.builder()
-                .resetReservoirPeriodically(Duration.ZERO);
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void nullExecutorShouldBeDeprecated() {
-        RollingHdrHistogram.builder()
-                .withBackgroundExecutor(null);
     }
 
     @Test
     public void validateResetByChunksParametersTest() {
-        RollingHdrHistogram.builder()
-                .resetReservoirPeriodicallyByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS * MAX_CHUNKS), MAX_CHUNKS);
-        try {
-            RollingHdrHistogram.builder()
-                    .resetReservoirPeriodicallyByChunks(Duration.ofMillis(-1), 2);
-            fail("should disallow negative duration");
-        } catch (IllegalArgumentException e) {}
+        RetentionPolicy.resetPeriodicallyByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS * MAX_CHUNKS), MAX_CHUNKS)
+                .newRollingHdrHistogramBuilder()
+                .build();
 
         try {
-            RollingHdrHistogram.builder()
-                    .resetReservoirPeriodicallyByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS - 1), MAX_CHUNKS);
+            RetentionPolicy.resetPeriodicallyByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS - 1), MAX_CHUNKS)
+                .newRollingHdrHistogramBuilder()
+                .build();
             fail("should disallow too short duration");
         } catch (IllegalArgumentException e) {}
 
         try {
-            RollingHdrHistogram.builder()
-                    .resetReservoirPeriodicallyByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS), MAX_CHUNKS + 1);
+            RetentionPolicy.resetPeriodicallyByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS), MAX_CHUNKS + 1)
+                .newRollingHdrHistogramBuilder()
+                .build();
             fail("should too many chunks");
-        } catch (IllegalArgumentException e) {}
-
-        try {
-            RollingHdrHistogram.builder()
-                    .resetReservoirPeriodicallyByChunks(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS), 0);
-            fail("should check that chunks >= 1");
         } catch (IllegalArgumentException e) {}
     }
 

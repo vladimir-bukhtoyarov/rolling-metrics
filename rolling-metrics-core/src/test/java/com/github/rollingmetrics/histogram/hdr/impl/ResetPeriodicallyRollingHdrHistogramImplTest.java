@@ -20,6 +20,7 @@ package com.github.rollingmetrics.histogram.hdr.impl;
 
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.MockExecutor;
 import org.junit.Test;
@@ -36,10 +37,11 @@ public class ResetPeriodicallyRollingHdrHistogramImplTest {
     public void test() {
         AtomicLong time = new AtomicLong(0);
         Ticker ticker = Ticker.mock(time);
-        RollingHdrHistogram histogram = RollingHdrHistogram.builder()
+        RollingHdrHistogram histogram = RetentionPolicy
+                .resetPeriodically(Duration.ofMillis(1000))
                 .withTicker(ticker)
-                .resetReservoirPeriodically(Duration.ofMillis(1000))
                 .withBackgroundExecutor(MockExecutor.INSTANCE)
+                .newRollingHdrHistogramBuilder()
                 .build();
 
         histogram.update(10);
@@ -95,15 +97,17 @@ public class ResetPeriodicallyRollingHdrHistogramImplTest {
 
     @Test
     public void testToString() {
-        RollingHdrHistogram.builder()
-                .resetReservoirPeriodically(Duration.ofSeconds(1))
+        RetentionPolicy
+                .resetPeriodically(Duration.ofSeconds(1))
+                .newRollingHdrHistogramBuilder()
                 .build().toString();
     }
 
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
-        RollingHdrHistogram histogram = RollingHdrHistogram.builder()
-                .resetReservoirPeriodically(Duration.ofSeconds(1))
+        RollingHdrHistogram histogram = RetentionPolicy
+                .resetPeriodically(Duration.ofSeconds(1))
+                .newRollingHdrHistogramBuilder()
                 .build();
 
         HistogramTestUtil.runInParallel(histogram, TimeUnit.SECONDS.toMillis(30));
