@@ -61,7 +61,8 @@ public class SmoothlyDecayingRollingCounterPerOperationBenchmark {
         };
         public final WindowCounter counter =  RetentionPolicy
                 .resetPeriodicallyByChunks(Duration.ofSeconds(1), 10)
-                .newCounter(ticker);
+                .withTicker(ticker)
+                .newCounter();
     }
 
     @State(Scope.Benchmark)

@@ -19,6 +19,7 @@ package com.github.rollingmetrics.microprofile.adapter;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
 import com.github.rollingmetrics.microprofile.MicroProfile;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.eclipse.microprofile.metrics.Histogram;
 import org.eclipse.microprofile.metrics.Meter;
 import org.eclipse.microprofile.metrics.Snapshot;
@@ -42,7 +43,8 @@ public class MicroProfileHistogramAndTimerTest {
     static double meanRate = 0.24;
 
     Meter meter = Mockito.mock(Meter.class);
-    RollingHdrHistogram rollingHistogram = RollingHdrHistogram.builder()
+    RollingHdrHistogram rollingHistogram = RetentionPolicy.uniform()
+            .newRollingHdrHistogramBuilder()
             .withSignificantDigits(4)
             .build();
 

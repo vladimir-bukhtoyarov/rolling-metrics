@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.hitratio;
 
-import com.github.rollingmetrics.hitratio.impl.ResetPeriodicallyHitRatio;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -33,7 +33,7 @@ public class ResetPeriodicalyHitRatioBenchmark {
 
     @org.openjdk.jmh.annotations.State(Scope.Benchmark)
     public static class State {
-        public final HitRatio hitRatio = new ResetPeriodicallyHitRatio(Duration.ofSeconds(1));
+        public final HitRatio hitRatio = RetentionPolicy.resetPeriodically(Duration.ofSeconds(1)).newHitRatio();
     }
 
     @Benchmark

@@ -88,22 +88,22 @@ public class HistogramRecordingBenchmark {
 
             this.chunkedHistogramWithBackgroundClock = RetentionPolicy
                     .resetPeriodicallyByChunks(Duration.ofSeconds(3), 3)
-                    .newRollingHdrHistogramBuilder()
                     .withTicker(backgroundClock)
+                    .newRollingHdrHistogramBuilder()
                     .build();
 
             this.upperLimitedChunkedHistogramWithBackgroundClock = RetentionPolicy
                     .resetPeriodicallyByChunks(Duration.ofSeconds(3), 3)
-                    .newRollingHdrHistogramBuilder()
                     .withTicker(backgroundClock)
+                    .newRollingHdrHistogramBuilder()
                     .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
                     .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                     .build();
 
             this.resetPeriodicallyHistogramWithBackgroundClock = RetentionPolicy
                     .resetPeriodically(Duration.ofSeconds(300))
-                    .newRollingHdrHistogramBuilder()
                     .withTicker(backgroundClock)
+                    .newRollingHdrHistogramBuilder()
                     .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
                     .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                     .build();
@@ -178,7 +178,7 @@ public class HistogramRecordingBenchmark {
     public static class OneThread {
         public static void main(String[] args) throws RunnerException {
             Options opt = new OptionsBuilder()
-                    .include(((Class) HistogramRecordingBenchmark.class).getSimpleName())
+                    .include((HistogramRecordingBenchmark.class).getSimpleName())
                     .warmupIterations(5)
                     .measurementIterations(5)
                     .threads(1)
@@ -195,7 +195,7 @@ public class HistogramRecordingBenchmark {
     public static class FourThread {
         public static void main(String[] args) throws RunnerException {
             Options opt = new OptionsBuilder()
-                    .include(((Class) HistogramRecordingBenchmark.class).getSimpleName())
+                    .include((HistogramRecordingBenchmark.class).getSimpleName())
                     .warmupIterations(5)
                     .measurementIterations(5)
                     .threads(4)

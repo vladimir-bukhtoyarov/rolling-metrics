@@ -22,6 +22,7 @@ import com.codahale.metrics.Timer;
 import com.github.rollingmetrics.dropwizard.Dropwizard;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -34,8 +35,10 @@ import static junit.framework.TestCase.assertEquals;
  */
 public class ReservoirToRollingHdrHistogramAdapterTest {
 
-    RollingHdrHistogram rollingHistogram = RollingHdrHistogram.builder()
-            .withSignificantDigits(4).build();
+    RollingHdrHistogram rollingHistogram = RetentionPolicy.uniform()
+            .newRollingHdrHistogramBuilder()
+            .withSignificantDigits(4)
+            .build();
     Histogram histogram = Dropwizard.toHistogram(rollingHistogram);
     Timer timer = Dropwizard.toTimer(rollingHistogram);
 

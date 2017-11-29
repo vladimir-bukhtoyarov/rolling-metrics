@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.hitratio;
 
-import com.github.rollingmetrics.hitratio.impl.ResetOnSnapshotHitRatio;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -32,7 +32,7 @@ public class ResetOnSnapshotHitRatioBenchmark {
 
     @org.openjdk.jmh.annotations.State(Scope.Benchmark)
     public static class State {
-        public final HitRatio hitRatio = new ResetOnSnapshotHitRatio();
+        public final HitRatio hitRatio = RetentionPolicy.resetOnSnapshot().newHitRatio();
     }
 
     @Benchmark

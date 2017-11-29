@@ -18,6 +18,7 @@
 package com.github.rollingmetrics.top;
 
 
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -36,44 +37,40 @@ public class TopBenchmark {
     @State(Scope.Benchmark)
     public static class TopState {
 
-        final Top chunkedTop_1 = Top.builder(1)
-                .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(4), 4)
-                .withSnapshotCachingDuration(Duration.ZERO)
+        final Top chunkedTop_1 = RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofSeconds(4), 4)
+                .newTopBuilder(1)
                 .build();
 
-        final Top chunkedTop_10 = Top.builder(10)
-                .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(4), 4)
-                .withSnapshotCachingDuration(Duration.ZERO)
+        final Top chunkedTop_10 = RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofSeconds(4), 4)
+                .newTopBuilder(10)
                 .build();
 
-        final Top periodicallyTop_1 = Top.builder(1)
-                .resetAllPositionsPeriodically(Duration.ofSeconds(1))
-                .withSnapshotCachingDuration(Duration.ZERO)
+        final Top periodicallyTop_1 = RetentionPolicy
+                .resetPeriodically(Duration.ofSeconds(1))
+                .newTopBuilder(1)
                 .build();
 
-        final Top periodicallyTop_10 = Top.builder(10)
-                .resetAllPositionsPeriodically(Duration.ofSeconds(1))
-                .withSnapshotCachingDuration(Duration.ZERO)
+        final Top periodicallyTop_10 = RetentionPolicy
+                .resetPeriodically(Duration.ofSeconds(1))
+                .newTopBuilder(10)
                 .build();
 
-        final Top resetOnSnapshotTop_1 = Top.builder(1)
-                .resetAllPositionsOnSnapshot()
-                .withSnapshotCachingDuration(Duration.ZERO)
+        final Top resetOnSnapshotTop_1 = RetentionPolicy.resetOnSnapshot()
+                .newTopBuilder(1)
                 .build();
 
-        final Top resetOnSnapshotTop_10 = Top.builder(10)
-                .resetAllPositionsOnSnapshot()
-                .withSnapshotCachingDuration(Duration.ZERO)
+        final Top resetOnSnapshotTop_10 = RetentionPolicy.resetOnSnapshot()
+                .newTopBuilder(10)
                 .build();
 
-        final Top uniformTop_1 = Top.builder(1)
-                .neverResetPositions()
-                .withSnapshotCachingDuration(Duration.ZERO)
+        final Top uniformTop_1 = RetentionPolicy.uniform()
+                .newTopBuilder(1)
                 .build();
 
-        final Top uniformTop_10 = Top.builder(10)
-                .neverResetPositions()
-                .withSnapshotCachingDuration(Duration.ZERO)
+        final Top uniformTop_10 = RetentionPolicy.uniform()
+                .newTopBuilder(10)
                 .build();
     }
 
@@ -201,7 +198,7 @@ public class TopBenchmark {
     public static class FourThread {
         public static void main(String[] args) throws RunnerException {
             Options opt = new OptionsBuilder()
-                    .include(((Class) TopBenchmark.class).getSimpleName())
+                    .include((TopBenchmark.class).getSimpleName())
                     .warmupIterations(5)
                     .measurementIterations(5)
                     .threads(4)

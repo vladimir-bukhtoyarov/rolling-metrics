@@ -98,17 +98,15 @@ public class ResetOnSnapshotTopTest {
         for (int i = 1; i <= 2; i++) {
             System.out.println(
                     RetentionPolicy.resetOnSnapshot()
-                    Top.builder(i)
-                    .resetAllPositionsOnSnapshot()
+                    .newTopBuilder(i)
                     .build());
         }
     }
 
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung_1() throws InterruptedException {
-        Top top = Top.builder(1)
-                .resetAllPositionsOnSnapshot()
-                .withSnapshotCachingDuration(Duration.ZERO)
+        Top top = RetentionPolicy.resetOnSnapshot()
+                .newTopBuilder(1)
                 .build();
         TopTestUtil.runInParallel(top, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
     }

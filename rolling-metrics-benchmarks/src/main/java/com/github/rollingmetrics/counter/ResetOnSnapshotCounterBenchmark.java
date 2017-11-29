@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.counter;
 
-import com.github.rollingmetrics.counter.impl.ResetOnSnapshotCounter;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -32,7 +32,7 @@ public class ResetOnSnapshotCounterBenchmark {
 
     @State(Scope.Benchmark)
     public static class CounterState {
-        public final WindowCounter counter = new ResetOnSnapshotCounter();
+        public final WindowCounter counter = RetentionPolicy.resetOnSnapshot().newCounter();
     }
 
     @Benchmark

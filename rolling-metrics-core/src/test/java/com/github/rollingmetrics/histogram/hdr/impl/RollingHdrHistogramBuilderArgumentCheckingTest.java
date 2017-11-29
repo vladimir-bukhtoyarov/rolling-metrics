@@ -97,7 +97,7 @@ public class RollingHdrHistogramBuilderArgumentCheckingTest {
                 .build();
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void shouldNotAllowNullOverflowHandlingStrategy() {
         RetentionPolicy.uniform()
                 .newRollingHdrHistogramBuilder()

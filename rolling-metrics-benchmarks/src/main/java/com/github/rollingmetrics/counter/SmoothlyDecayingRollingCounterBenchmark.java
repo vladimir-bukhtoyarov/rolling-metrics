@@ -44,7 +44,8 @@ public class SmoothlyDecayingRollingCounterBenchmark {
             backgroundClock = new BackgroundTicker(100);
             counterWithBackgroundClock = RetentionPolicy
                     .resetPeriodicallyByChunks(Duration.ofMillis(1000), 10)
-                    .newCounter(backgroundClock)
+                    .withTicker(backgroundClock)
+                    .newCounter()
             ;
             counter = RetentionPolicy
                     .resetPeriodicallyByChunks(Duration.ofMillis(1000), 10)
@@ -87,7 +88,7 @@ public class SmoothlyDecayingRollingCounterBenchmark {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = new OptionsBuilder()
-                .include(((Class) SmoothlyDecayingRollingCounterBenchmark.class).getSimpleName())
+                .include((SmoothlyDecayingRollingCounterBenchmark.class).getSimpleName())
                 .warmupIterations(5)
                 .measurementIterations(5)
                 .threads(4)

@@ -18,6 +18,7 @@ package com.github.rollingmetrics.dropwizard.adapter;import com.codahale.metrics
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
 import com.github.rollingmetrics.dropwizard.Dropwizard;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.top.TopTestData;
 import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.top.impl.TopTestUtil;
@@ -34,7 +35,7 @@ import static org.junit.Assert.*;
 
 public class TopMetricSetTest {
 
-    private Top top = Top.builder(3).withSnapshotCachingDuration(Duration.ZERO).build();
+    private Top top = RetentionPolicy.uniform().newTopBuilder(3).build();
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNullName() {

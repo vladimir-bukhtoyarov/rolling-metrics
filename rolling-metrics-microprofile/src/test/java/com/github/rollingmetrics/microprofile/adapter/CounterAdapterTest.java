@@ -16,9 +16,9 @@
 
 package com.github.rollingmetrics.microprofile.adapter;
 
-import com.github.rollingmetrics.counter.ResetOnSnapshotCounter;
 import com.github.rollingmetrics.counter.WindowCounter;
 import com.github.rollingmetrics.microprofile.MicroProfile;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.eclipse.microprofile.metrics.Gauge;
 import org.junit.Test;
 
@@ -33,7 +33,7 @@ public class CounterAdapterTest {
 
     @Test
     public void shouldProperlyReturnValue() {
-        WindowCounter counter = new ResetOnSnapshotCounter();
+        WindowCounter counter = RetentionPolicy.resetOnSnapshot().newCounter();
         counter.add(100);
         Gauge<Long> gauge = MicroProfile.toGauge(counter);
         assertEquals(100L, gauge.getValue().longValue());

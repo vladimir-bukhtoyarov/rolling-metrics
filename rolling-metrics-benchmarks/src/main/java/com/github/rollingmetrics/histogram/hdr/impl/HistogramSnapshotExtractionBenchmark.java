@@ -50,13 +50,14 @@ public class HistogramSnapshotExtractionBenchmark {
 
         final RollingHdrHistogram chunkedHistogram = RetentionPolicy
                 .resetPeriodicallyByChunks(Duration.ofSeconds(3), 3)
-                .newRollingHdrHistogramBuilder()
                 .withTicker(ticker)
+                .newRollingHdrHistogramBuilder()
                 .build();
 
-        final RollingHdrHistogram upperLimitedChunkedHistogram = RollingHdrHistogram.builder()
+        final RollingHdrHistogram upperLimitedChunkedHistogram = RetentionPolicy
+                .resetPeriodicallyByChunks(Duration.ofSeconds(3), 3)
                 .withTicker(ticker)
-                .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(3), 3)
+                .newRollingHdrHistogramBuilder()
                 .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
                 .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .build();
@@ -79,20 +80,23 @@ public class HistogramSnapshotExtractionBenchmark {
     @org.openjdk.jmh.annotations.State(Scope.Benchmark)
     public static class StateWithRealClock {
 
-        final RollingHdrHistogram resetOnSnapshotHistogram = RollingHdrHistogram.builder()
-                .resetReservoirOnSnapshot()
+        final RollingHdrHistogram resetOnSnapshotHistogram = RetentionPolicy
+                .resetOnSnapshot()
+                .newRollingHdrHistogramBuilder()
                 .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
                 .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .build();
 
-        final RollingHdrHistogram resetPeriodicallyHistogram = RollingHdrHistogram.builder()
-                .resetReservoirPeriodically(Duration.ofSeconds(300))
+        final RollingHdrHistogram resetPeriodicallyHistogram = RetentionPolicy
+                .resetPeriodically(Duration.ofSeconds(300))
+                .newRollingHdrHistogramBuilder()
                 .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
                 .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .build();
 
-        final RollingHdrHistogram uniformHistogram = RollingHdrHistogram.builder()
-                .neverResetReservoir()
+        final RollingHdrHistogram uniformHistogram = RetentionPolicy
+                .uniform()
+                .newRollingHdrHistogramBuilder()
                 .withLowestDiscernibleValue(TimeUnit.MICROSECONDS.toNanos(1))
                 .withHighestTrackableValue(TimeUnit.MINUTES.toNanos(5), OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .build();
@@ -180,7 +184,7 @@ public class HistogramSnapshotExtractionBenchmark {
     public static class OneThread {
         public static void main(String[] args) throws RunnerException {
             Options opt = new OptionsBuilder()
-                    .include(((Class) HistogramSnapshotExtractionBenchmark.class).getSimpleName())
+                    .include((HistogramSnapshotExtractionBenchmark.class).getSimpleName())
                     .warmupIterations(5)
                     .measurementIterations(5)
                     .threads(1)

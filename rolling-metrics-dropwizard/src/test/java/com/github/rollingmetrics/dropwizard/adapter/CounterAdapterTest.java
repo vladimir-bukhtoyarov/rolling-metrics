@@ -17,9 +17,9 @@
 package com.github.rollingmetrics.dropwizard.adapter;
 
 import com.codahale.metrics.Gauge;
-import com.github.rollingmetrics.counter.ResetOnSnapshotCounter;
 import com.github.rollingmetrics.counter.WindowCounter;
 import com.github.rollingmetrics.dropwizard.Dropwizard;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
@@ -33,7 +33,7 @@ public class CounterAdapterTest {
 
     @Test
     public void shouldProperlyReturnValue() {
-        WindowCounter counter = new ResetOnSnapshotCounter();
+        WindowCounter counter = RetentionPolicy.resetOnSnapshot().newCounter();
         counter.add(100);
         Gauge<Long> gauge = Dropwizard.toGauge(counter);
         assertEquals(100L, gauge.getValue().longValue());

@@ -19,7 +19,7 @@ package com.github.rollingmetrics.dropwizard.adapter;
 import com.codahale.metrics.Gauge;
 import com.github.rollingmetrics.dropwizard.Dropwizard;
 import com.github.rollingmetrics.hitratio.HitRatio;
-import com.github.rollingmetrics.hitratio.ResetOnSnapshotHitRatio;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertEquals;
@@ -33,7 +33,7 @@ public class HitRatioAdapterTest {
 
     @Test
     public void shouldProperlyReturnValue() {
-        HitRatio hitRatio = new ResetOnSnapshotHitRatio();
+        HitRatio hitRatio = RetentionPolicy.resetOnSnapshot().newHitRatio();
         hitRatio.update(50, 100);
         Gauge<Double> gauge = Dropwizard.toGauge(hitRatio);
         assertEquals(0.5d, gauge.getValue());

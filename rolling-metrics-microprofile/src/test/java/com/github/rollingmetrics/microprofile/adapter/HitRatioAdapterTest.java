@@ -17,8 +17,8 @@
 package com.github.rollingmetrics.microprofile.adapter;
 
 import com.github.rollingmetrics.hitratio.HitRatio;
-import com.github.rollingmetrics.hitratio.ResetOnSnapshotHitRatio;
 import com.github.rollingmetrics.microprofile.MicroProfile;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.eclipse.microprofile.metrics.Gauge;
 import org.junit.Test;
 
@@ -33,7 +33,7 @@ public class HitRatioAdapterTest {
 
     @Test
     public void shouldProperlyReturnValue() {
-        HitRatio hitRatio = new ResetOnSnapshotHitRatio();
+        HitRatio hitRatio = RetentionPolicy.resetOnSnapshot().newHitRatio();
         hitRatio.update(50, 100);
         Gauge<Double> gauge = MicroProfile.toGauge(hitRatio);
         assertEquals(0.5d, gauge.getValue());

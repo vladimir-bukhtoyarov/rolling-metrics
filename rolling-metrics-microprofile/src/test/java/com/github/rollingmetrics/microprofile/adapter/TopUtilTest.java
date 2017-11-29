@@ -17,6 +17,7 @@
 package com.github.rollingmetrics.microprofile.adapter;
 
 import com.github.rollingmetrics.microprofile.MicroProfile;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.top.TopTestData;
 import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.top.impl.TopTestUtil;
@@ -34,7 +35,7 @@ import static junit.framework.TestCase.assertEquals;
 
 public class TopUtilTest {
 
-    private Top top = Top.builder(3).withSnapshotCachingDuration(Duration.ZERO).build();
+    private Top top = RetentionPolicy.uniform().newTopBuilder(3).build();
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNullName() {

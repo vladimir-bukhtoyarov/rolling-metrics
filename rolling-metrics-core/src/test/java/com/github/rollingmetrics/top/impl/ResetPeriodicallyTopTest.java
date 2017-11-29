@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.top.impl;
 
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.top.Top;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.MockExecutor;
@@ -37,9 +38,9 @@ public class ResetPeriodicallyTopTest {
     @Test
     public void testCommonAspects() {
         for (int i = 1; i <= 2; i++) {
-            Top top = Top.builder(i)
-                    .resetAllPositionsPeriodically(Duration.ofDays(1))
+            Top top = RetentionPolicy.resetPeriodically(Duration.ofDays(1))
                     .withSnapshotCachingDuration(Duration.ZERO)
+                    .newTopBuilder(i)
                     .withLatencyThreshold(Duration.ofMillis(100))
                     .withMaxLengthOfQueryDescription(1000)
                     .build();
@@ -47,16 +48,16 @@ public class ResetPeriodicallyTopTest {
         }
     }
 
-
     @Test
     public void test_size_1() throws Exception {
         AtomicLong currentTimeMillis = new AtomicLong(0L);
         Ticker ticker = Ticker.mock(currentTimeMillis);
-        Top top = Top.builder(1)
-                .resetAllPositionsPeriodically(Duration.ofSeconds(1))
+        Top top = RetentionPolicy
+                .resetPeriodically(Duration.ofSeconds(1))
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .withTicker(ticker)
                 .withBackgroundExecutor(MockExecutor.INSTANCE)
+                .newTopBuilder(1)
                 .build();
 
         assertEmpty(top);
@@ -98,11 +99,12 @@ public class ResetPeriodicallyTopTest {
     public void test_size_3() throws Exception {
         AtomicLong currentTimeMillis = new AtomicLong(0L);
         Ticker ticker = Ticker.mock(currentTimeMillis);
-        Top top = Top.builder(3)
-                .resetAllPositionsPeriodically(Duration.ofSeconds(1))
+        Top top = RetentionPolicy
+                .resetPeriodically(Duration.ofSeconds(1))
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .withTicker(ticker)
                 .withBackgroundExecutor(MockExecutor.INSTANCE)
+                .newTopBuilder(3)
                 .build();
 
         assertEmpty(top);
@@ -146,26 +148,27 @@ public class ResetPeriodicallyTopTest {
     @Test
     public void testToString() {
         for (int i = 1; i <= 2; i++) {
-            System.out.println(Top.builder(i)
-                    .resetAllPositionsPeriodically(Duration.ofDays(1))
+            System.out.println(RetentionPolicy
+                    .resetPeriodically(Duration.ofDays(1))
+                    .newTopBuilder(i)
                     .build());
         }
     }
 
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung_1() throws InterruptedException {
-        Top top = Top.builder(1)
-                .resetAllPositionsPeriodically(Duration.ofSeconds(1))
-                .withSnapshotCachingDuration(Duration.ZERO)
+        Top top = RetentionPolicy
+                .resetPeriodically(Duration.ofSeconds(1))
+                .newTopBuilder(1)
                 .build();
         TopTestUtil.runInParallel(top, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
     }
 
     @Test(timeout = 35000)
     public void testThatConcurrentThreadsNotHung_3() throws InterruptedException {
-        Top top = Top.builder(3)
-                .resetAllPositionsPeriodically(Duration.ofSeconds(1))
-                .withSnapshotCachingDuration(Duration.ZERO)
+        Top top = RetentionPolicy
+                .resetPeriodically(Duration.ofSeconds(1))
+                .newTopBuilder(1)
                 .build();
         TopTestUtil.runInParallel(top, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
     }

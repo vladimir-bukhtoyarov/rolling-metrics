@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.hitratio;
 
-import com.github.rollingmetrics.hitratio.impl.UniformHitRatio;
+import com.github.rollingmetrics.retention.RetentionPolicy;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -32,7 +32,7 @@ public class UniformHitRatioBenchmark {
 
     @org.openjdk.jmh.annotations.State(Scope.Benchmark)
     public static class State {
-        public final HitRatio hitRatio = new UniformHitRatio();
+        public final HitRatio hitRatio = RetentionPolicy.uniform().newHitRatio();
     }
 
     @Benchmark
