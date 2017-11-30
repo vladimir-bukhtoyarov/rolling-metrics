@@ -62,7 +62,7 @@ public class UniformTopTest {
     @Test
     public void test_size_3() throws Exception {
         Top top = RetentionPolicy.uniform()
-                .newTopBuilder(1)
+                .newTopBuilder(3)
                 .build();
 
         TopTestUtil.assertEmpty(top);

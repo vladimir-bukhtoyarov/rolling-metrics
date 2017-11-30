@@ -161,7 +161,7 @@ public class SmoothlyDecayingRollingHitRatioTest {
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung() throws InterruptedException {
         HitRatio hitRatio = RetentionPolicy
-                .resetPeriodicallyByChunks(Duration.ofSeconds(1), 100)
+                .resetPeriodicallyByChunks(Duration.ofSeconds(1), 10)
                 .newHitRatio();
         HitRationTestUtil.runInParallel(hitRatio, TimeUnit.SECONDS.toMillis(30));
     }

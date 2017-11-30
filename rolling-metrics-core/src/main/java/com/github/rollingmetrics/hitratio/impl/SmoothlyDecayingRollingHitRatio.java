@@ -67,7 +67,7 @@ class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
     // meaningful limits to disallow user to kill performance(or memory footprint) by mistake
     public static final int MAX_CHUNKS = 100;
-    public static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
+    public static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 100;
 
     private static final int HIT_INDEX = 0;
     private static final int TOTAL_INDEX = 1;
