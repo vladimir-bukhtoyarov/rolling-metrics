@@ -2,10 +2,10 @@
 Rolling-Metrics is the monitoring library which provides advanced monitoring structures with rolling time window semantic.
 
 ## Supported monitoring primitives
-* Rolling time window counters. [See documentation for counters](doc-pages/counters.md).
-* Rolling time window hit-ratio. [See documentation for hit-ratio](doc-pages/hit-ratio.md).
-* Top of queries by latency. [See documentation for top](doc-pages/top.md).
-* Loss-less capturing histograms(based on HdrHistogram). [See documentation for histograms](doc-pages/histograms.md).
+* Rolling time window counters. [See documentation for counters](doc-pages/metrics/counters.md).
+* Rolling time window hit-ratio. [See documentation for hit-ratio](doc-pages/metrics/hit-ratio.md).
+* Top of queries by latency. [See documentation for top](doc-pages/metrics/top.md).
+* Loss-less capturing histograms(based on HdrHistogram). [See documentation for histograms](doc-pages/metrics/histograms.md).
 
 ## Integrations
 The reasons why anybody can decide to to use ```Rolling-metrics``` together with anything else:
@@ -54,9 +54,9 @@ mvn clean install
 
 Have a question?
 ----------------
-Feel free to ask in the [gitter chat](https://gitter.im/vladimir-bukhtoyarov/rolling-metrics)
+Feel free to ask in the [Google Groups](https://groups.google.com/forum/?hl=en#!forum/rolling-metrics)
 
 License
 -------
-Copyright 2016 Vladimir Bukhtoyarov
+Copyright 2017 Vladimir Bukhtoyarov
 Licensed under the Apache Software License, Version 2.0: <http://www.apache.org/licenses/LICENSE-2.0>.
