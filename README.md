@@ -1,11 +1,25 @@
 # Rolling-Metrics
-Rolling-Metrics is the monitoring library which provides advanced monitoring structures with rolling time window semantic.
+Rolling-Metrics is the monitoring library  and provides advanced monitoring structures with rolling time window semantic.
 
-## Supported monitoring primitives
-* Rolling time window counters. [See documentation for counters](doc-pages/metrics/counters.md).
-* Rolling time window hit-ratio. [See documentation for hit-ratio](doc-pages/metrics/hit-ratio.md).
+## Mission
+Lets describe the particular features that make the ```rolling-metrics`` library different from other libraries on the market:
+* Obeys the for following [monitoring manifest](doc-pages/manifest.md)
+*
+*
+
+## Non goals
+* ```Reporting``` is not a goal
+* ```Visualization``` is not a goal
+* ```Framework support is not a goal```
+
+## Supported monitoring primitives:
+* Rolling counters. [See documentation for counters](doc-pages/metrics/counters.md).
+* Rolling hit-ratio. [See documentation for hit-ratio](doc-pages/metrics/hit-ratio.md).
 * Top of queries by latency. [See documentation for top](doc-pages/metrics/top.md).
-* Loss-less capturing histograms(based on HdrHistogram). [See documentation for histograms](doc-pages/metrics/histograms.md).
+* Rolling histograms(based on top of HdrHistogram). [See documentation for histograms](doc-pages/metrics/histograms.md).
+
+## Supported retention policies
+[fine configurable retention policies](retention.md).
 
 ## Integrations
 The reasons why anybody can decide to to use ```Rolling-metrics``` together with anything else:
