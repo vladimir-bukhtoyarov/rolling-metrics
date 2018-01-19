@@ -20,6 +20,9 @@ import com.github.rollingmetrics.counter.WindowCounter;
 import com.github.rollingmetrics.retention.RetentionPolicy;
 import com.github.rollingmetrics.util.CachingSupplier;
 
+/**
+ * Decorator for counter is used when retention policy requires the caching.
+ */
 class SnapshotCachingWindowCounter implements WindowCounter {
 
     private final CachingSupplier<Long> cachingSupplier;

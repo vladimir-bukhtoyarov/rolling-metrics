@@ -1,5 +1,5 @@
 # Rolling-Metrics
-Rolling-Metrics is the monitoring library  and provides advanced monitoring structures with rolling time window semantic.
+Rolling-Metrics is the java library that provides the monitoring primitives with rolling time window semantic.
 
 ## Mission
 Lets describe the particular features that make the ```rolling-metrics`` library different from other libraries on the market:

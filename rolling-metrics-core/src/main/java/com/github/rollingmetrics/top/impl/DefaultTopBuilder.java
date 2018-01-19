@@ -9,6 +9,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Default implementation of {@link TopBuilder}
+ */
 public class DefaultTopBuilder implements TopBuilder {
 
     private final RetentionPolicy retentionPolicy;
@@ -19,7 +22,6 @@ public class DefaultTopBuilder implements TopBuilder {
      *
      * @param size the count of positions for tops which will be constructed by this builder
      * @param retentionPolicy policy which responsible for decisions how long any written value should be remembered
-     * @return this builder instance
      */
     public DefaultTopBuilder(int size, RetentionPolicy retentionPolicy) {
         this.retentionPolicy = Objects.requireNonNull(retentionPolicy);

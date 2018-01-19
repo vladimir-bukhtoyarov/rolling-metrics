@@ -8,6 +8,9 @@ import com.github.rollingmetrics.retention.*;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Default implementation of {@link RollingHdrHistogramBuilder}.
+ */
 public class DefaultRollingHdrHistogramBuilder implements RollingHdrHistogramBuilder {
 
     @Override

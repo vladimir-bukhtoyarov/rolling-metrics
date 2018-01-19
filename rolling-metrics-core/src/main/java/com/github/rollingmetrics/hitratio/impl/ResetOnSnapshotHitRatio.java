@@ -21,27 +21,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The hit-ratio which reset its state to zero after each invocation of {@link #getHitRatio()}.
- *
- * <p>
- * Concurrency properties:
- * <ul>
- *     <li>Writing is lock-free. Writers do not block writers and readers.</li>
- *     <li>Reading is lock-free. Readers do not block writers and readers.</li>
- * </ul>
- *
- * <p>
- * Usage recommendations:
- * <ul>
- *     <li>When you do not need in "rolling time window" semantic. Else use {@link SmoothlyDecayingRollingHitRatio}</li>
- *     <li>When you need in 100 percents guarantee that one measure can not be reported twice.</li>
- *     <li>Only if one kind of reader interests in value of hit-ratio.
- *     Usage of this implementation for case of multiple readers will be a bad idea because of readers will steal data from each other.
- *     </li>
- * </ul>
- *
- * @see SmoothlyDecayingRollingHitRatio
- * @see ResetPeriodicallyHitRatio
- * @see UniformHitRatio
  */
 class ResetOnSnapshotHitRatio implements HitRatio {
 

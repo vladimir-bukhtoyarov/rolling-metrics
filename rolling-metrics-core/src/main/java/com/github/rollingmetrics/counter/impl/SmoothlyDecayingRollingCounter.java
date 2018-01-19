@@ -27,46 +27,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * The rolling time window counter implementation which resets its state by chunks.
- *
- * The unique properties which makes this counter probably the best "rolling time window" implementation are following:
- * <ul>
- *     <li>Sufficient performance about tens of millions concurrent writes and reads per second.</li>
- *     <li>Predictable and low memory consumption, the memory which consumed by counter does not depend from amount and frequency of writes.</li>
- *     <li>Perfectly user experience, the continuous observation does not see the sudden changes of sum.
- *     This property achieved by smoothly decaying of oldest chunk of counter.
- *     </li>
- * </ul>
- *
- * <p>
- * Concurrency properties:
- * <ul>
- *     <li>Writing is lock-free.
- *     <li>Sum reading is lock-free.
- * </ul>
- *
- * <p>
- * Usage recommendations:
- * <ul>
- *     <li>Only when you need in "rolling time window" semantic.</li>
- * </ul>
- *
- * <p>
- * Performance considerations:
- * <ul>
- *     <li>You can consider writing speed as a constant. The write latency does not depend from count of chunk or frequency of chunk rotation.
- *     <li>The writing depends only from level of contention between writers(internally counter implemented across AtomicLong).</li>
- *     <li>The huge count of chunk leads to the slower calculation of their sum. So precision of sum conflicts with latency of sum. You need to choose meaningful values.
- *     For example 10 chunks will guarantee at least 90% accuracy and ten million reads per second.</li>
- * </ul>
- *
- * <p> Example of usage:
- * <pre><code>
- *         // constructs the counter which divided by 10 chunks with 60 seconds time window.
- *         // one chunk will be reset to zero after each 6 second,
- *         WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(60), 10);
- *         counter.add(42);
- *     </code>
- * </pre>
  */
 class SmoothlyDecayingRollingCounter implements WindowCounter {
 
@@ -80,25 +40,7 @@ class SmoothlyDecayingRollingCounter implements WindowCounter {
 
     private final Chunk[] chunks;
 
-    /**
-     * Constructs the chunked counter divided by {@code numberChunks}.
-     * The counter will invalidate one chunk each time when {@code rollingWindow/numberChunks} millis has elapsed,
-     * except oldest chunk which invalidated continuously.
-     * The memory consumed by counter and latency of sum calculation depend directly from {@code numberChunks}
-     *
-     * <p> Example of usage:
-     * <pre><code>
-     *         // constructs the counter which divided by 10 chunks with 60 seconds time window.
-     *         // one chunk will be reset to zero after each 6 second,
-     *         WindowCounter counter = new SmoothlyDecayingRollingCounter(Duration.ofSeconds(60), 10);
-     *         counter.add(42);
-     *     </code>
-     * </pre>
-     *
-     * // TODO
-     * @param rollingWindow the rolling time window duration
-     * @param numberChunks The count of chunk to split counter
-     */
+
     SmoothlyDecayingRollingCounter(ResetPeriodicallyByChunksRetentionPolicy retentionPolicy, Ticker ticker) {
         int numberChunks = retentionPolicy.getNumberChunks();
         if (numberChunks > SmoothlyDecayingRollingCounter.MAX_CHUNKS) {
@@ -118,20 +60,6 @@ class SmoothlyDecayingRollingCounter implements WindowCounter {
         for (int i = 0; i < chunks.length; i++) {
             this.chunks[i] = new Chunk(i);
         }
-    }
-
-    /**
-     * @return the rolling window duration for this counter
-     */
-    Duration getRollingWindow() {
-        return Duration.ofMillis((chunks.length - 1) * intervalBetweenResettingOneChunkMillis);
-    }
-
-    /**
-     * @return the number of chunks
-     */
-    int getChunkCount() {
-        return chunks.length - 1;
     }
 
     @Override
@@ -195,10 +123,8 @@ class SmoothlyDecayingRollingCounter implements WindowCounter {
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("Chunk{");
-            sb.append("currentPhaseRef=").append(currentPhaseRef);
-            sb.append('}');
-            return sb.toString();
+            return "Chunk{" + "currentPhaseRef=" + currentPhaseRef +
+                    '}';
         }
     }
 
@@ -233,11 +159,9 @@ class SmoothlyDecayingRollingCounter implements WindowCounter {
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("Phase{");
-            sb.append("sum=").append(sum);
-            sb.append(", proposedInvalidationTimestamp=").append(proposedInvalidationTime);
-            sb.append('}');
-            return sb.toString();
+            return "Phase{" + "sum=" + sum +
+                    ", proposedInvalidationTimestamp=" + proposedInvalidationTime +
+                    '}';
         }
     }
 

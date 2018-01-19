@@ -54,7 +54,6 @@ public class WindowCounterUtil {
         if (snapshotCachingDuration.isZero()) {
             return counter;
         }
-        // TODO unit test
         return new SnapshotCachingWindowCounter(retentionPolicy, counter);
     }
 

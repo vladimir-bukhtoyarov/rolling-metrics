@@ -17,19 +17,31 @@
 package com.github.rollingmetrics.histogram.hdr;
 
 /**
- * TODO
+ * The wrapper around {@link org.HdrHistogram HdrHistogram} that allows to customize retention policy.
+ *
+ * @see org.HdrHistogram
  */
 public interface RollingHdrHistogram {
 
     /**
-     * Provide a (conservatively high) estimate of the Reservoir's total footprint in bytes
+     * Provide a (conservatively high) estimate of this histogram total footprint in bytes
      *
-     * @return a (conservatively high) estimate of the Reservoir's total footprint in bytes
+     * @return a (conservatively high) estimate of this histogram total footprint in bytes
      */
     int getEstimatedFootprintInBytes();
 
+    /**
+     * Returns snapshot of values recorded to this histogram
+     *
+     * @return snapshot of values recorded to this histogram
+     */
     RollingSnapshot getSnapshot();
 
+    /**
+     * Record a value in the histogram
+     *
+     * @param value The value to be recorded
+     */
     void update(long value);
 
 }

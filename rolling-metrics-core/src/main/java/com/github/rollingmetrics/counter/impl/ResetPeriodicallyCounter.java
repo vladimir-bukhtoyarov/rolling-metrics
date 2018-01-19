@@ -24,23 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The counter which reset its state to zero each time when configured interval is elapsed.
- *
- * <p>
- * Concurrency properties:
- * <ul>
- *     <li>Writing is lock-free.</li>
- *     <li>Sum reading is lock-free.</li>
- * </ul>
- *
- * <p>
- * Usage recommendations:
- * <ul>
- *     <li>When you do not need in "rolling time window" semantic. Else use {@link SmoothlyDecayingRollingCounter}</li>
- *     <li>When you want to limit time which each increment takes affect to counter sum in order to avoid reporting of obsolete measurements.</li>
- *     <li>Only if you accept the fact that several increments can be never observed by reader(because rotation to zero can happen before reader seen the written values).</li>
- * </ul>
- *
- * @see SmoothlyDecayingRollingCounter
  */
 class ResetPeriodicallyCounter implements WindowCounter {
 
@@ -49,13 +32,6 @@ class ResetPeriodicallyCounter implements WindowCounter {
     private final Ticker ticker;
     private final AtomicLong nextResetTimeMillisRef;
 
-    /**
-     * TODO
-     * Constructs the counter which reset its state to zero each time when {@code resetInterval} is elapsed.
-     *
-     * @param retentionPolicy
-     * @param ticker
-     */
     ResetPeriodicallyCounter(ResetPeriodicallyRetentionPolicy retentionPolicy, Ticker ticker) {
         this.resetIntervalMillis = retentionPolicy.getResettingPeriodMillis();
         this.ticker = ticker;

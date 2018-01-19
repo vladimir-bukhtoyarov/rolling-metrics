@@ -27,7 +27,7 @@ import java.util.Objects;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * TODO
+ * This is adapter for {@link Snapshot} interface.
  */
 public class RollingHdrHistogramSnapshotAdapter extends Snapshot {
 

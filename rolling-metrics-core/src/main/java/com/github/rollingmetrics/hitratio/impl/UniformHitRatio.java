@@ -26,24 +26,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The hit-ratio which never evicts collected values.
- *
- * <p>
- * Concurrency properties:
- * <ul>
- *     <li>Writing is lock-free. Writers do not block writers and readers.</li>
- *     <li>Reading is lock-free. Readers do not block writers and readers.</li>
- * </ul>
- *
- * <p>
- * Usage recommendations:
- * <ul>
- *     <li>When you do not need in "rolling time window" semantic. Else use {@link SmoothlyDecayingRollingHitRatio}</li>
- *     <li>Normally you should not use this implementation because in real world use-cases you need to show measurements which actual to current moment of time or time window.</li>
- * </ul>
- *
- * @see SmoothlyDecayingRollingHitRatio
- * @see ResetPeriodicallyHitRatio
- * @see ResetOnSnapshotHitRatio
  */
 public class UniformHitRatio implements HitRatio {
 

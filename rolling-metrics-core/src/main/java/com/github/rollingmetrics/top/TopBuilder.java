@@ -24,14 +24,6 @@ import java.time.Duration;
 /**
  * The builder for {@link Top}.
  *
- * <p><br> Basic examples of usage:
- * <pre> {@code
- *
- *  Top top = Top.builder(3).resetAllPositionsOnSnapshot().create();
- *  MetricSet metricSet = new TopMetricSet("my-top", top, TimeUnit.MILLISECONDS, 5);
- *  registry.registerAll(metricSet);
- * }</pre>
- *
  * @see Top
  */
 public interface TopBuilder {
@@ -58,7 +50,8 @@ public interface TopBuilder {
      * Specify this parameter when you want not to track queries which fast,
      * in other words when you want see nothing when all going well.
      *
-     * @param latencyThreshold
+     * @param latencyThreshold the latencies shortest than threshold would be skipped
+     *
      * @return this builder instance
      */
     TopBuilder withLatencyThreshold(Duration latencyThreshold);

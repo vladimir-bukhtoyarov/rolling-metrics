@@ -24,25 +24,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * The hit-ratio which reset its state to zero each time when configured interval is elapsed.
- *
- * <p>
- * Concurrency properties:
- * <ul>
- *     <li>Writing is lock-free.</li>
- *     <li>Ratio calculation is lock-free.</li>
- * </ul>
- *
- * <p>
- * Usage recommendations:
- * <ul>
- *     <li>When you do not need in "rolling time window" semantic. Else use {@link SmoothlyDecayingRollingHitRatio}</li>
- *     <li>When you want to limit time which each increment takes affect to hit-ratio in order to avoid reporting of obsolete measurements.</li>
- *     <li>Only if you accept the fact that several increments can be never observed by reader(because rotation to zero can happen before reader seen the written values).</li>
- * </ul>
- *
- * @see SmoothlyDecayingRollingHitRatio
- * @see ResetPeriodicallyHitRatio
- * @see UniformHitRatio
  */
 class ResetPeriodicallyHitRatio implements HitRatio {
 
@@ -51,16 +32,9 @@ class ResetPeriodicallyHitRatio implements HitRatio {
     private final Ticker ticker;
     private final AtomicLong nextResetTimeMillisRef;
 
-    /**
-     * Constructs the hit-ratio which reset its state to zero each time when {@code resetInterval} is elapsed.
-     *
-     * TODO
-     * @param retentionPolicy
-     * @param ticker
-     */
-    ResetPeriodicallyHitRatio(ResetPeriodicallyRetentionPolicy retentionPolicy, Ticker ticker) {
+    ResetPeriodicallyHitRatio(ResetPeriodicallyRetentionPolicy retentionPolicy) {
         this.resetIntervalMillis = retentionPolicy.getResettingPeriodMillis();
-        this.ticker = ticker;
+        this.ticker = retentionPolicy.getTicker();
         this.nextResetTimeMillisRef = new AtomicLong(ticker.stableMilliseconds() + resetIntervalMillis);
     }
 

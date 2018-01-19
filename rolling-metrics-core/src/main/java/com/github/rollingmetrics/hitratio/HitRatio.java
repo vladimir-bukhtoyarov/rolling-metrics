@@ -19,8 +19,6 @@ package com.github.rollingmetrics.hitratio;
 
 /**
  * The metric for hit ratio measurement.
- *
- * TODO
  */
 public interface HitRatio {
 

@@ -20,6 +20,9 @@ import com.github.rollingmetrics.counter.WindowCounter;
 
 import java.util.concurrent.atomic.LongAdder;
 
+/**
+ * The counter that retains any recorded value forever.
+ */
 class UniformCounter implements WindowCounter {
 
     private final LongAdder adder = new LongAdder();

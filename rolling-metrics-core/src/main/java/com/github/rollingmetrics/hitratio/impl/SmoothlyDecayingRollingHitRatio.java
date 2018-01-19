@@ -20,48 +20,11 @@ import com.github.rollingmetrics.hitratio.HitRatio;
 import com.github.rollingmetrics.retention.ResetPeriodicallyByChunksRetentionPolicy;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.Printer;
-
-import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * The rolling time window hit-ratio implementation which resets its state by chunks.
- *
- * The unique properties which makes this hit-ratio probably the best "rolling time window" implementation are following:
- * <ul>
- *     <li>Sufficient performance about tens of millions concurrent writes and reads per second.</li>
- *     <li>Predictable and low memory consumption, the memory which consumed by hit-ratio does not depend from amount and frequency of writes.</li>
- *     <li>Perfectly user experience, the continuous observation does not see the sudden changes of sum.
- *     This property achieved by smoothly decaying of oldest chunk of hit-ratio.
- *     </li>
- * </ul>
- *
- * <p>
- * Concurrency properties:
- * <ul>
- *     <li>Writing is lock-free.
- *     <li>Ratio calculation is lock-free.
- * </ul>
- *
- * <p>
- * Usage recommendations:
- * <ul>
- *     <li>Only when you need in "rolling time window" semantic.</li>
- * </ul>
- *
- * <p>
- * Performance considerations:
- * <ul>
- *     <li>You can consider writing speed as a constant. The write latency does not depend from count of chunk or frequency of chunk rotation.
- *     <li>The writing depends only from level of contention between writers(internally hit-ratio implemented across AtomicLong).</li>
- *     <li>The huge count of chunk leads to the slower calculation of their ratio. So precision of getHitRatio conflicts with latency of getHitRatio. You need to choose meaningful values.
- *     For example 10 chunks will guarantee at least 90% accuracy and ten million reads per second.</li>
- * </ul>
- *
- * @see ResetOnSnapshotHitRatio
- * @see ResetPeriodicallyHitRatio
- * @see UniformHitRatio
  */
 class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
@@ -78,16 +41,7 @@ class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
     private final Chunk[] chunks;
 
-    /**
-     * Constructs the chunked hit-ratio divided by {@code numberChunks}.
-     * The hit-ratio will invalidate one chunk each time when {@code rollingWindow/numberChunks} millis has elapsed,
-     * except oldest chunk which invalidated continuously.
-     * The memory consumed by hit-ratio and latency of ratio calculation depend directly from {@code numberChunks}
-     *
-     * @param retentionPolicy the rolling time window duration TODO The count of chunk to split
-     * @param ticker
-     */
-    SmoothlyDecayingRollingHitRatio(ResetPeriodicallyByChunksRetentionPolicy retentionPolicy, Ticker ticker) {
+    SmoothlyDecayingRollingHitRatio(ResetPeriodicallyByChunksRetentionPolicy retentionPolicy) {
         int numberChunks = retentionPolicy.getNumberChunks();
         this.intervalBetweenResettingOneChunkMillis = retentionPolicy.getIntervalBetweenResettingOneChunkMillis();
         if (numberChunks > SmoothlyDecayingRollingHitRatio.MAX_CHUNKS) {
@@ -97,7 +51,7 @@ class SmoothlyDecayingRollingHitRatio implements HitRatio {
             throw new IllegalArgumentException("rollingWindowMillis should be >=" + SmoothlyDecayingRollingHitRatio.MIN_CHUNK_RESETTING_INTERVAL_MILLIS);
         }
 
-        this.ticker = ticker;
+        this.ticker = retentionPolicy.getTicker();
         this.creationTimestamp = ticker.stableMilliseconds();
 
         this.chunks = new Chunk[numberChunks + 1];
@@ -166,10 +120,7 @@ class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("Chunk{");
-            sb.append("currentPhaseRef=").append(currentPhaseRef);
-            sb.append('}');
-            return sb.toString();
+            return "Chunk{" + "currentPhaseRef=" + currentPhaseRef + '}';
         }
     }
 
@@ -211,11 +162,9 @@ class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
         @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("Phase{");
-            sb.append("ratio=").append(ratio);
-            sb.append(", proposedInvalidationTimestamp=").append(proposedInvalidationTimestamp);
-            sb.append('}');
-            return sb.toString();
+            return "Phase{" + "ratio=" + ratio +
+                    ", proposedInvalidationTimestamp=" + proposedInvalidationTimestamp +
+                    '}';
         }
     }
 
@@ -228,6 +177,5 @@ class SmoothlyDecayingRollingHitRatio implements HitRatio {
                 ", chunks=" + Printer.printArray(chunks, "chunk") +
                 '}';
     }
-
 
 }

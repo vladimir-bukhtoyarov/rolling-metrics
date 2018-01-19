@@ -83,7 +83,6 @@ public class HitRatioUtil {
         if (retentionPolicy.getSnapshotCachingDuration().isZero()) {
             return hitRatio;
         }
-        // TODO unit test
         return new SnapshotCachingHitRatio(retentionPolicy, hitRatio);
     }
 
@@ -96,7 +95,7 @@ public class HitRatioUtil {
             return new ResetOnSnapshotHitRatio();
         }
         if (retentionPolicy instanceof ResetPeriodicallyRetentionPolicy) {
-            return new ResetPeriodicallyHitRatio((ResetPeriodicallyRetentionPolicy) retentionPolicy, retentionPolicy.getTicker());
+            return new ResetPeriodicallyHitRatio((ResetPeriodicallyRetentionPolicy) retentionPolicy);
         }
         if (retentionPolicy instanceof ResetPeriodicallyByChunksRetentionPolicy) {
             return new SmoothlyDecayingRollingHitRatio((ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy, retentionPolicy.getTicker());
