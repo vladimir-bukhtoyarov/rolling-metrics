@@ -98,7 +98,7 @@ public class HitRatioUtil {
             return new ResetPeriodicallyHitRatio((ResetPeriodicallyRetentionPolicy) retentionPolicy);
         }
         if (retentionPolicy instanceof ResetPeriodicallyByChunksRetentionPolicy) {
-            return new SmoothlyDecayingRollingHitRatio((ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy, retentionPolicy.getTicker());
+            return new SmoothlyDecayingRollingHitRatio((ResetPeriodicallyByChunksRetentionPolicy) retentionPolicy);
         }
         throw new IllegalArgumentException("Unknown retention policy " + retentionPolicy);
     }
