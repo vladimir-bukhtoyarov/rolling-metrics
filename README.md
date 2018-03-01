@@ -1,16 +1,16 @@
 # Rolling-Metrics
 Rolling-Metrics is the java library that provides the monitoring primitives with rolling time window semantic.
 
-## Mission
-Lets describe the particular features that make the ```rolling-metrics`` library different from other libraries on the market:
-* Obeys the for following [monitoring manifest](doc-pages/manifest.md)
-*
-*
+## Goals
+* **Obeys best practices when doing metrics collection**
+[monitoring manifest](doc-pages/manifest.md)
+* **Be reusable**
+``` There are many Java monitoring frameworks on the market like ```Dropwizard/Metrics```, ```Pivotal/Micrometer```, ```Netflix/spectator``` and many others.
 
 ## Non goals
 * ```Reporting``` is not a goal
 * ```Visualization``` is not a goal
-* ```Framework support is not a goal```
+* ```Framework style functionality support is not a goal```
 
 ## Supported monitoring primitives:
 * Rolling counters. [See documentation for counters](doc-pages/metrics/counters.md).
