@@ -181,7 +181,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
             this.left = new Phase(invalidationTimestamp);
             this.right = new Phase(Long.MAX_VALUE);
 
-            this.currentPhaseRef = new AtomicReference<>(new Phase(invalidationTimestamp));
+            this.currentPhaseRef = new AtomicReference<>(left);
         }
 
         long getSum(long currentTimeMillis) {
