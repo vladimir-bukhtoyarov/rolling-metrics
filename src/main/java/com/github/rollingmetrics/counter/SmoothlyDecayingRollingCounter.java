@@ -195,11 +195,11 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
             if (currentTimeMillis < currentPhaseProposedInvalidationTimestamp) {
                 if (currentPhaseProposedInvalidationTimestamp != Long.MAX_VALUE) {
                     // this is main path - there are no rotation in the middle and we are writing to non-expired phase
-                    currentPhase.sum.addAndGet(delta);
+                    currentPhase.adder.add(delta);
                 } else {
                     // another thread is in the middle of phase rotation.
                     // We need to re-read current phase to be sure that we are not writing to inactive phase
-                    currentPhaseRef.get().sum.addAndGet(delta);
+                    currentPhaseRef.get().adder.add(delta);
                 }
             } else {
                 // it is need to flip the phases
@@ -207,12 +207,12 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
 
                 // write to next phase because current is expired
                 Phase nextPhase = expiredPhase == left? right : left;
-                nextPhase.sum.addAndGet(delta);
+                nextPhase.adder.add(delta);
 
                 // try flip phase
                 if (currentPhaseRef.compareAndSet(expiredPhase, nextPhase)) {
                     // Prepare expired phase to next iteration
-                    expiredPhase.sum.set(0);
+                    expiredPhase.adder.reset();
                     expiredPhase.proposedInvalidationTimestamp = Long.MAX_VALUE;
 
                     // allow to next phase to be expired
@@ -234,11 +234,11 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
 
     private final class Phase {
 
-        final AtomicLong sum;
+        final LongAdder adder;
         volatile long proposedInvalidationTimestamp;
 
         Phase(long proposedInvalidationTimestamp) {
-            this.sum = new AtomicLong();
+            this.adder = new LongAdder();
             this.proposedInvalidationTimestamp = proposedInvalidationTimestamp;
         }
 
@@ -249,7 +249,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
                 return 0;
             }
 
-            long sum = this.sum.get();
+            long sum = this.adder.sum();
 
             // if this is oldest chunk then we need to reduce its weight
             long beforeInvalidateMillis = proposedInvalidationTimestamp - currentTimeMillis;
@@ -264,7 +264,7 @@ public class SmoothlyDecayingRollingCounter implements WindowCounter {
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder("Phase{");
-            sb.append("sum=").append(sum);
+            sb.append("sum=").append(adder);
             sb.append(", proposedInvalidationTimestamp=").append(proposedInvalidationTimestamp);
             sb.append('}');
             return sb.toString();
