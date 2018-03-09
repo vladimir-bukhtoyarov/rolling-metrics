@@ -16,11 +16,7 @@
 
 package com.github.rollingmetrics.hitratio.impl;
 
-import com.github.rollingmetrics.counter.SmoothlyDecayingRollingCounter;
-import com.github.rollingmetrics.util.Clock;
-import com.github.rollingmetrics.histogram.util.Printer;
 
-import java.time.Duration;
 import com.github.rollingmetrics.hitratio.HitRatio;
 import com.github.rollingmetrics.retention.ResetPeriodicallyByChunksRetentionPolicy;
 import com.github.rollingmetrics.util.Ticker;
@@ -101,7 +97,7 @@ class SmoothlyDecayingRollingHitRatio implements HitRatio {
         final AtomicReference<Phase> currentPhaseRef;
 
         Chunk(int chunkIndex) {
-            long invalidationTimestamp = creationTimestamp + (chunks.length + chunkIndex) * intervalBetweenResettingMillis;
+            long invalidationTimestamp = creationTimestamp + (chunks.length + chunkIndex) * intervalBetweenResettingOneChunkMillis;
             this.left = new Phase(invalidationTimestamp);
             this.right = new Phase(Long.MAX_VALUE);
             this.currentPhaseRef = new AtomicReference<>(left);
@@ -140,8 +136,8 @@ class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
                     // allow to next phase to be expired
                     long millisSinceCreation = currentTimeMillis - creationTimestamp;
-                    long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
-                    nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingMillis;
+                    long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingOneChunkMillis;
+                    nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingOneChunkMillis;
                 }
             }
         }
