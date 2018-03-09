@@ -79,5 +79,5 @@ Feel free to ask in the [Google Groups](https://groups.google.com/forum/?hl=en#!
 
 License
 -------
-Copyright 2017 Vladimir Bukhtoyarov
+Copyright 2018 Vladimir Bukhtoyarov
 Licensed under the Apache Software License, Version 2.0: <http://www.apache.org/licenses/LICENSE-2.0>.
