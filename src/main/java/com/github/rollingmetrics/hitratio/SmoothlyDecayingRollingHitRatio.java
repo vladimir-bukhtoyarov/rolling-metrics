@@ -17,6 +17,7 @@
 
 package com.github.rollingmetrics.hitratio;
 
+import com.github.rollingmetrics.counter.SmoothlyDecayingRollingCounter;
 import com.github.rollingmetrics.util.Clock;
 import com.github.rollingmetrics.histogram.util.Printer;
 
@@ -159,11 +160,15 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
     private final class Chunk {
 
+        final Phase left;
+        final Phase right;
         final AtomicReference<Phase> currentPhaseRef;
 
         Chunk(int chunkIndex) {
             long invalidationTimestamp = creationTimestamp + (chunks.length + chunkIndex) * intervalBetweenResettingMillis;
-            this.currentPhaseRef = new AtomicReference<>(new Phase(invalidationTimestamp));
+            this.left = new Phase(invalidationTimestamp);
+            this.right = new Phase(Long.MAX_VALUE);
+            this.currentPhaseRef = new AtomicReference<>(left);
         }
 
         void addToSnapshot(long[] snapshot, long currentTimeMillis) {
@@ -172,18 +177,37 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
 
         void update(int hitCount, int totalCount, long currentTimeMillis) {
             Phase currentPhase = currentPhaseRef.get();
-            while (currentTimeMillis >= currentPhase.proposedInvalidationTimestamp) {
-                long millisSinceCreation = currentTimeMillis - creationTimestamp;
-                long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
-                long nextProposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingMillis;
-                Phase replacement = new Phase(nextProposedInvalidationTimestamp);
-                if (currentPhaseRef.compareAndSet(currentPhase, replacement)) {
-                    currentPhase = replacement;
+            long currentPhaseProposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp;
+
+            if (currentTimeMillis < currentPhaseProposedInvalidationTimestamp) {
+                if (currentPhaseProposedInvalidationTimestamp != Long.MAX_VALUE) {
+                    // this is main path - there are no rotation in the middle and we are writing to non-expired phase
+                    HitRatioUtil.updateRatio(currentPhase.ratio, hitCount, totalCount);
                 } else {
-                    currentPhase = currentPhaseRef.get();
+                    // another thread is in the middle of phase rotation.
+                    // We need to re-read current phase to be sure that we are not writing to inactive phase
+                    HitRatioUtil.updateRatio(currentPhaseRef.get().ratio, hitCount, totalCount);
+                }
+            } else {
+                // it is need to flip the phases
+                Phase expiredPhase = currentPhase;
+
+                // write to next phase because current is expired
+                Phase nextPhase = expiredPhase == left? right : left;
+                HitRatioUtil.updateRatio(nextPhase.ratio, hitCount, totalCount);
+
+                // try flip phase
+                if (currentPhaseRef.compareAndSet(expiredPhase, nextPhase)) {
+                    // Prepare expired phase to next iteration
+                    expiredPhase.ratio.set(0);
+                    expiredPhase.proposedInvalidationTimestamp = Long.MAX_VALUE;
+
+                    // allow to next phase to be expired
+                    long millisSinceCreation = currentTimeMillis - creationTimestamp;
+                    long intervalsSinceCreation = millisSinceCreation / intervalBetweenResettingMillis;
+                    nextPhase.proposedInvalidationTimestamp = creationTimestamp + (intervalsSinceCreation + chunks.length) * intervalBetweenResettingMillis;
                 }
             }
-            HitRatioUtil.updateRatio(currentPhase.ratio, hitCount, totalCount);
         }
 
         @Override
@@ -198,7 +222,7 @@ public class SmoothlyDecayingRollingHitRatio implements HitRatio {
     private final class Phase {
 
         final AtomicLong ratio;
-        final long proposedInvalidationTimestamp;
+        volatile long proposedInvalidationTimestamp;
 
         Phase(long proposedInvalidationTimestamp) {
             this.ratio = new AtomicLong();
