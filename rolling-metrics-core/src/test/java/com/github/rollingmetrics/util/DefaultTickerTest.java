@@ -28,11 +28,10 @@ public class DefaultTickerTest {
 
     @Test
     public void testStableMillisOnInit() {
-        testStableMillisOnInit(0, TimeUnit.MINUTES.toMillis(2));
-        testStableMillisOnInit(TimeUnit.MINUTES.toNanos(45), TimeUnit.MINUTES.toMillis(45));
-        testStableMillisOnInit(Long.MAX_VALUE, TimeUnit.MINUTES.toMillis(2));
-        testStableMillisOnInit(Long.MIN_VALUE, TimeUnit.MINUTES.toMillis(2));
-        testStableMillisOnInit(-1 * TimeUnit.MINUTES.toNanos(45), Long.MAX_VALUE / 1_000_000 - TimeUnit.MINUTES.toMillis(45));
+        testStableMillisOnInit(0, 0);
+        testStableMillisOnInit(Long.MAX_VALUE, 0);
+        testStableMillisOnInit(Long.MIN_VALUE, 0);
+        testStableMillisOnInit(-1 * TimeUnit.MINUTES.toNanos(45), 0);
     }
 
     private void testStableMillisOnInit(long initialTimeNanos, long requiredStableMillisAtInitialization) {
@@ -52,16 +51,13 @@ public class DefaultTickerTest {
 
     @Test
     public void testStableMillisWhenChangingSignum() {
-        testStableMillisWhenChangingSignum(1, Long.MAX_VALUE, DefaultTicker.BORDER_ZONE / 1_000_000 * 2  + DefaultTicker.MAX_MILLIS);
-        testStableMillisWhenChangingSignum(TimeUnit.MINUTES.toNanos(45), Long.MAX_VALUE, TimeUnit.MINUTES.toMillis(45) + DefaultTicker.MAX_MILLIS);
-
-        testStableMillisWhenChangingSignum(-1 * TimeUnit.MINUTES.toNanos(45), Long.MAX_VALUE, DefaultTicker.MAX_MILLIS * 2 - TimeUnit.MINUTES.toMillis(45));
-
-        testStableMillisWhenChangingSignum(Long.MIN_VALUE + 1, Long.MAX_VALUE, DefaultTicker.BORDER_ZONE / 1_000_000 * 2  + DefaultTicker.MAX_MILLIS);
-        testStableMillisWhenChangingSignum(Long.MIN_VALUE + TimeUnit.MINUTES.toNanos(45), Long.MAX_VALUE, TimeUnit.MINUTES.toMillis(45) + DefaultTicker.MAX_MILLIS - 1);
+        checkStableMillis(1, Long.MAX_VALUE, Long.MAX_VALUE / 1_000_000);
+        checkStableMillis(Long.MAX_VALUE, TimeUnit.MINUTES.toNanos(45), TimeUnit.MINUTES.toMillis(45));
+        checkStableMillis(-1, 1, 0);
+        checkStableMillis(-1, 1_000_000, 1);
     }
 
-    private void testStableMillisWhenChangingSignum(long initialTimeNanos, long deltaNanos, long requiredStableMillisInTheEnd) {
+    private void checkStableMillis(long initialTimeNanos, long deltaNanos, long requiredStableMillisInTheEnd) {
         AtomicLong timeNanos = new AtomicLong(initialTimeNanos);
         DefaultTicker ticker = new DefaultTicker() {
             @Override

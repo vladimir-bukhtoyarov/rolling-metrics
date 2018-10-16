@@ -21,134 +21,22 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.github.vladimir-bukhtoyarov</groupId>
-    <artifactId>rolling-metrics-parent</artifactId>
-    <version>3.0.0-RC2</version>
+    <artifactId>rolling-metrics</artifactId>
+    <version>3.0.0-RC4</version>
+    <packaging>pom</packaging>
+    <name>Rolling metrics</name>
+
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <modules>
+        <module>rolling-metrics-parent</module>
         <module>rolling-metrics-benchmarks</module>
         <module>rolling-metrics-core</module>
         <module>rolling-metrics-dropwizard</module>
         <module>rolling-metrics-microprofile</module>
         <module>rolling-metrics-jmx</module>
     </modules>
-
-    <packaging>pom</packaging>
-    <name>Rolling metrics parent</name>
-
-    <description>Collection of advanced monitoring metrics with rolling time window semantic</description>
-    <url>https://github.com/vladimir-bukhtoyarov/rolling-metrics</url>
-
-    <scm>
-        <url>https://github.com/vladimir-bukhtoyarov/rolling-metrics</url>
-        <connection>scm:git:git://github.com/vladimir-bukhtoyarov/rolling-metrics.git</connection>
-    </scm>
-    <developers>
-        <developer>
-            <id>vladimir.bukhtoyarov</id>
-            <name>Vladimir Bukhtoyarov</name>
-            <email>jsecoder@mail.ru</email>
-            <url>https://github.com/vladimir-bukhtoyarov</url>
-        </developer>
-    </developers>
-    <licenses>
-        <license>
-            <name>The Apache Software License, Version 2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-    <properties>
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <hdr.histogram.version>2.1.8</hdr.histogram.version>
-        <metrics-core.version>3.1.2</metrics-core.version>
-    </properties>
-
-    <repositories>
-        <repository>
-            <id>jcenter</id>
-            <url>http://jcenter.bintray.com</url>
-        </repository>
-    </repositories>
-
-    <distributionManagement>
-        <repository>
-            <id>vladimir-bukhtoyarov-bintray-repo</id>
-            <url>https://api.bintray.com/maven/vladimir-bukhtoyarov/maven/rolling-metrics/</url>
-        </repository>
-    </distributionManagement>
-
-    <dependencies>
-        <!-- Test dependencies-->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
-
-    <profiles>
-        <profile>
-            <id>coverall</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.jacoco</groupId>
-                        <artifactId>jacoco-maven-plugin</artifactId>
-                        <version>0.7.2.201409121644</version>
-                        <executions>
-                            <execution>
-                                <id>prepare-agent</id>
-                                <goals>
-                                    <goal>prepare-agent</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.eluder.coveralls</groupId>
-                        <artifactId>coveralls-maven-plugin</artifactId>
-                        <version>3.1.0</version>
-                        <configuration>
-                            <repoToken>${env.coverallToken}</repoToken>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-        <profile>
-            <id>bintray</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <artifactId>maven-source-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-sources</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-javadoc-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>attach-javadocs</id>
-                                <goals>
-                                    <goal>jar</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 
 </project>
