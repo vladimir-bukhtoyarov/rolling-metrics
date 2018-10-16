@@ -50,7 +50,7 @@ public class ResetByChunksTopTest {
         AtomicLong currentTimeMillis = new AtomicLong(0L);
         Ticker ticker = Ticker.mock(currentTimeMillis);
         Top top =  RetentionPolicy
-                .resetPeriodicallyByChunks(Duration.ofDays(1), 3)
+                .resetPeriodicallyByChunks(Duration.ofSeconds(3), 3)
                 .withBackgroundExecutor(MockExecutor.INSTANCE)
                 .withTicker(ticker)
                 .withSnapshotCachingDuration(Duration.ZERO)

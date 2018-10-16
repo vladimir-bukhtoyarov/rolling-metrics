@@ -16,8 +16,6 @@
 
 package com.github.rollingmetrics.util;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * Implementation of ticker which based on {@link System#nanoTime()}.
  *
@@ -25,28 +23,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class DefaultTicker implements Ticker {
 
-    static final long BORDER_ZONE = TimeUnit.MINUTES.toNanos(1);
-    static final long NANOS_IN_ONE_MILLIS = 1_000_000L;
-    static final long MAX_MILLIS = Long.MAX_VALUE / NANOS_IN_ONE_MILLIS;
-
     private static final Ticker INSTANCE = new DefaultTicker();
 
-    private final long positiveShiftMillis;
-    private final long negativeShiftMillis;
-    private final long sourceShiftNanos;
+    private final long initializationNanoTime;
+
 
     DefaultTicker() {
-        long nanotime = nanoTime();
-        boolean nearToBorder = Long.MAX_VALUE - Math.abs(nanotime) <= BORDER_ZONE || Math.abs(nanotime) <= BORDER_ZONE;
-        this.sourceShiftNanos = nearToBorder? BORDER_ZONE * 2 : 0;
-        nanotime += sourceShiftNanos;
-        if (nanotime >= 0) {
-            positiveShiftMillis = 0;
-            negativeShiftMillis = MAX_MILLIS * 2;
-        } else {
-            positiveShiftMillis = MAX_MILLIS;
-            negativeShiftMillis = MAX_MILLIS;
-        }
+        initializationNanoTime = nanoTime();
     }
 
     /**
@@ -63,12 +46,7 @@ public class DefaultTicker implements Ticker {
 
     @Override
     public long stableMilliseconds() {
-        long nanotime = nanoTime() + sourceShiftNanos;
-        if (nanotime >= 0) {
-            return nanotime / NANOS_IN_ONE_MILLIS + positiveShiftMillis;
-        } else {
-            return nanotime / NANOS_IN_ONE_MILLIS + negativeShiftMillis;
-        }
+        return  (nanoTime() - initializationNanoTime) / 1_000_000;
     }
 
 }
