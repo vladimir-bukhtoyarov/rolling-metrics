@@ -37,13 +37,13 @@ public class Printer {
     }
 
     public static String printArray(Object[] array, String elementName) {
-        String msg = "{";
+        StringBuilder msg = new StringBuilder("{");
         for (int i = 0; i < array.length; i++) {
             Object element = array[i];
-            msg += "\n" + elementName + "[" + i + "]=" + element;
+            msg.append("\n").append(elementName).append("[").append(i).append("]=").append(element);
         }
-        msg += "\n}";
-        return msg;
+        msg.append("\n}");
+        return msg.toString();
     }
-
+    
 }
