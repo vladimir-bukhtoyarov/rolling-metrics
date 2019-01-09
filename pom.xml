@@ -35,7 +35,6 @@
         <module>rolling-metrics-benchmarks</module>
         <module>rolling-metrics-core</module>
         <module>rolling-metrics-dropwizard</module>
-        <module>rolling-metrics-microprofile</module>
         <module>rolling-metrics-jmx</module>
     </modules>
 
