@@ -22,7 +22,7 @@
 
     <groupId>com.github.vladimir-bukhtoyarov</groupId>
     <artifactId>rolling-metrics-parent</artifactId>
-    <version>3.0.0-RC4</version>
+    <version>4.0.0</version>
 
     <packaging>pom</packaging>
     <name>Rolling metrics parent</name>

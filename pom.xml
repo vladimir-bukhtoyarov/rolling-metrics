@@ -22,7 +22,7 @@
 
     <groupId>com.github.vladimir-bukhtoyarov</groupId>
     <artifactId>rolling-metrics</artifactId>
-    <version>3.0.0-RC4</version>
+    <version>4.0.0-RC1</version>
     <packaging>pom</packaging>
     <name>Rolling metrics</name>
 
@@ -35,8 +35,6 @@
         <module>rolling-metrics-benchmarks</module>
         <module>rolling-metrics-core</module>
         <module>rolling-metrics-dropwizard</module>
-        <module>rolling-metrics-microprofile</module>
-        <module>rolling-metrics-jmx</module>
     </modules>
 
 </project>
