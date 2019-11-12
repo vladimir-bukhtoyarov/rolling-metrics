@@ -47,5 +47,5 @@ Licensed under the Apache Software License, Version 2.0: <http://www.apache.org/
 
 ## Announcement from the author
 I am looking for a long-term stable remote job 40 hours per week with an 8000$ gross per month salary. 
-Especially you should not miss to hire me if you are interested to modify Rolling-Metrics or Buckre4j libraries to behave in a way that you need. 
+Especially you should not miss to hire me if you are interested to modify Rolling-Metrics or Bucket4j libraries to behave in a way that you need. 
 [https://www.linkedin.com/in/vladimir-bukhtoyarov-a2385224](https://www.linkedin.com/in/vladimir-bukhtoyarov-a2385224)
