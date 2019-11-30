@@ -22,7 +22,7 @@
 
     <groupId>com.github.vladimir-bukhtoyarov</groupId>
     <artifactId>rolling-metrics</artifactId>
-    <version>3.0.0-RC4</version>
+    <version>3.0.0-RC5</version>
     <packaging>pom</packaging>
     <name>Rolling metrics</name>
 
