@@ -36,6 +36,7 @@
         <module>rolling-metrics-core</module>
         <module>rolling-metrics-dropwizard</module>
         <module>rolling-metrics-jmx</module>
+        <module>rolling-metrics-micrometer</module>
     </modules>
 
 </project>
