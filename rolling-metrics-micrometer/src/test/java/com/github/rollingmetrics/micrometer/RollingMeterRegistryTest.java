@@ -90,6 +90,16 @@ public class RollingMeterRegistryTest {
     }
 
     @Test
+    public void newDistributionSummary_empty() {
+        DistributionSummary histogram = registry.summary("histogram");
+        HistogramSnapshot snapshot = histogram.takeSnapshot();
+        assertEquals(0, snapshot.count());
+        assertEquals(0, snapshot.max(), 0);
+        assertEquals(0, snapshot.mean(), 0);
+        assertEquals(0, snapshot.percentileValues()[0].value(), 0);
+    }
+
+    @Test
     public void newFunctionTimer() {
         AtomicLong counter = new AtomicLong(42);
         AtomicReference<Double> time = new AtomicReference<>(666.0);

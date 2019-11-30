@@ -83,7 +83,7 @@ public class RollingDistributionSummary implements DistributionSummary {
         ValueAtPercentile[] valuesAtPercentile = new ValueAtPercentile[percentiles.length];
         for (int i = 0; i < percentiles.length; i++) {
             double percentile = percentiles[i];
-            double value = snapshot.getValues()[i];
+            double value = snapshot.getValue(percentile);
             valuesAtPercentile[i] = new ValueAtPercentile(percentile, value);
         }
         return new HistogramSnapshot(
