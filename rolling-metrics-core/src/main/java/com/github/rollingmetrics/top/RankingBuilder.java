@@ -17,10 +17,9 @@
 
 package com.github.rollingmetrics.top;
 
-import com.github.rollingmetrics.top.impl.ResetByChunksTop;
-import com.github.rollingmetrics.top.impl.ResetOnSnapshotConcurrentTop;
-import com.github.rollingmetrics.top.impl.SnapshotCachingTop;
-import com.github.rollingmetrics.top.impl.UniformTop;
+import com.github.rollingmetrics.top.impl.*;
+import com.github.rollingmetrics.top.impl.ResetByChunksRanking;
+import com.github.rollingmetrics.top.impl.UniformRanking;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.ResilientExecutionUtil;
 
@@ -29,7 +28,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * The builder for {@link Top}.
+ * The builder for {@link Ranking}.
  *
  * <p><br> Basic examples of usage:
  * <pre> {@code
@@ -39,9 +38,9 @@ import java.util.concurrent.ThreadFactory;
  *  registry.registerAll(metricSet);
  * }</pre>
  *
- * @see Top
+ * @see Ranking
  */
-public class TopBuilder {
+public class RankingBuilder {
 
     public static final int MAX_POSITION_COUNT = 1000;
     public static final long MIN_CHUNK_RESETTING_INTERVAL_MILLIS = 1000;
@@ -63,7 +62,7 @@ public class TopBuilder {
     private Executor backgroundExecutor;
     private TopFactory factory;
 
-    private TopBuilder(int size, Duration latencyThreshold, Duration snapshotCachingDuration, int maxDescriptionLength, Ticker ticker, Executor backgroundExecutor, TopFactory factory) {
+    private RankingBuilder(int size, Duration latencyThreshold, Duration snapshotCachingDuration, int maxDescriptionLength, Ticker ticker, Executor backgroundExecutor, TopFactory factory) {
         this.size = size;
         this.latencyThreshold = latencyThreshold;
         this.snapshotCachingDuration = snapshotCachingDuration;
@@ -74,16 +73,16 @@ public class TopBuilder {
     }
 
     /**
-     * Constructs new {@link Top} instance
+     * Constructs new {@link Ranking} instance
      *
-     * @return new {@link Top} instance
+     * @return new {@link Ranking} instance
      */
-    public Top build() {
-        Top top = factory.create(size, latencyThreshold, maxDescriptionLength, ticker);
+    public Ranking build() {
+        Ranking ranking = factory.create(size, latencyThreshold, maxDescriptionLength, ticker);
         if (!snapshotCachingDuration.isZero()) {
-            top = new SnapshotCachingTop(top, snapshotCachingDuration, ticker);
+            ranking = new SnapshotCachingRanking(ranking, snapshotCachingDuration, ticker);
         }
-        return top;
+        return ranking;
     }
 
     /**
@@ -92,9 +91,9 @@ public class TopBuilder {
      * @param size the count of positions for tops which will be constructed by this builder
      * @return this builder instance
      */
-    public static TopBuilder newBuilder(int size) {
+    public static RankingBuilder newBuilder(int size) {
         validateSize(size);
-        return new TopBuilder(size, DEFAULT_LATENCY_THRESHOLD, DEFAULT_SNAPSHOT_CACHING_DURATION, DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION, Ticker.defaultTicker(), DEFAULT_BACKGROUND_EXECUTOR, DEFAULT_TOP_FACTORY);
+        return new RankingBuilder(size, DEFAULT_LATENCY_THRESHOLD, DEFAULT_SNAPSHOT_CACHING_DURATION, DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION, Ticker.defaultTicker(), DEFAULT_BACKGROUND_EXECUTOR, DEFAULT_TOP_FACTORY);
     }
 
     /**
@@ -103,7 +102,7 @@ public class TopBuilder {
      * @param size the maximum count of positions
      * @return this builder instance
      */
-    public TopBuilder withPositionCount(int size) {
+    public RankingBuilder withPositionCount(int size) {
         validateSize(size);
         this.size = size;
         return this;
@@ -119,7 +118,7 @@ public class TopBuilder {
      * @param latencyThreshold
      * @return this builder instance
      */
-    public TopBuilder withLatencyThreshold(Duration latencyThreshold) {
+    public RankingBuilder withLatencyThreshold(Duration latencyThreshold) {
         if (latencyThreshold == null) {
             throw new IllegalArgumentException("latencyThreshold should not be null");
         }
@@ -131,7 +130,7 @@ public class TopBuilder {
     }
 
     /**
-     * Configures the duration for caching the results of invocation of {@link Top#getPositionsInDescendingOrder()}.
+     * Configures the duration for caching the results of invocation of {@link Ranking#getPositionsInDescendingOrder()}.
      * Currently the caching is only one way to solve <a href="https://github.com/dropwizard/metrics/issues/1016">atomicity read problem</a>.
      * The default value is one second {@link #DEFAULT_SNAPSHOT_CACHING_DURATION}.
      * You can specify zero duration to discard caching at all, but theoretically,
@@ -140,7 +139,7 @@ public class TopBuilder {
      * @param snapshotCachingDuration
      * @return this builder instance
      */
-    public TopBuilder withSnapshotCachingDuration(Duration snapshotCachingDuration) {
+    public RankingBuilder withSnapshotCachingDuration(Duration snapshotCachingDuration) {
         if (snapshotCachingDuration == null) {
             throw new IllegalArgumentException("snapshotCachingDuration should not be null");
         }
@@ -161,7 +160,7 @@ public class TopBuilder {
      *
      * @return this builder instance
      */
-    public TopBuilder withMaxLengthOfQueryDescription(int maxLengthOfQueryDescription) {
+    public RankingBuilder withMaxLengthOfQueryDescription(int maxLengthOfQueryDescription) {
         if (maxLengthOfQueryDescription < MIN_LENGTH_OF_QUERY_DESCRIPTION) {
             String msg = "The requested maxDescriptionLength=" + maxLengthOfQueryDescription + " is wrong " +
                     "because of maxDescriptionLength should be >=" + MIN_LENGTH_OF_QUERY_DESCRIPTION + "." +
@@ -180,7 +179,7 @@ public class TopBuilder {
      *
      * @return this builder instance
      */
-    public TopBuilder withTicker(Ticker ticker) {
+    public RankingBuilder withTicker(Ticker ticker) {
         if (ticker == null) {
             throw new IllegalArgumentException("Ticker should not be null");
         }
@@ -202,7 +201,7 @@ public class TopBuilder {
      *
      * @return this builder instance
      */
-    public TopBuilder withBackgroundExecutor(Executor backgroundExecutor) {
+    public RankingBuilder withBackgroundExecutor(Executor backgroundExecutor) {
         if (backgroundExecutor == null) {
             throw new IllegalArgumentException("Ticker should not be null");
         }
@@ -213,7 +212,7 @@ public class TopBuilder {
     /**
      * Top configured with this strategy will store all values since the top was created.
      *
-     * <p>This is default strategy for {@link TopBuilder}.
+     * <p>This is default strategy for {@link RankingBuilder}.
      * This strategy is useless for long running applications, because very slow queries happen in the past
      * will not provide chances to fresh queries to take place in the top.
      * So, it is strongly recommended to switch eviction strategy to one of:
@@ -229,19 +228,19 @@ public class TopBuilder {
      * @see #resetAllPositionsPeriodically(Duration)
      * @see #resetAllPositionsOnSnapshot()
      */
-    public TopBuilder neverResetPositions() {
+    public RankingBuilder neverResetPositions() {
         this.factory = TopFactory.UNIFORM;
         return this;
     }
 
     /**
-     * Top configured with this strategy will be cleared each time when {@link Top#getPositionsInDescendingOrder()} invoked.
+     * Top configured with this strategy will be cleared each time when {@link Ranking#getPositionsInDescendingOrder()} invoked.
      *
      * @return this builder instance
      * @see #resetPositionsPeriodicallyByChunks(Duration, int)
      * @see #resetAllPositionsPeriodically(Duration)
      */
-    public TopBuilder resetAllPositionsOnSnapshot() {
+    public RankingBuilder resetAllPositionsOnSnapshot() {
         this.factory = TopFactory.RESET_ON_SNAPSHOT;
         return this;
     }
@@ -259,7 +258,7 @@ public class TopBuilder {
      * @param intervalBetweenResetting specifies how often need to reset the top
      * @return this builder instance
      */
-    public TopBuilder resetAllPositionsPeriodically(Duration intervalBetweenResetting) {
+    public RankingBuilder resetAllPositionsPeriodically(Duration intervalBetweenResetting) {
         if (intervalBetweenResetting == null) {
             throw new IllegalArgumentException("intervalBetweenResetting should not be null");
         }
@@ -296,7 +295,7 @@ public class TopBuilder {
      * @param numberChunks specifies number of chunks by which the top will be slitted
      * @return this builder instance
      */
-    public TopBuilder resetPositionsPeriodicallyByChunks(Duration rollingTimeWindow, int numberChunks) {
+    public RankingBuilder resetPositionsPeriodicallyByChunks(Duration rollingTimeWindow, int numberChunks) {
         if (numberChunks > MAX_CHUNKS) {
             throw new IllegalArgumentException("numberChunks should be <= " + MAX_CHUNKS);
         }
@@ -322,19 +321,19 @@ public class TopBuilder {
 
     private interface TopFactory {
 
-        Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker);
+        Ranking create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker);
 
         TopFactory UNIFORM = new TopFactory() {
             @Override
-            public Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
-                return new UniformTop(size, latencyThreshold.toNanos(), maxDescriptionLength);
+            public Ranking create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
+                return new UniformRanking(size, latencyThreshold.toNanos(), maxDescriptionLength);
             }
         };
 
         TopFactory RESET_ON_SNAPSHOT = new TopFactory() {
             @Override
-            public Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
-                return new ResetOnSnapshotConcurrentTop(size, latencyThreshold.toNanos(), maxDescriptionLength);
+            public Ranking create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
+                return new ResetOnSnapshotConcurrentRanking(size, latencyThreshold.toNanos(), maxDescriptionLength);
             }
         };
 
@@ -352,8 +351,8 @@ public class TopBuilder {
     private TopFactory resetByChunks(final long intervalBetweenResettingMillis, int numberOfHistoryChunks) {
         return new TopFactory() {
             @Override
-            public Top create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
-                return new ResetByChunksTop(size, latencyThreshold.toNanos(), maxDescriptionLength, intervalBetweenResettingMillis, numberOfHistoryChunks, ticker, getExecutor());
+            public Ranking create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
+                return new ResetByChunksRanking(size, latencyThreshold.toNanos(), maxDescriptionLength, intervalBetweenResettingMillis, numberOfHistoryChunks, ticker, getExecutor());
             }
         };
     }

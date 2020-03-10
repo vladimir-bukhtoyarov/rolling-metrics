@@ -17,7 +17,7 @@
 
 package com.github.rollingmetrics.top.impl;
 
-import com.github.rollingmetrics.top.Top;
+import com.github.rollingmetrics.top.Ranking;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.MockExecutor;
 import org.junit.Test;
@@ -27,23 +27,23 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.github.rollingmetrics.top.TopTestData.*;
-import static com.github.rollingmetrics.top.impl.TopTestUtil.assertEmpty;
-import static com.github.rollingmetrics.top.impl.TopTestUtil.checkOrder;
-import static com.github.rollingmetrics.top.impl.TopTestUtil.update;
+import static com.github.rollingmetrics.top.impl.RankingTestUtil.assertEmpty;
+import static com.github.rollingmetrics.top.impl.RankingTestUtil.checkOrder;
+import static com.github.rollingmetrics.top.impl.RankingTestUtil.update;
 
 
-public class ResetPeriodicallyTopTest {
+public class ResetPeriodicallyRankingTest {
 
     @Test
     public void testCommonAspects() {
         for (int i = 1; i <= 2; i++) {
-            Top top = Top.builder(i)
+            Ranking ranking = Ranking.builder(i)
                     .resetAllPositionsPeriodically(Duration.ofDays(1))
                     .withSnapshotCachingDuration(Duration.ZERO)
                     .withLatencyThreshold(Duration.ofMillis(100))
                     .withMaxLengthOfQueryDescription(1000)
                     .build();
-            TopTestUtil.testCommonScenarios(i, top, Duration.ofMillis(100).toNanos(), 1000);
+            RankingTestUtil.testCommonScenarios(i, ranking, Duration.ofMillis(100).toNanos(), 1000);
         }
     }
 
@@ -52,101 +52,101 @@ public class ResetPeriodicallyTopTest {
     public void test_size_1() throws Exception {
         AtomicLong currentTimeMillis = new AtomicLong(0L);
         Ticker ticker = Ticker.mock(currentTimeMillis);
-        Top top = Top.builder(1)
+        Ranking ranking = Ranking.builder(1)
                 .resetAllPositionsPeriodically(Duration.ofSeconds(1))
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .withTicker(ticker)
                 .withBackgroundExecutor(MockExecutor.INSTANCE)
                 .build();
 
-        assertEmpty(top);
+        assertEmpty(ranking);
 
-        update(top, first);
-        checkOrder(top, first);
+        update(ranking, first);
+        checkOrder(ranking, first);
 
         currentTimeMillis.addAndGet(500L); //500
-        checkOrder(top, first);
+        checkOrder(ranking, first);
 
         currentTimeMillis.addAndGet(500L); //1000
-        assertEmpty(top);
+        assertEmpty(ranking);
 
-        update(top, second);
-        checkOrder(top, second);
-        checkOrder(top, second);
+        update(ranking, second);
+        checkOrder(ranking, second);
+        checkOrder(ranking, second);
 
         currentTimeMillis.addAndGet(1L); //1001
-        update(top, first);
-        checkOrder(top, second);
+        update(ranking, first);
+        checkOrder(ranking, second);
 
         currentTimeMillis.addAndGet(1000L); //2001
-        assertEmpty(top);
+        assertEmpty(ranking);
 
 
-        update(top, first);
-        update(top, second);
-        update(top, third);
-        checkOrder(top, third);
+        update(ranking, first);
+        update(ranking, second);
+        update(ranking, third);
+        checkOrder(ranking, third);
 
         currentTimeMillis.addAndGet(999L); //3000
-        assertEmpty(top);
+        assertEmpty(ranking);
 
         currentTimeMillis.addAndGet(1000L); //4000
-        assertEmpty(top);
+        assertEmpty(ranking);
     }
 
     @Test
     public void test_size_3() throws Exception {
         AtomicLong currentTimeMillis = new AtomicLong(0L);
         Ticker ticker = Ticker.mock(currentTimeMillis);
-        Top top = Top.builder(3)
+        Ranking ranking = Ranking.builder(3)
                 .resetAllPositionsPeriodically(Duration.ofSeconds(1))
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .withTicker(ticker)
                 .withBackgroundExecutor(MockExecutor.INSTANCE)
                 .build();
 
-        assertEmpty(top);
+        assertEmpty(ranking);
 
-        update(top, first);
-        update(top, second);
-        checkOrder(top, second, first);
+        update(ranking, first);
+        update(ranking, second);
+        checkOrder(ranking, second, first);
 
         currentTimeMillis.addAndGet(500L); //500
-        checkOrder(top, second, first);
+        checkOrder(ranking, second, first);
 
         currentTimeMillis.addAndGet(500L); //1000
-        assertEmpty(top);
+        assertEmpty(ranking);
 
-        update(top, second);
-        checkOrder(top, second);
-        checkOrder(top, second);
+        update(ranking, second);
+        checkOrder(ranking, second);
+        checkOrder(ranking, second);
 
         currentTimeMillis.addAndGet(1L); //1001
-        update(top, first);
-        update(top, third);
-        checkOrder(top, third, second, first);
+        update(ranking, first);
+        update(ranking, third);
+        checkOrder(ranking, third, second, first);
 
         currentTimeMillis.addAndGet(1000L); //2001
-        assertEmpty(top);
+        assertEmpty(ranking);
 
 
-        update(top, fourth);
-        update(top, first);
-        update(top, second);
-        update(top, third);
-        checkOrder(top, fourth, third, second);
+        update(ranking, fourth);
+        update(ranking, first);
+        update(ranking, second);
+        update(ranking, third);
+        checkOrder(ranking, fourth, third, second);
 
         currentTimeMillis.addAndGet(999L); //3000
-        assertEmpty(top);
+        assertEmpty(ranking);
 
         currentTimeMillis.addAndGet(1000L); //4000
-        assertEmpty(top);
+        assertEmpty(ranking);
     }
 
     @Test
     public void testToString() {
         for (int i = 1; i <= 2; i++) {
-            System.out.println(Top.builder(i)
+            System.out.println(Ranking.builder(i)
                     .resetAllPositionsPeriodically(Duration.ofDays(1))
                     .build());
         }
@@ -154,20 +154,20 @@ public class ResetPeriodicallyTopTest {
 
     @Test(timeout = 32000)
     public void testThatConcurrentThreadsNotHung_1() throws InterruptedException {
-        Top top = Top.builder(1)
+        Ranking ranking = Ranking.builder(1)
                 .resetAllPositionsPeriodically(Duration.ofSeconds(1))
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
-        TopTestUtil.runInParallel(top, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
+        RankingTestUtil.runInParallel(ranking, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
     }
 
     @Test(timeout = 35000)
     public void testThatConcurrentThreadsNotHung_3() throws InterruptedException {
-        Top top = Top.builder(3)
+        Ranking ranking = Ranking.builder(3)
                 .resetAllPositionsPeriodically(Duration.ofSeconds(1))
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
-        TopTestUtil.runInParallel(top, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
+        RankingTestUtil.runInParallel(ranking, TimeUnit.SECONDS.toMillis(30), 0, 10_000);
     }
 
 }

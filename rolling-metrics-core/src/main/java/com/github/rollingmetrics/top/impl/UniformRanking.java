@@ -18,43 +18,40 @@
 package com.github.rollingmetrics.top.impl;
 
 import com.github.rollingmetrics.top.Position;
-import com.github.rollingmetrics.top.Top;
-import com.github.rollingmetrics.top.impl.collector.PositionCollector;
-import com.github.rollingmetrics.top.impl.recorder.PositionRecorder;
-import com.github.rollingmetrics.top.impl.recorder.TwoPhasePositionRecorder;
+import com.github.rollingmetrics.top.Ranking;
+import com.github.rollingmetrics.top.impl.recorder.ConcurrentRanking;
+import com.github.rollingmetrics.top.impl.recorder.RankingRecorder;
+import com.github.rollingmetrics.top.impl.recorder.SingleThreadedRanking;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
+public class UniformRanking implements Ranking {
 
-public class UniformTop implements Top {
+    private final RankingRecorder phasedRecorder;
+    private final SingleThreadedRanking uniformCollector;
+    private ConcurrentRanking intervalRecorder;
 
-    private final TwoPhasePositionRecorder phasedRecorder;
-    private final PositionCollector uniformCollector;
-    private PositionRecorder intervalRecorder;
-
-    public UniformTop(int size, long latencyThresholdNanos, int maxDescriptionLength) {
-        this.phasedRecorder = new TwoPhasePositionRecorder(size, latencyThresholdNanos, maxDescriptionLength);
+    public UniformRanking(int size, long threshold) {
+        this.phasedRecorder = new RankingRecorder(size, threshold);
         intervalRecorder = phasedRecorder.getIntervalRecorder();
-        this.uniformCollector = PositionCollector.createCollector(size);
+        this.uniformCollector = new SingleThreadedRanking(size, threshold);
     }
 
     @Override
-    public void update(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
-        phasedRecorder.update(timestamp, latencyTime, latencyUnit, descriptionSupplier);
+    public void update(long weight, Object identity) {
+        phasedRecorder.update(weight, identity);
     }
 
     @Override
     synchronized public List<Position> getPositionsInDescendingOrder() {
         intervalRecorder = phasedRecorder.getIntervalRecorder(intervalRecorder);
-        intervalRecorder.addInto(uniformCollector);
+        intervalRecorder.addIntoUnsafe(uniformCollector);
         return uniformCollector.getPositionsInDescendingOrder();
     }
 
     @Override
     public int getSize() {
-        return intervalRecorder.getSize();
+        return intervalRecorder.getMaxSize();
     }
 
 }

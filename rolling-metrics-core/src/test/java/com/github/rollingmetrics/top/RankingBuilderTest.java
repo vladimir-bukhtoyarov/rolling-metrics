@@ -18,164 +18,164 @@
 package com.github.rollingmetrics.top;
 
 import com.github.rollingmetrics.util.Ticker;
-import com.github.rollingmetrics.top.impl.TopTestUtil;
+import com.github.rollingmetrics.top.impl.RankingTestUtil;
 import org.junit.Test;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.github.rollingmetrics.top.TopBuilder.MIN_CHUNK_RESETTING_INTERVAL_MILLIS;
+import static com.github.rollingmetrics.top.RankingBuilder.MIN_CHUNK_RESETTING_INTERVAL_MILLIS;
 import static junit.framework.TestCase.assertEquals;
 
-public class TopBuilderTest {
+public class RankingBuilderTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void tooManyPositionsShouldBeDisallowed() {
-        Top.builder(TopBuilder.MAX_POSITION_COUNT + 1);
+        Ranking.builder(RankingBuilder.MAX_POSITION_COUNT + 1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void tooManyPositionsShouldBeDisallowed2() {
-        Top.builder(1).withPositionCount(TopBuilder.MAX_POSITION_COUNT + 1);
+        Ranking.builder(1).withPositionCount(RankingBuilder.MAX_POSITION_COUNT + 1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void zeroPositionsShouldBeDisallowed() {
-        Top.builder(0);
+        Ranking.builder(0);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void zeroPositionsShouldBeDisallowed2() {
-        Top.builder(1).withPositionCount(0);
+        Ranking.builder(1).withPositionCount(0);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void nullSlowQueryThresholdShouldBeDisallowed() {
-        Top.builder(1).withLatencyThreshold(null);
+        Ranking.builder(1).withLatencyThreshold(null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void negativeSlowQueryThresholdShouldBeDisallowed() {
-        Top.builder(1).withLatencyThreshold(Duration.ofMillis(-1));
+        Ranking.builder(1).withLatencyThreshold(Duration.ofMillis(-1));
     }
 
     @Test
     public void zeroSlowQueryThresholdShouldBeAllowed() {
-        Top.builder(1).withLatencyThreshold(Duration.ZERO);
+        Ranking.builder(1).withLatencyThreshold(Duration.ZERO);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void nullBackgroundExecutorShouldBeDisallowed() {
-        Top.builder(1).withBackgroundExecutor(null);
+        Ranking.builder(1).withBackgroundExecutor(null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void nullTickerShouldBeDisallowed() {
-        Top.builder(1).withTicker(null);
+        Ranking.builder(1).withTicker(null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void tooShortQueryDescriptionLengthShouldBeDisallowed() {
-        Top.builder(1).withMaxLengthOfQueryDescription(TopBuilder.MIN_LENGTH_OF_QUERY_DESCRIPTION - 1);
+        Ranking.builder(1).withMaxLengthOfQueryDescription(RankingBuilder.MIN_LENGTH_OF_QUERY_DESCRIPTION - 1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void nullIntervalBetweenResettingShouldBeDisallowed() {
-        Top.builder(1).resetAllPositionsPeriodically(null);
+        Ranking.builder(1).resetAllPositionsPeriodically(null);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void negativeIntervalBetweenResettingShouldBeDisallowed() {
-        Top.builder(1).resetAllPositionsPeriodically(Duration.ofSeconds(-60));
+        Ranking.builder(1).resetAllPositionsPeriodically(Duration.ofSeconds(-60));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void tooShortIntervalBetweenResettingShouldBeDisallowed() {
-        Top.builder(1).resetAllPositionsPeriodically(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS - 1));
+        Ranking.builder(1).resetAllPositionsPeriodically(Duration.ofMillis(MIN_CHUNK_RESETTING_INTERVAL_MILLIS - 1));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void tooManyChunksShouldBeDisallowed() {
-        Top.builder(1).resetPositionsPeriodicallyByChunks(Duration.ofDays(1), TopBuilder.MAX_CHUNKS + 1);
+        Ranking.builder(1).resetPositionsPeriodicallyByChunks(Duration.ofDays(1), RankingBuilder.MAX_CHUNKS + 1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void lesserThanTwoChunksShouldBeDisallowed() {
-        Top.builder(1).resetPositionsPeriodicallyByChunks(Duration.ofDays(1), 1);
+        Ranking.builder(1).resetPositionsPeriodicallyByChunks(Duration.ofDays(1), 1);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void nullRollingWindowShouldBeDisallowed() {
-        Top.builder(1).resetPositionsPeriodicallyByChunks(null, TopBuilder.MAX_CHUNKS);
+        Ranking.builder(1).resetPositionsPeriodicallyByChunks(null, RankingBuilder.MAX_CHUNKS);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void tooShortChunkTtlShouldBeDisallowed() {
-        Top.builder(1).resetPositionsPeriodicallyByChunks(Duration.ofMillis(TopBuilder.MIN_CHUNK_RESETTING_INTERVAL_MILLIS * 10 - 1), 10);
+        Ranking.builder(1).resetPositionsPeriodicallyByChunks(Duration.ofMillis(RankingBuilder.MIN_CHUNK_RESETTING_INTERVAL_MILLIS * 10 - 1), 10);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void negativeChunkTtlShouldBeDisallowed() {
-        Top.builder(1).resetPositionsPeriodicallyByChunks(Duration.ofMillis(-2000), 2);
+        Ranking.builder(1).resetPositionsPeriodicallyByChunks(Duration.ofMillis(-2000), 2);
     }
 
     @Test
     public void cachingPeriodShouldBeApplied() {
         AtomicLong currentTimeMillis = new AtomicLong();
         Ticker ticker = Ticker.mock(currentTimeMillis);
-        Top top = Top.builder(1)
+        Ranking ranking = Ranking.builder(1)
                 .neverResetPositions()
                 .withTicker(ticker)
                 .withSnapshotCachingDuration(Duration.ofSeconds(10))
                 .build();
 
-        assertEquals(1,top.getSize());
+        assertEquals(1, ranking.getSize());
 
-        TopTestUtil.update(top, TopTestData.first);
-        TopTestUtil.checkOrder(top, TopTestData.first);
+        RankingTestUtil.update(ranking, TopTestData.first);
+        RankingTestUtil.checkOrder(ranking, TopTestData.first);
 
-        TopTestUtil.update(top, TopTestData.second);
-        TopTestUtil.checkOrder(top, TopTestData.first);
+        RankingTestUtil.update(ranking, TopTestData.second);
+        RankingTestUtil.checkOrder(ranking, TopTestData.first);
 
         currentTimeMillis.addAndGet(10_000);
-        TopTestUtil.checkOrder(top, TopTestData.second);
+        RankingTestUtil.checkOrder(ranking, TopTestData.second);
     }
 
     @Test
     public void shouldUse1SecondCachingPeriodByDefault() {
         AtomicLong currentTimeMillis = new AtomicLong();
         Ticker ticker = Ticker.mock(currentTimeMillis);
-        Top top = Top.builder(1)
+        Ranking ranking = Ranking.builder(1)
                 .neverResetPositions()
                 .withTicker(ticker)
                 .build();
 
-        TopTestUtil.update(top, TopTestData.first);
-        TopTestUtil.checkOrder(top, TopTestData.first);
+        RankingTestUtil.update(ranking, TopTestData.first);
+        RankingTestUtil.checkOrder(ranking, TopTestData.first);
 
-        TopTestUtil.update(top, TopTestData.second);
-        TopTestUtil.checkOrder(top, TopTestData.first);
+        RankingTestUtil.update(ranking, TopTestData.second);
+        RankingTestUtil.checkOrder(ranking, TopTestData.first);
 
         currentTimeMillis.addAndGet(1_000);
-        TopTestUtil.checkOrder(top, TopTestData.second);
+        RankingTestUtil.checkOrder(ranking, TopTestData.second);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void negativeCachingDurationShouldBeDisallowed() {
-        Top.builder(1).withSnapshotCachingDuration(Duration.ofMillis(-2000));
+        Ranking.builder(1).withSnapshotCachingDuration(Duration.ofMillis(-2000));
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void nullCachingDurationShouldBeDisallowed() {
-        Top.builder(1).withSnapshotCachingDuration(null);
+        Ranking.builder(1).withSnapshotCachingDuration(null);
     }
 
     @Test
     public void shouldAllowToReplaceSize() {
-        Top top = Top.builder(1).withPositionCount(2).build();
-        TopTestUtil.update(top, TopTestData.first);
-        TopTestUtil.update(top, TopTestData.second);
-        TopTestUtil.checkOrder(top, TopTestData.second, TopTestData.first);
+        Ranking ranking = Ranking.builder(1).withPositionCount(2).build();
+        RankingTestUtil.update(ranking, TopTestData.first);
+        RankingTestUtil.update(ranking, TopTestData.second);
+        RankingTestUtil.checkOrder(ranking, TopTestData.second, TopTestData.first);
     }
 
 }

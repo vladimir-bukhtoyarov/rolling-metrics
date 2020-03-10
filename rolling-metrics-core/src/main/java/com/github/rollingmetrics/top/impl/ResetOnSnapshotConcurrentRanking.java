@@ -19,38 +19,36 @@ package com.github.rollingmetrics.top.impl;
 
 
 import com.github.rollingmetrics.top.Position;
-import com.github.rollingmetrics.top.Top;
-import com.github.rollingmetrics.top.impl.recorder.PositionRecorder;
-import com.github.rollingmetrics.top.impl.recorder.TwoPhasePositionRecorder;
+import com.github.rollingmetrics.top.Ranking;
+import com.github.rollingmetrics.top.impl.recorder.ConcurrentRanking;
+import com.github.rollingmetrics.top.impl.recorder.RankingRecorder;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
-public class ResetOnSnapshotConcurrentTop implements Top {
+public class ResetOnSnapshotConcurrentRanking implements Ranking {
 
-    private final TwoPhasePositionRecorder recorder;
-    private PositionRecorder intervalRecorder;
+    private final RankingRecorder recorder;
+    private ConcurrentRanking intervalRecorder;
 
-    public ResetOnSnapshotConcurrentTop(int size, long latencyThresholdNanos, int maxDescriptionLength) {
-        this.recorder = new TwoPhasePositionRecorder(size, latencyThresholdNanos, maxDescriptionLength);
+    public ResetOnSnapshotConcurrentRanking(int size, long latencyThresholdNanos) {
+        this.recorder = new RankingRecorder(size, latencyThresholdNanos);
         this.intervalRecorder = recorder.getIntervalRecorder();
     }
 
     @Override
-    public void update(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
-        recorder.update(timestamp, latencyTime, latencyUnit, descriptionSupplier);
+    public void update(long weight, Object identity) {
+        recorder.update(weight, identity);
     }
 
     @Override
     synchronized public List<Position> getPositionsInDescendingOrder() {
         intervalRecorder = recorder.getIntervalRecorder(intervalRecorder);
-        return intervalRecorder.getPositionsInDescendingOrder();
+        return intervalRecorder.getPositionsInDescendingOrderUnsafe();
     }
 
     @Override
     public int getSize() {
-        return intervalRecorder.getSize();
+        return intervalRecorder.getMaxSize();
     }
 
 }

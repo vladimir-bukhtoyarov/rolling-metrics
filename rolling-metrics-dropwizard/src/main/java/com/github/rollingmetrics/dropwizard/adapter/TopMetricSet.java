@@ -20,7 +20,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
 import com.github.rollingmetrics.top.Position;
-import com.github.rollingmetrics.top.Top;
+import com.github.rollingmetrics.top.Ranking;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * The adapter to use {@link Top} with {@link com.codahale.metrics.MetricRegistry}.
+ * The adapter to use {@link Ranking} with {@link com.codahale.metrics.MetricRegistry}.
  * <p>
  * <p><b>Sample Usage:</b>
  * <pre> {@code
@@ -62,18 +62,18 @@ public class TopMetricSet implements MetricSet {
      * Creates new collection of gauges which compatible with {@link com.codahale.metrics.MetricRegistry}.
      *
      * @param name the name prefix for each gauge
-     * @param top the target {@link Top}
+     * @param ranking the target {@link Ranking}
      * @param latencyUnit the time unit to convert latency
      * @param digitsAfterDecimalPoint the number of digits after decimal point
      */
-    public TopMetricSet(String name, Top top, TimeUnit latencyUnit, int digitsAfterDecimalPoint) {
+    public TopMetricSet(String name, Ranking ranking, TimeUnit latencyUnit, int digitsAfterDecimalPoint) {
         if (name == null) {
             throw new IllegalArgumentException("name should not be null");
         }
         if (name.isEmpty()) {
             throw new IllegalArgumentException("name should not be empty");
         }
-        if (top == null) {
+        if (ranking == null) {
             throw new IllegalArgumentException("top should not be null");
         }
         if (latencyUnit == null) {
@@ -88,14 +88,14 @@ public class TopMetricSet implements MetricSet {
 
         zero = BigDecimal.ZERO.setScale(digitsAfterDecimalPoint, RoundingMode.CEILING);
 
-        int size = top.getSize();
+        int size = ranking.getSize();
         for (int i = 0; i < size; i++) {
             String latencyName = name + "." + i + "." + "latency";
-            Gauge<BigDecimal> latencyGauge = createLatencyGauge(i, top, latencyUnit, digitsAfterDecimalPoint);
+            Gauge<BigDecimal> latencyGauge = createLatencyGauge(i, ranking, latencyUnit, digitsAfterDecimalPoint);
             gauges.put(latencyName, latencyGauge);
 
             String descriptionName = name + "." + i + "." + "description";
-            Gauge<String> descriptionGauge = createDescriptionGauge(i, top);
+            Gauge<String> descriptionGauge = createDescriptionGauge(i, ranking);
             gauges.put(descriptionName, descriptionGauge);
         }
     }
@@ -105,9 +105,9 @@ public class TopMetricSet implements MetricSet {
         return gauges;
     }
 
-    private Gauge<BigDecimal> createLatencyGauge(int i, Top top, TimeUnit latencyUnit, int digitsAfterDecimalPoint) {
+    private Gauge<BigDecimal> createLatencyGauge(int i, Ranking ranking, TimeUnit latencyUnit, int digitsAfterDecimalPoint) {
         return () -> {
-            List<Position> positions = top.getPositionsInDescendingOrder();
+            List<Position> positions = ranking.getPositionsInDescendingOrder();
             if (positions.size() <= i) {
                 return zero;
             }
@@ -119,9 +119,9 @@ public class TopMetricSet implements MetricSet {
         };
     }
 
-    private Gauge<String> createDescriptionGauge(int i, Top top) {
+    private Gauge<String> createDescriptionGauge(int i, Ranking ranking) {
         return () -> {
-            List<Position> positions = top.getPositionsInDescendingOrder();
+            List<Position> positions = ranking.getPositionsInDescendingOrder();
             if (positions.size() <= i) {
                 return "";
             }

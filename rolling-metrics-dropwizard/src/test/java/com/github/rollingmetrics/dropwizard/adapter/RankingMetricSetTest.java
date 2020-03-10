@@ -18,9 +18,9 @@ package com.github.rollingmetrics.dropwizard.adapter;import com.codahale.metrics
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
 import com.github.rollingmetrics.dropwizard.Dropwizard;
+import com.github.rollingmetrics.top.Ranking;
 import com.github.rollingmetrics.top.TopTestData;
-import com.github.rollingmetrics.top.Top;
-import com.github.rollingmetrics.top.impl.TopTestUtil;
+import com.github.rollingmetrics.top.impl.RankingTestUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -32,18 +32,18 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 
-public class TopMetricSetTest {
+public class RankingMetricSetTest {
 
-    private Top top = Top.builder(3).withSnapshotCachingDuration(Duration.ZERO).build();
+    private Ranking ranking = Ranking.builder(3).withSnapshotCachingDuration(Duration.ZERO).build();
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNullName() {
-        Dropwizard.toMetricSet(null, top, TimeUnit.MILLISECONDS, 3);
+        Dropwizard.toMetricSet(null, ranking, TimeUnit.MILLISECONDS, 3);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowEmptyName() {
-        Dropwizard.toMetricSet("", top, TimeUnit.MILLISECONDS, 3);
+        Dropwizard.toMetricSet("", ranking, TimeUnit.MILLISECONDS, 3);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -53,18 +53,18 @@ public class TopMetricSetTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNullLatencyUnit() {
-        Dropwizard.toMetricSet("my-top", top, null, 3);
+        Dropwizard.toMetricSet("my-top", ranking, null, 3);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNegativeDigitsAfterDecimalPoint() {
-        Dropwizard.toMetricSet("my-top", top, TimeUnit.MILLISECONDS, -1);
+        Dropwizard.toMetricSet("my-top", ranking, TimeUnit.MILLISECONDS, -1);
     }
 
     @Test
     public void shouldAddLatencyUnitGauge() {
         for (TimeUnit timeUnit: TimeUnit.values()) {
-            MetricSet metricSet = Dropwizard.toMetricSet("my-top", top, timeUnit, 3);
+            MetricSet metricSet = Dropwizard.toMetricSet("my-top", ranking, timeUnit, 3);
             Map<String, Metric> metrics = metricSet.getMetrics();
             Gauge<String> timeUnitGauge = (Gauge<String>) metrics.get("my-top.latencyUnit");
             Assert.assertNotNull(timeUnitGauge);
@@ -74,32 +74,32 @@ public class TopMetricSetTest {
 
     @Test
     public void testDescriptionGauges() {
-        MetricSet metricSet = Dropwizard.toMetricSet("my-top", top, TimeUnit.MILLISECONDS, 3);
+        MetricSet metricSet = Dropwizard.toMetricSet("my-top", ranking, TimeUnit.MILLISECONDS, 3);
         checkDescriptions(metricSet, "my-top", "", "", "");
 
-        TopTestUtil.update(top, TopTestData.first);
+        RankingTestUtil.update(ranking, TopTestData.first);
         checkDescriptions(metricSet, "my-top", TopTestData.first.getQueryDescription(), "", "");
 
-        TopTestUtil.update(top, TopTestData.second);
+        RankingTestUtil.update(ranking, TopTestData.second);
         checkDescriptions(metricSet, "my-top", TopTestData.second.getQueryDescription(), TopTestData.first.getQueryDescription(), "");
 
-        TopTestUtil.update(top, TopTestData.third);
+        RankingTestUtil.update(ranking, TopTestData.third);
         checkDescriptions(metricSet, "my-top", TopTestData.third.getQueryDescription(), TopTestData.second.getQueryDescription(), TopTestData.first.getQueryDescription());
     }
 
     @Test
     public void testValueGauges() {
-        MetricSet metricSet = Dropwizard.toMetricSet("my-top", top, TimeUnit.MILLISECONDS, 3);
+        MetricSet metricSet = Dropwizard.toMetricSet("my-top", ranking, TimeUnit.MILLISECONDS, 3);
         checkValues(metricSet, "my-top", 3, 0.0d, 0.0d, 0.0d);
 
-        top.update(0, 13_345_456, TimeUnit.NANOSECONDS, () -> "SELECT * FROM USERS");
+        ranking.update(0, 13_345_456, TimeUnit.NANOSECONDS, () -> "SELECT * FROM USERS");
         checkValues(metricSet, "my-top", 3, 13.345d, 0.0d, 0.0d);
 
 
-        top.update(0, 11_666_957, TimeUnit.NANOSECONDS, () -> "SELECT * FROM USERS");
+        ranking.update(0, 11_666_957, TimeUnit.NANOSECONDS, () -> "SELECT * FROM USERS");
         checkValues(metricSet, "my-top", 3, 13.345d, 11.666d, 0.0d);
 
-        top.update(0, 2_004_123, TimeUnit.NANOSECONDS, () -> "SELECT * FROM DUAL");
+        ranking.update(0, 2_004_123, TimeUnit.NANOSECONDS, () -> "SELECT * FROM DUAL");
         checkValues(metricSet, "my-top", 3, 13.345d, 11.666d, 2.004d);
     }
 

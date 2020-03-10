@@ -18,23 +18,22 @@
 package com.github.rollingmetrics.top.impl;
 
 
+import com.github.rollingmetrics.top.impl.recorder.ConcurrentRanking;
+import com.github.rollingmetrics.top.impl.recorder.RankingRecorder;
+import com.github.rollingmetrics.top.impl.recorder.SingleThreadedRanking;
 import com.github.rollingmetrics.util.Printer;
 import com.github.rollingmetrics.top.Position;
-import com.github.rollingmetrics.top.Top;
-import com.github.rollingmetrics.top.impl.collector.PositionCollector;
-import com.github.rollingmetrics.top.impl.recorder.PositionRecorder;
-import com.github.rollingmetrics.top.impl.recorder.TwoPhasePositionRecorder;
+import com.github.rollingmetrics.top.Ranking;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.ResilientExecutionUtil;
 
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 
-public class ResetByChunksTop implements Top {
+public class ResetByChunksRanking implements Ranking {
 
     private final Executor backgroundExecutor;
     private final long intervalBetweenResettingMillis;
@@ -42,26 +41,26 @@ public class ResetByChunksTop implements Top {
     private final ArchivedTop[] archive;
     private final boolean historySupported;
     private final Ticker ticker;
-    private final PositionCollector temporarySnapshotCollector;
+    private final SingleThreadedRanking temporarySnapshotCollector;
 
     private final Phase left;
     private final Phase right;
     private final Phase[] phases;
     private final AtomicReference<Phase> currentPhaseRef;
 
-    public ResetByChunksTop(int size, long latencyThresholdNanos, int maxDescriptionLength, long intervalBetweenResettingMillis, int numberHistoryChunks, Ticker ticker, Executor backgroundExecutor) {
+    public ResetByChunksRanking(int size, long threshold, long intervalBetweenResettingMillis, int numberHistoryChunks, Ticker ticker, Executor backgroundExecutor) {
         this.intervalBetweenResettingMillis = intervalBetweenResettingMillis;
         this.ticker = ticker;
         this.creationTimestamp = ticker.stableMilliseconds();
         this.backgroundExecutor = backgroundExecutor;
 
-        Supplier<TwoPhasePositionRecorder> recorderSupplier = () -> new TwoPhasePositionRecorder(size, latencyThresholdNanos, maxDescriptionLength);
+        Supplier<RankingRecorder> recorderSupplier = () -> new RankingRecorder(size, threshold);
         this.left = new Phase(recorderSupplier.get(), creationTimestamp + intervalBetweenResettingMillis);
         this.right = new Phase(recorderSupplier.get(), Long.MAX_VALUE);
         this.phases = new Phase[] {left, right};
         this.currentPhaseRef = new AtomicReference<>(left);
 
-        Supplier<PositionCollector> collectorSupplier = () -> PositionCollector.createCollector(size);
+        Supplier<SingleThreadedRanking> collectorSupplier = () -> new SingleThreadedRanking(size, threshold);
         this.historySupported = numberHistoryChunks > 0;
         if (historySupported) {
             this.archive = new ArchivedTop[numberHistoryChunks];
@@ -75,16 +74,16 @@ public class ResetByChunksTop implements Top {
     }
 
     @Override
-    public void update(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
+    public void update(long weight, Object identity) {
         long currentTimeMillis = ticker.stableMilliseconds();
         Phase currentPhase = currentPhaseRef.get();
         if (currentTimeMillis < currentPhase.proposedInvalidationTimestamp) {
-            currentPhase.recorder.update(timestamp, latencyTime, latencyUnit, descriptionSupplier);
+            currentPhase.recorder.update(weight, identity);
             return;
         }
 
         Phase nextPhase = currentPhase == left ? right : left;
-        nextPhase.recorder.update(timestamp, latencyTime, latencyUnit, descriptionSupplier);
+        nextPhase.recorder.update(weight, identity);
 
         if (!currentPhaseRef.compareAndSet(currentPhase, nextPhase)) {
             // another writer achieved progress and must submit rotation task to backgroundExecutor
@@ -104,7 +103,7 @@ public class ResetByChunksTop implements Top {
         for (Phase phase : phases) {
             if (phase.isNeedToBeReportedToSnapshot(currentTimeMillis)) {
                 phase.intervalRecorder = phase.recorder.getIntervalRecorder(phase.intervalRecorder);
-                phase.intervalRecorder.addInto(phase.totalsCollector);
+                phase.intervalRecorder.addIntoUnsafe(phase.totalsCollector);
                 phase.totalsCollector.addInto(temporarySnapshotCollector);
             }
         }
@@ -122,13 +121,13 @@ public class ResetByChunksTop implements Top {
 
     @Override
     public int getSize() {
-        return left.intervalRecorder.getSize();
+        return left.intervalRecorder.getMaxSize();
     }
 
     private synchronized void rotate(long currentTimeMillis, Phase currentPhase, Phase nextPhase) {
         try {
             currentPhase.intervalRecorder = currentPhase.recorder.getIntervalRecorder(currentPhase.intervalRecorder);
-            currentPhase.intervalRecorder.addInto(currentPhase.totalsCollector);
+            currentPhase.intervalRecorder.addIntoUnsafe(currentPhase.totalsCollector);
             if (historySupported) {
                 // move values from recorder to correspondent archived collector
                 long currentPhaseNumber = (currentPhase.proposedInvalidationTimestamp - creationTimestamp) / intervalBetweenResettingMillis;
@@ -149,10 +148,10 @@ public class ResetByChunksTop implements Top {
 
     private final class ArchivedTop {
 
-        private final PositionCollector collector;
+        private final SingleThreadedRanking collector;
         private volatile long proposedInvalidationTimestamp;
 
-        public ArchivedTop(PositionCollector collector, long proposedInvalidationTimestamp) {
+        public ArchivedTop(SingleThreadedRanking collector, long proposedInvalidationTimestamp) {
             this.collector = collector;
             this.proposedInvalidationTimestamp = proposedInvalidationTimestamp;
         }
@@ -168,15 +167,15 @@ public class ResetByChunksTop implements Top {
 
     private final class Phase {
 
-        final TwoPhasePositionRecorder recorder;
-        final PositionCollector totalsCollector;
-        PositionRecorder intervalRecorder;
+        final RankingRecorder recorder;
+        final SingleThreadedRanking totalsCollector;
+        ConcurrentRanking intervalRecorder;
         volatile long proposedInvalidationTimestamp;
 
-        Phase(TwoPhasePositionRecorder recorder, long proposedInvalidationTimestamp) {
+        Phase(RankingRecorder recorder, long proposedInvalidationTimestamp) {
             this.recorder = recorder;
             this.intervalRecorder = recorder.getIntervalRecorder();
-            this.totalsCollector = PositionCollector.createCollector(intervalRecorder.getSize());
+            this.totalsCollector = new SingleThreadedRanking(intervalRecorder.getMaxSize(), intervalRecorder.getThreshold());
             this.proposedInvalidationTimestamp = proposedInvalidationTimestamp;
         }
 

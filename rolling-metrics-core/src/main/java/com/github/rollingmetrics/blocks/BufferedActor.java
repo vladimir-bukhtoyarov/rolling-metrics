@@ -16,7 +16,7 @@
 
 package com.github.rollingmetrics.blocks;
 
-import org.jctools.queues.MpscBlockingConsumerArrayQueue;
+import org.jctools.queues.MpscArrayQueue;
 import org.jctools.queues.SpmcArrayQueue;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -67,11 +67,12 @@ import java.util.function.Supplier;
 public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
 
     private final SpmcArrayQueue<T> actionPool;
-    private final MpscBlockingConsumerArrayQueue<T> scheduledActions;
+    private final MpscArrayQueue<T> scheduledActions;
 
     private final ReentrantLock lock = new ReentrantLock();
-    private final AtomicLong blockedCounter = new AtomicLong();
+    private final AtomicLong overflowCounter = new AtomicLong();
     private final int batchSize;
+    private final Supplier<T> actionFactory;
 
     /**
      * @param actionFactory factory which used to populate action pool, pool is always populated to maximum during initialization
@@ -81,95 +82,54 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
      */
     public BufferedActor(Supplier<T> actionFactory, int bufferSize, int batchSize) {
         actionPool = new SpmcArrayQueue<>(bufferSize);
-        scheduledActions = new MpscBlockingConsumerArrayQueue<>(bufferSize);
+        scheduledActions = new MpscArrayQueue<>(bufferSize);
         this.batchSize = batchSize;
+        this.actionFactory = actionFactory;
 
-        for (int i = 0; i < bufferSize; i++) {
-            T action = actionFactory.get();
-            actionPool.add(action);
+        if (batchSize < bufferSize) {
+            throw new IllegalArgumentException();
         }
     }
 
     public final T getActionFromPool() {
         T action = actionPool.poll();
-        if (action != null) {
-            // fast path
-            return action;
+        if (action == null) {
+            action = actionFactory.get();
         }
-
-        // if there are no actions in pool we need to help to process already scheduled actions
-        blockedCounter.incrementAndGet();
-        lock.lock();
-
-        boolean actionFromPool = false;
-        T firstAction = null;
-        while (firstAction == null) {
-            firstAction = actionPool.poll();
-            if (firstAction != null) {
-                actionFromPool = true;
-                break;
-            }
-            try {
-                firstAction = scheduledActions.take();
-            } catch (InterruptedException e) {
-                // ignore
-            }
-        }
-
-        int dispatchedActions = 0;
-        T currentAction = firstAction;
-        while (currentAction != null) {
-            if (currentAction != firstAction || !actionFromPool) {
-                currentAction.run();
-            }
-            if (currentAction != firstAction) {
-                currentAction.prepareForReuse();
-                actionPool.offer(currentAction);
-            }
-            if (dispatchedActions++ >= batchSize) {
-                break;
-            }
-            currentAction = scheduledActions.poll();
-        }
-        lock.unlock();
-
-        firstAction.prepareForReuse();
-        return firstAction;
+        return action;
     }
 
     public void doExclusivelyOrSchedule(T action) {
-        scheduledActions.offer(action);
-
-        if (!lock.tryLock()) {
-            return;
+        boolean queued = false;
+        if (!scheduledActions.offer(action)) {
+            queued = true;
+            if (!lock.tryLock()) {
+                return;
+            }
+        } else {
+            overflowCounter.incrementAndGet();
+            lock.lock();
         }
 
-        int dispatchedActions = 0;
-
-        T firstAction = scheduledActions.poll();
-        T currentAction = firstAction;
-
-        while (currentAction != null) {
-            currentAction.run();
-            if (currentAction != firstAction) {
-                currentAction.prepareForReuse();
+        try {
+            int dispatchedActions = 0;
+            T currentAction = queued? scheduledActions.poll() : action;
+            while (currentAction != null) {
+                currentAction.run();
+                currentAction.freeGarbage();
                 actionPool.offer(currentAction);
+                if (dispatchedActions++ >= batchSize) {
+                    break;
+                }
+                currentAction = scheduledActions.poll();
             }
-            if (dispatchedActions++ >= batchSize) {
-                break;
-            }
-            currentAction = scheduledActions.poll();
+        } finally {
+            lock.unlock();
         }
-
-        if (firstAction != null) {
-            firstAction.prepareForReuse();
-            actionPool.offer(firstAction);
-        }
-        lock.unlock();
     }
 
-    public long getBlockedCount() {
-        return blockedCounter.get();
+    public long getOverflowedCount() {
+        return overflowCounter.get();
     }
 
     public int getActionPoolSize() {
@@ -180,11 +140,28 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
         return scheduledActions.size();
     }
 
-    public interface ReusableActionContainer {
+    public void processAllScheduledActions() {
+        T action;
+        while ((action = scheduledActions.poll()) != null) {
+            action.run();
+            action.freeGarbage();
+            actionPool.offer(action);
+        }
+    }
 
-        void prepareForReuse();
+    public void clear() {
+        T action;
+        while ((action = scheduledActions.poll()) != null) {
+            action.freeGarbage();
+            actionPool.offer(action);
+        }
+    }
 
-        void run();
+    public static abstract class ReusableActionContainer {
+
+        abstract protected void freeGarbage();
+
+        abstract protected void run();
 
     }
 
