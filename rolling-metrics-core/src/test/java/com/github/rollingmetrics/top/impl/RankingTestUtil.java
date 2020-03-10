@@ -18,8 +18,8 @@
 package com.github.rollingmetrics.top.impl;
 
 import com.github.rollingmetrics.top.Position;
+import com.github.rollingmetrics.top.Ranking;
 import com.github.rollingmetrics.top.TopTestData;
-import com.github.rollingmetrics.top.Top;
 import junit.framework.TestCase;
 
 import java.util.Arrays;
@@ -28,34 +28,32 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TopTestUtil {
+public class RankingTestUtil {
 
-    public static void testCommonScenarios(int size, Top top, long latencyThresholdNanos, int maxDescriptionLength) {
-        assertEquals(size, top.getSize());
-        negativeLatencyShouldBeIgnored(top);
-        tooShortLatencyShouldBeIgnored(top, latencyThresholdNanos);
-        tooLongDescriptionShouldBeReduced(top, latencyThresholdNanos, maxDescriptionLength);
+    public static void testCommonScenarios(int size, Ranking ranking, long latencyThresholdNanos, int maxDescriptionLength) {
+        assertEquals(size, ranking.getSize());
+        negativeLatencyShouldBeIgnored(ranking);
+        tooShortLatencyShouldBeIgnored(ranking, latencyThresholdNanos);
+        tooLongDescriptionShouldBeReduced(ranking, latencyThresholdNanos, maxDescriptionLength);
     }
 
-    public static void update(Top top, Position position) {
-        top.update(position.getTimestamp(), position.getLatencyTime(), position.getLatencyUnit(), position::getQueryDescription);
+    public static void update(Ranking ranking, Position position) {
+        ranking.update(position.getTimestamp(), position.getLatencyTime(), position.getLatencyUnit(), position.getQueryDescription());
     }
 
-
-    public static void checkOrder(Top top, Position... positions) {
-        TestCase.assertEquals(Arrays.asList(positions), top.getPositionsInDescendingOrder());
+    public static void checkOrder(Ranking ranking, Position... positions) {
+        TestCase.assertEquals(Arrays.asList(positions), ranking.getPositionsInDescendingOrder());
     }
 
-    public static void assertEmpty(Top top) {
-        assertEquals(Collections.emptyList(), top.getPositionsInDescendingOrder());
+    public static void assertEmpty(Ranking ranking) {
+        assertEquals(Collections.emptyList(), ranking.getPositionsInDescendingOrder());
     }
 
-    public static void runInParallel(Top top, long durationMillis, long minValue, long maxValue) throws InterruptedException {
+    public static void runInParallel(Ranking ranking, long durationMillis, long minValue, long maxValue) throws InterruptedException {
         AtomicReference<Throwable> errorRef = new AtomicReference<>();
 
         Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors() * 2];
@@ -68,9 +66,9 @@ public class TopTestUtil {
                     while (errorRef.get() == null && System.currentTimeMillis() - start < durationMillis) {
                         for (int j = 1; j <= 10; j++) {
                             long latency = minValue + ThreadLocalRandom.current().nextLong(maxValue - minValue);
-                            top.update(System.currentTimeMillis(), latency, TimeUnit.NANOSECONDS, () -> "" + latency);
+                            ranking.update(System.currentTimeMillis(), latency, TimeUnit.NANOSECONDS, "" + latency);
                         }
-                        top.getPositionsInDescendingOrder();
+                        ranking.getPositionsInDescendingOrder();
                     }
                 } catch (Exception e){
                     e.printStackTrace();
@@ -92,20 +90,20 @@ public class TopTestUtil {
         }
     }
 
-    private static void negativeLatencyShouldBeIgnored(Top top) {
-        top.update(System.currentTimeMillis(), -1, TimeUnit.MILLISECONDS, () -> "SELECT * FROM DUAL");
-        assertTrue(top.getPositionsInDescendingOrder().isEmpty());
+    private static void negativeLatencyShouldBeIgnored(Ranking ranking) {
+        ranking.update(System.currentTimeMillis(), -1, TimeUnit.MILLISECONDS, "SELECT * FROM DUAL");
+        assertTrue(ranking.getPositionsInDescendingOrder().isEmpty());
     }
 
-    private static void tooShortLatencyShouldBeIgnored(Top top, long latencyThresholdNanos) {
-        top.update(System.currentTimeMillis(), latencyThresholdNanos - 1, TimeUnit.NANOSECONDS, () -> "SELECT * FROM DUAL");
-        assertTrue(top.getPositionsInDescendingOrder().isEmpty());
+    private static void tooShortLatencyShouldBeIgnored(Ranking ranking, long latencyThresholdNanos) {
+        ranking.update(System.currentTimeMillis(), latencyThresholdNanos - 1, TimeUnit.NANOSECONDS, "SELECT * FROM DUAL");
+        assertTrue(ranking.getPositionsInDescendingOrder().isEmpty());
     }
 
-    private static void tooLongDescriptionShouldBeReduced(Top top, long latencyThresholdNanos, int maxDescriptionLength) {
-        Supplier<String> longDescription = () -> TopTestData.generateString(maxDescriptionLength * 2);
-        top.update(System.currentTimeMillis(), latencyThresholdNanos, TimeUnit.NANOSECONDS, longDescription);
-        Position position = top.getPositionsInDescendingOrder().get(0);
+    private static void tooLongDescriptionShouldBeReduced(Ranking ranking, long latencyThresholdNanos, int maxDescriptionLength) {
+        String longDescription = TopTestData.generateString(maxDescriptionLength * 2);
+        ranking.update(System.currentTimeMillis(), latencyThresholdNanos, TimeUnit.NANOSECONDS, longDescription);
+        Position position = ranking.getPositionsInDescendingOrder().get(0);
         assertEquals(maxDescriptionLength, position.getQueryDescription().length());
     }
 

@@ -16,7 +16,7 @@
 
 package com.github.rollingmetrics.blocks;
 
-import org.jctools.queues.MpscBlockingConsumerArrayQueue;
+import org.jctools.queues.MpscArrayQueue;
 import org.jctools.queues.SpmcArrayQueue;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -67,7 +67,7 @@ import java.util.function.Supplier;
 public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
 
     private final SpmcArrayQueue<T> actionPool;
-    private final MpscBlockingConsumerArrayQueue<T> scheduledActions;
+    private final MpscArrayQueue<T> scheduledActions;
 
     private final ReentrantLock lock = new ReentrantLock();
     private final AtomicLong blockedCounter = new AtomicLong();
@@ -81,7 +81,7 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
      */
     public BufferedActor(Supplier<T> actionFactory, int bufferSize, int batchSize) {
         actionPool = new SpmcArrayQueue<>(bufferSize);
-        scheduledActions = new MpscBlockingConsumerArrayQueue<>(bufferSize);
+        scheduledActions = new MpscArrayQueue<>(bufferSize);
         this.batchSize = batchSize;
 
         for (int i = 0; i < bufferSize; i++) {
@@ -109,11 +109,7 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
                 actionFromPool = true;
                 break;
             }
-            try {
-                firstAction = scheduledActions.take();
-            } catch (InterruptedException e) {
-                // ignore
-            }
+            firstAction = scheduledActions.poll();
         }
 
         int dispatchedActions = 0;
@@ -123,7 +119,7 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
                 currentAction.run();
             }
             if (currentAction != firstAction) {
-                currentAction.prepareForReuse();
+                currentAction.freeGarbage();
                 actionPool.offer(currentAction);
             }
             if (dispatchedActions++ >= batchSize) {
@@ -133,7 +129,7 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
         }
         lock.unlock();
 
-        firstAction.prepareForReuse();
+        firstAction.freeGarbage();
         return firstAction;
     }
 
@@ -152,7 +148,7 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
         while (currentAction != null) {
             currentAction.run();
             if (currentAction != firstAction) {
-                currentAction.prepareForReuse();
+                currentAction.freeGarbage();
                 actionPool.offer(currentAction);
             }
             if (dispatchedActions++ >= batchSize) {
@@ -162,7 +158,7 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
         }
 
         if (firstAction != null) {
-            firstAction.prepareForReuse();
+            firstAction.freeGarbage();
             actionPool.offer(firstAction);
         }
         lock.unlock();
@@ -180,11 +176,30 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
         return scheduledActions.size();
     }
 
-    public interface ReusableActionContainer {
+    public void processAllScheduladActions() {
+        T action = scheduledActions.poll();
+        while (action != null) {
+            action.run();
+            action.freeGarbage();
+            actionPool.offer(action);
+        }
+    }
 
-        void prepareForReuse();
+    public void clear() {
+        T action = scheduledActions.poll();
+        while (action != null) {
+            action.freeGarbage();
+            actionPool.offer(action);
+        }
+    }
 
-        void run();
+    public static abstract class ReusableActionContainer {
+
+        private ReusableActionContainer previous;
+
+        abstract protected void freeGarbage();
+
+        abstract protected void run();
 
     }
 

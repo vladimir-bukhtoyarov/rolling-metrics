@@ -36,7 +36,7 @@ public class BufferedActorTest {
 
         Supplier<BufferedActor.ReusableActionContainer> actionFactory = () -> new BufferedActor.ReusableActionContainer() {
             @Override
-            public void prepareForReuse() {
+            public void freeGarbage() {
             }
 
             @Override

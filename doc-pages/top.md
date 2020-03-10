@@ -1,7 +1,7 @@
 # Top
-Top - the ```N```-position collection for queries sorted by latency in descended order. Each position in the top has the latency and description.
-The top always stores no more than ```N``` positions, the longer queries displace shorter queries when top reaches max size.
-Reading the javadocs for [Top](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/2.0/src/main/java/com/github/rollingmetrics/top/Top.java) and [TopBuilder](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/2.0/src/main/java/com/github/rollingmetrics/top/TopBuilder.java) classes is quite enough to start with this functionality.
+Top - the ```N```-position collection for queries sorted by latency in descended order. Each position in the ranking has the latency and description.
+The ranking always stores no more than ```N``` positions, the longer queries displace shorter queries when ranking reaches max size.
+Reading the javadocs for [Top](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/2.0/src/main/java/com/github/rollingmetrics/ranking/Top.java) and [TopBuilder](https://github.com/vladimir-bukhtoyarov/rolling-metrics/blob/2.0/src/main/java/com/github/rollingmetrics/ranking/TopBuilder.java) classes is quite enough to start with this functionality.
  
 Concurrency properties:
 * Writing is lock-free. Writers never blocked by readers or other writers.
@@ -26,7 +26,7 @@ The query description must contain:
  import com.codahale.metrics.MetricRegistry;
  import com.codahale.metrics.MetricSet;
  import com.datastax.driver.core.*;
- import com.github.rollingmetrics.top.Top;
+ import com.github.rollingmetrics.top.Ranking.Top;
  import com.github.rollingmetrics.dropwizard.adapter.TopMetricSet;
 
  import java.time.Duration;
@@ -39,17 +39,17 @@ The query description must contain:
   */
  public class LatencyTopTracker implements LatencyTracker {
 
-     private final Top top;
+     private final Top ranking;
 
      public LatencyTopTracker(MetricRegistry metricRegistry) {
-         this.top = Top.builder(10) // 10 positions in the top
+         this.ranking = Top.builder(10) // 10 positions in the ranking
                  .withLatencyThreshold(Duration.ofMillis(25)) // do not care about queries wich shorter than 25ms
-                 .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(60), 3) // position recorded in the top will take effect 60-80 seconds
+                 .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(60), 3) // position recorded in the ranking will take effect 60-80 seconds
                  .build();
 
          TimeUnit latencyUnit = TimeUnit.MILLISECONDS; // output latency in milliseconds
          int digitsAfterDecimalPoint = 3; // round output to 3 digits(example 34.945)
-         MetricSet topMetricSet = new TopMetricSet("cassandra-query-top", top, latencyUnit, digitsAfterDecimalPoint);
+         MetricSet topMetricSet = new TopMetricSet("cassandra-query-ranking", ranking, latencyUnit, digitsAfterDecimalPoint);
          metricRegistry.registerAll(topMetricSet);
      }
 
@@ -66,7 +66,7 @@ The query description must contain:
                      .append(exception == null ? "" : " error=" + exception.getMessage())
                      .toString();
          };
-         top.update(requestTimestamp, newLatencyNanos, TimeUnit.NANOSECONDS, lazyQueryDescriptionSupplier);
+         ranking.update(requestTimestamp, newLatencyNanos, TimeUnit.NANOSECONDS, lazyQueryDescriptionSupplier);
      }
 
      private static String getQueryString(Statement statement) {
@@ -128,67 +128,67 @@ The output bellow was produced through [MetricServlet](http://metrics.dropwizard
   "gauges" : {
     ... 
     
-    "cassandra-query-top.0.description" : {
+    "cassandra-query-ranking.0.description" : {
       "value" : "192.168.35.87 Fri Nov 11 12:57:38 UTC 2016 select data from my_keyspace.my_table where event_filter in :event_filters"
     },
-    "cassandra-query-top.0.latency" : {
+    "cassandra-query-ranking.0.latency" : {
       "value" : 43.085
     },
-    "cassandra-query-top.1.description" : {
+    "cassandra-query-ranking.1.description" : {
       "value" : "192.168.35.87 Fri Nov 11 12:57:38 UTC 2016 select data from my_keyspace.my_table where event_filter in :event_filters"
     },
-    "cassandra-query-top.1.latency" : {
+    "cassandra-query-ranking.1.latency" : {
       "value" : 42.959
     },
-    "cassandra-query-top.2.description" : {
+    "cassandra-query-ranking.2.description" : {
       "value" : "192.168.35.87 Fri Nov 11 12:57:38 UTC 2016 select data from my_keyspace.my_table where event_filter in :event_filters"
     },
-    "cassandra-query-top.2.latency" : {
+    "cassandra-query-ranking.2.latency" : {
       "value" : 36.989
     },
-    "cassandra-query-top.3.description" : {
+    "cassandra-query-ranking.3.description" : {
       "value" : "192.168.35.87 Fri Nov 11 12:57:53 UTC 2016 select data from my_keyspace.my_table where event_filter in :event_filters"
     },
-    "cassandra-query-top.3.latency" : {
+    "cassandra-query-ranking.3.latency" : {
       "value" : 32.510
     },
-    "cassandra-query-top.4.description" : {
+    "cassandra-query-ranking.4.description" : {
       "value" : "192.168.35.82 Fri Nov 11 12:56:43 UTC 2016 (insert into my_keyspace.my_table (  event_filter,  id,  data ) values ( :event_filter, :id, :data )using ttl :expires_in; insert into my_keyspace.my_table (  event_filter,  id,  data ) values ( :event_filter, :id, :data )using ttl :expires_in; insert into my_keyspace.my_table (  event_filter,  id,  data ) values ( :event_filter, :id, :data )using ttl :expires_in; insert into my_keyspace.my_table (  event_filter,  id,  data ) values ( :event_filter, :id, :data )using ttl :expires_in; insert into my_keyspace.subscription_by_id (  id,  data,  data_versions,  extension_application_id,  device_token_application_id_transport) values ( :id, :data, :data_versions, :extension_application_id, :device_token_application_id_transport)using ttl :expires_in; )"
     },
-    "cassandra-query-top.4.latency" : {
+    "cassandra-query-ranking.4.latency" : {
       "value" : 32.008
     },
-    "cassandra-query-top.5.description" : {
+    "cassandra-query-ranking.5.description" : {
       "value" : "192.168.35.87 Fri Nov 11 12:56:43 UTC 2016 (insert into my_keyspace.my_table (  event_filter,  id,  data ) values ( :event_filter, :id, :data )using ttl :expires_in; insert into my_keyspace.my_table (  event_filter,  id,  data ) values ( :event_filter, :id, :data )using ttl :expires_in; insert into my_keyspace.my_table (  event_filter,  id,  data ) values ( :event_filter, :id, :data )using ttl :expires_in; insert into my_keyspace.my_table (  event_filter,  id,  data ) values ( :event_filter, :id, :data )using ttl :expires_in; insert into my_keyspace.subscription_by_id (  id,  data,  data_versions,  extension_application_id,  device_token_application_id_transport) values ( :id, :data, :data_versions, :extension_application_id, :device_token_application_id_transport)using ttl :expires_in; )"
     },
-    "cassandra-query-top.5.latency" : {
+    "cassandra-query-ranking.5.latency" : {
       "value" : 31.741
     },
-    "cassandra-query-top.6.description" : {
+    "cassandra-query-ranking.6.description" : {
       "value" : "192.168.35.183 Fri Nov 11 12:56:31 UTC 2016 select data from my_keyspace.my_table where id = :id limit 1"
     },
-    "cassandra-query-top.6.latency" : {
+    "cassandra-query-ranking.6.latency" : {
       "value" : 31.519
     },
-    "cassandra-query-top.7.description" : {
+    "cassandra-query-ranking.7.description" : {
       "value" : "192.168.35.183 Fri Nov 11 12:57:53 UTC 2016 (insert into my_keyspace.my_table (  event_filter,  id,  data ) values ( :event_filter, :id, :data )using ttl :expires_in; insert into my_keyspace.my_table (  event_filter,  id,  data ) values ( :event_filter, :id, :data )using ttl :expires_in; insert into my_keyspace.my_table (  event_filter,  id,  data ) values ( :event_filter, :id, :data )using ttl :expires_in; insert into my_keyspace.my_table (  event_filter,  id,  data ) values ( :event_filter, :id, :data )using ttl :expires_in; insert into my_keyspace.subscription_by_id (  id,  data,  data_versions,  extension_application_id,  device_token_application_id_transport) values ( :id, :data, :data_versions, :extension_application_id, :device_token_application_id_transport)using ttl :expires_in; )"
     },
-    "cassandra-query-top.7.latency" : {
+    "cassandra-query-ranking.7.latency" : {
       "value" : 30.836
     },
-    "cassandra-query-top.8.description" : {
+    "cassandra-query-ranking.8.description" : {
       "value" : "192.168.35.82 Fri Nov 11 12:57:28 UTC 2016 select data from my_keyspace.my_table where event_filter in :event_filters"
     },
-    "cassandra-query-top.8.latency" : {
+    "cassandra-query-ranking.8.latency" : {
       "value" : 30.334
     },
-    "cassandra-query-top.9.description" : {
+    "cassandra-query-ranking.9.description" : {
       "value" : "192.168.35.183 Fri Nov 11 12:57:50 UTC 2016 select data from my_keyspace.my_table where id = :id limit 1"
     },
-    "cassandra-query-top.9.latency" : {
+    "cassandra-query-ranking.9.latency" : {
       "value" : 29.910
     },
-    "cassandra-query-top.latencyUnit" : {
+    "cassandra-query-ranking.latencyUnit" : {
       "value" : "MILLISECONDS"
     },
  

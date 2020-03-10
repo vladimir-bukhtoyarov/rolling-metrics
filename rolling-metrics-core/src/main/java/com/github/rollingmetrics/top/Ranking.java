@@ -19,37 +19,32 @@ package com.github.rollingmetrics.top;
 
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 /**
  * The top of queries sorted by its latency.
  * The top is sized, independent of count of recorded queries, the top always stores no more than {@link #getSize} positions,
- * the longer queries displace shorter queries when top reaches it max size.
+ * the longer queries displace shorter queries when ranking reaches it max size.
  */
-public interface Top {
+public interface Ranking {
 
     /**
-     * Creates new instance of {@link TopBuilder}
+     * Creates new instance of {@link RankingBuilder}
      *
      * @param size maximum count of positions in the top
      *
-     * @return new instance of {@link TopBuilder}
+     * @return new instance of {@link RankingBuilder}
      */
-    static TopBuilder builder(int size) {
-        return TopBuilder.newBuilder(size);
+    static RankingBuilder builder(int size) {
+        return RankingBuilder.newBuilder(size);
     }
 
     /**
-     * Registers latency of query. To avoid unnecessary memory allocation for Strings the descriptionSupplier will be called only if latency is greater then "SlowQueryThreshold"
-     * and latency is greater than any other query in the top.
+     * Updates the ranking positions.
      *
-     * @param timestamp timestamp in milliseconds when latency taken
-     * @param latencyTime query duration
-     * @param latencyUnit resolution of latency time
-     * @param descriptionSupplier lazy supplier for query description
+     * @param weight the weight of query
+     * @param identity the identity by which one query can be distinguished from another.
      */
-    void update(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier);
+    void update(long weight, Object identity);
 
     /**
      * Returns the top of queries in descend order, slowest query will be at first place.
@@ -60,7 +55,7 @@ public interface Top {
     List<Position> getPositionsInDescendingOrder();
 
     /**
-     * @return the maximum count of positions in the top.
+     * @return the maximum count of positions that can be stored in the ranking.
      */
     int getSize();
 

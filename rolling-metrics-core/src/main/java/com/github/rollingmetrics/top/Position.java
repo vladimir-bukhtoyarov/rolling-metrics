@@ -17,121 +17,35 @@
 
 package com.github.rollingmetrics.top;
 
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
+import java.util.Objects;
 
 /**
- * Represents query latency with user friendly query description.
+ * Represents position inside ranking.
  */
-public class Position implements Comparable<Position> {
+public class Position {
 
-    private final long latencyTime;
-    private final TimeUnit latencyUnit;
-    private final String description;
-    private final long timestamp;
-    private long latencyInNanoseconds;
+    private final long weight;
+    private final Object identity;
 
-    public Position(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, int maxDescriptionLengt) {
-        this(timestamp, latencyTime, latencyUnit, combineDescriptionWithLatency(latencyTime, latencyUnit, descriptionSupplier, maxDescriptionLengt));
+    public Position(long weight, Object identity) {
+        this.weight = weight;
+        this.identity = Objects.requireNonNull(identity);
     }
 
-    public Position(long timestamp, long latencyTime, TimeUnit latencyUnit, String description) {
-        this.latencyTime = latencyTime;
-        this.latencyUnit = latencyUnit;
-        this.description = description;
-        this.timestamp = timestamp;
-        this.latencyInNanoseconds = latencyUnit.toNanos(latencyTime);
+    public long getWeight() {
+        return weight;
     }
 
-    /**
-     * @return user friendly query description. For example SQL or HTTP URL.
-     */
-    public String getQueryDescription() {
-        return description;
-    }
-
-    /**
-     * @return the latency of query, resolution of latency time unit can be get via {@link #getLatencyUnit()}
-     */
-    public long getLatencyTime() {
-        return latencyTime;
-    }
-
-    /**
-     * @return time units in which latency was measured.
-     */
-    public TimeUnit getLatencyUnit() {
-        return latencyUnit;
-    }
-
-    /**
-     * @return latency of query in nanoseconds
-     */
-    public long getLatencyInNanoseconds() {
-        return latencyInNanoseconds;
-    }
-
-    /**
-     * Returns timestamp in milliseconds when latency taken
-     *
-     * @return timestamp in milliseconds when latency taken
-     */
-    public long getTimestamp() {
-        return timestamp;
-    }
-
-    @Override
-    public int compareTo(Position other) {
-        if (latencyInNanoseconds != other.latencyInNanoseconds) {
-            return Long.compare(latencyInNanoseconds, other.latencyInNanoseconds);
-        }
-        if (timestamp != other.timestamp) {
-            return Long.compare(timestamp, other.timestamp);
-        }
-        return description.compareTo(other.description);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        Position position = (Position) o;
-
-        if (timestamp != position.timestamp) return false;
-        if (latencyInNanoseconds != position.latencyInNanoseconds) return false;
-        return description.equals(position.description);
-
-    }
-
-    @Override
-    public int hashCode() {
-        int result = description.hashCode();
-        result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
-        result = 31 * result + (int) (latencyInNanoseconds ^ (latencyInNanoseconds >>> 32));
-        return result;
+    public Object getIdentity() {
+        return identity;
     }
 
     @Override
     public String toString() {
         return "Position{" +
-                "latencyTime=" + latencyTime +
-                ", latencyUnit=" + latencyUnit +
-                ", description='" + description + '\'' +
-                ", timestamp=" + timestamp +
-                ", latencyInNanoseconds=" + latencyInNanoseconds +
+                "weight=" + weight +
+                ", identity=" + identity +
                 '}';
-    }
-
-    private static String combineDescriptionWithLatency(long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier, int maxDescriptionLength) {
-        String queryDescription = descriptionSupplier.get();
-        if (queryDescription == null) {
-            throw new IllegalArgumentException("Query queryDescription should not be null");
-        }
-        if (queryDescription.length() > maxDescriptionLength) {
-            queryDescription = queryDescription.substring(0, maxDescriptionLength);
-        }
-        return queryDescription;
     }
 
 }

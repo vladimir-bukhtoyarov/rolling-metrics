@@ -19,28 +19,26 @@ package com.github.rollingmetrics.top.impl;
 
 
 import com.github.rollingmetrics.top.Position;
-import com.github.rollingmetrics.top.Top;
+import com.github.rollingmetrics.top.Ranking;
 import com.github.rollingmetrics.util.CachingSupplier;
 import com.github.rollingmetrics.util.Ticker;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
-public class SnapshotCachingTop implements Top {
+public class SnapshotCachingRanking implements Ranking {
 
-    private final Top target;
+    private final Ranking target;
     private final CachingSupplier<List<Position>> cache;
 
-    public SnapshotCachingTop(Top target, Duration cachingDuration, Ticker ticker) {
+    public SnapshotCachingRanking(Ranking target, Duration cachingDuration, Ticker ticker) {
         this.target = target;
         this.cache = new CachingSupplier<>(cachingDuration, ticker, target::getPositionsInDescendingOrder);
     }
 
     @Override
-    public void update(long timestamp, long latencyTime, TimeUnit latencyUnit, Supplier<String> descriptionSupplier) {
-        target.update(timestamp, latencyTime, latencyUnit, descriptionSupplier);
+    public void update(long weight, Object identity) {
+        target.update(weight, identity);
     }
 
     @Override
@@ -60,4 +58,5 @@ public class SnapshotCachingTop implements Top {
                 ", cache=" + cache +
                 '}';
     }
+
 }

@@ -23,7 +23,7 @@ import com.github.rollingmetrics.dropwizard.adapter.ReservoirToRollingHdrHistogr
 import com.github.rollingmetrics.dropwizard.adapter.TopMetricSet;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.hitratio.HitRatio;
-import com.github.rollingmetrics.top.Top;
+import com.github.rollingmetrics.top.Ranking;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -88,12 +88,12 @@ public class Dropwizard {
      * Creates new collection of gauges which compatible with {@link com.codahale.metrics.MetricRegistry}.
      *
      * @param name the name prefix for each gauge
-     * @param top the target {@link Top}
+     * @param ranking the target {@link Ranking}
      * @param latencyUnit the time unit to convert latency
      * @param digitsAfterDecimalPoint the number of digits after decimal point
      */
-    public static MetricSet toMetricSet(String name, Top top, TimeUnit latencyUnit, int digitsAfterDecimalPoint) {
-        return new TopMetricSet(name, top, latencyUnit, digitsAfterDecimalPoint);
+    public static MetricSet toMetricSet(String name, Ranking ranking, TimeUnit latencyUnit, int digitsAfterDecimalPoint) {
+        return new TopMetricSet(name, ranking, latencyUnit, digitsAfterDecimalPoint);
     }
 
 }

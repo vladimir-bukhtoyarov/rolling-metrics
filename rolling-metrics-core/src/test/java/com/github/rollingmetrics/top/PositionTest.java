@@ -20,7 +20,6 @@ package com.github.rollingmetrics.top;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import static org.junit.Assert.assertEquals;
 
@@ -28,34 +27,24 @@ public class PositionTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNullDescription() {
-        Supplier<String> desciptionSupplier = () -> null;
-        new Position(System.currentTimeMillis(), 22, TimeUnit.MILLISECONDS, desciptionSupplier, 23);
-    }
-
-    @Test
-    public void shouldReduceTooLongDescriptions() {
-        int MAX_LENGTH = 1000;
-        int ACTUAL_LENGTH = 2000;
-        Supplier<String> desciptionSupplier = () -> TopTestData.generateString(ACTUAL_LENGTH);
-        Position position = new Position(System.currentTimeMillis(), 22, TimeUnit.MILLISECONDS, desciptionSupplier, 1000);
-        assertEquals(MAX_LENGTH, position.getQueryDescription().length());
+        new Position(System.currentTimeMillis(), 22, TimeUnit.MILLISECONDS, null, 23);
     }
 
     @Test
     public void shouldCorrectlyConverLatencyToNanoseconds() {
-        Position position = new Position(System.currentTimeMillis(), 2, TimeUnit.MILLISECONDS, () -> "SELECT * FROM DUAL", 1000);
+        Position position = new Position(System.currentTimeMillis(), 2, TimeUnit.MILLISECONDS, "SELECT * FROM DUAL", 1000);
         assertEquals(2_000_000L, position.getLatencyInNanoseconds());
     }
 
     @Test
     public void shouldCorrectlyFormatDescription() {
-        Position position = new Position(System.currentTimeMillis(), 2, TimeUnit.MILLISECONDS, () -> "SELECT * FROM DUAL", 1000);
+        Position position = new Position(System.currentTimeMillis(), 2, TimeUnit.MILLISECONDS, "SELECT * FROM DUAL", 1000);
         assertEquals("SELECT * FROM DUAL", position.getQueryDescription());
     }
 
     @Test
     public void testToString() {
-        Position position = new Position(System.currentTimeMillis(), 2, TimeUnit.MILLISECONDS, () -> "SELECT * FROM DUAL", 1000);
+        Position position = new Position(System.currentTimeMillis(), 2, TimeUnit.MILLISECONDS, "SELECT * FROM DUAL", 1000);
         System.out.println(position.toString());
     }
 
