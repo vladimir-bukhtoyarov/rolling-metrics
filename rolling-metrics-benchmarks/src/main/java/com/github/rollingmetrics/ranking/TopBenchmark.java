@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-package com.github.rollingmetrics.top;
+package com.github.rollingmetrics.ranking;
 
 
 import org.openjdk.jmh.annotations.*;
@@ -86,7 +86,7 @@ public class TopBenchmark {
     @GroupThreads(3)
     @Benchmark
     public void update_chunkedTop_1(TopState state) {
-        state.chunkedRanking_1.update(0, getRandomValue(), TimeUnit.NANOSECONDS, () -> "Some query to something");
+        state.chunkedRanking_1.update(getRandomValue(), "Some query to something");
     }
 
     @Group("chunkedTop_1")
@@ -100,7 +100,7 @@ public class TopBenchmark {
     @GroupThreads(3)
     @Benchmark
     public void update_chunkedTop_10(TopState state) {
-        state.chunkedRanking_10.update(0, getRandomValue(), TimeUnit.NANOSECONDS, () -> "Some query to something");
+        state.chunkedRanking_10.update(getRandomValue(), "Some query to something");
     }
 
     @Group("chunkedTop_10")
@@ -114,7 +114,7 @@ public class TopBenchmark {
     @GroupThreads(3)
     @Benchmark
     public void update_periodicallyTop_1(TopState state) {
-        state.periodicallyRanking_1.update(0, getRandomValue(), TimeUnit.NANOSECONDS, () -> "Some query to something");
+        state.periodicallyRanking_1.update(getRandomValue(), "Some query to something");
     }
 
     @Group("periodicallyTop_1")
@@ -128,7 +128,7 @@ public class TopBenchmark {
     @GroupThreads(3)
     @Benchmark
     public void update_periodicallyTop_10(TopState state) {
-        state.periodicallyRanking_10.update(0, getRandomValue(), TimeUnit.NANOSECONDS, () -> "Some query to something");
+        state.periodicallyRanking_10.update(getRandomValue(), "Some query to something");
     }
 
     @Group("periodicallyTop_10")
@@ -142,7 +142,7 @@ public class TopBenchmark {
     @GroupThreads(3)
     @Benchmark
     public void update_resetOnSnapshotTop_1(TopState state) {
-        state.resetOnSnapshotRanking_1.update(0, getRandomValue(), TimeUnit.NANOSECONDS, () -> "Some query to something");
+        state.resetOnSnapshotRanking_1.update(getRandomValue(), "Some query to something");
     }
 
     @Group("resetOnSnapshotTop_1")
@@ -156,7 +156,7 @@ public class TopBenchmark {
     @GroupThreads(3)
     @Benchmark
     public void update_resetOnSnapshotTop_10(TopState state) {
-        state.resetOnSnapshotRanking_10.update(0, getRandomValue(), TimeUnit.NANOSECONDS, () -> "Some query to something");
+        state.resetOnSnapshotRanking_10.update(getRandomValue(), "Some query to something");
     }
 
     @Group("resetOnSnapshotTop_10")
@@ -170,7 +170,7 @@ public class TopBenchmark {
     @GroupThreads(3)
     @Benchmark
     public void update_uniformTop_1(TopState state) {
-        state.uniformRanking_1.update(0, getRandomValue(), TimeUnit.NANOSECONDS, () -> "Some query to something");
+        state.uniformRanking_1.update(getRandomValue(), "Some query to something");
     }
 
     @Group("uniformTop_1")
@@ -184,7 +184,7 @@ public class TopBenchmark {
     @GroupThreads(3)
     @Benchmark
     public void update_uniformTop_10(TopState state) {
-        state.uniformRanking_10.update(0, getRandomValue(), TimeUnit.NANOSECONDS, () -> "Some query to something");
+        state.uniformRanking_10.update(getRandomValue(), "Some query to something");
     }
 
     @Group("uniformTop_10")
@@ -201,7 +201,7 @@ public class TopBenchmark {
     public static class FourThread {
         public static void main(String[] args) throws RunnerException {
             Options opt = new OptionsBuilder()
-                    .include(((Class) TopBenchmark.class).getSimpleName())
+                    .include((TopBenchmark.class).getSimpleName())
                     .warmupIterations(5)
                     .measurementIterations(5)
                     .threads(4)

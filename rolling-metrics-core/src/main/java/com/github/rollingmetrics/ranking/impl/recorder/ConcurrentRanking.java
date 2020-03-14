@@ -14,10 +14,10 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.top.impl.recorder;
+package com.github.rollingmetrics.ranking.impl.recorder;
 
 import com.github.rollingmetrics.blocks.BufferedActor;
-import com.github.rollingmetrics.top.Position;
+import com.github.rollingmetrics.ranking.Position;
 
 import java.util.List;
 
@@ -29,12 +29,12 @@ public class ConcurrentRanking {
     private final SingleThreadedRanking singleThreadedRanking;
     private final BufferedActor<ModifyRankingAction> bufferedActor;
 
-    protected ConcurrentRanking(int maxSize, long threshold) {
+    public ConcurrentRanking(int maxSize, long threshold) {
         this.singleThreadedRanking = new SingleThreadedRanking(maxSize, threshold);
         this.bufferedActor = new BufferedActor<>(ModifyRankingAction::new, 256, 256);
     }
 
-    void update(long weight, Object identity) {
+    public void update(long weight, Object identity) {
         if (weight < getThreshold()) {
             // the measure should be skipped because it is lesser then threshold
             return;
@@ -64,12 +64,12 @@ public class ConcurrentRanking {
     }
 
     public void addIntoUnsafe(SingleThreadedRanking collector) {
-        bufferedActor.processAllScheduladActions();
+        bufferedActor.processAllScheduledActions();
         singleThreadedRanking.addInto(collector);
     }
 
     public List<Position> getPositionsInDescendingOrderUnsafe() {
-        bufferedActor.processAllScheduladActions();
+        bufferedActor.processAllScheduledActions();
         return singleThreadedRanking.getPositionsInDescendingOrder();
     }
 
@@ -81,7 +81,6 @@ public class ConcurrentRanking {
         protected void freeGarbage() {
             // help gc
             this.identity = null;
-            // other fields are not need in cleaning because they are primitives
         }
 
         @Override

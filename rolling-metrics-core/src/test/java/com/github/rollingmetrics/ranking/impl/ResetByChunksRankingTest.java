@@ -15,12 +15,13 @@
  *   limitations under the License.
  */
 
-package com.github.rollingmetrics.top.impl;
+package com.github.rollingmetrics.ranking.impl;
 
-import com.github.rollingmetrics.top.Ranking;
+import com.github.rollingmetrics.ranking.Ranking;
+import com.github.rollingmetrics.ranking.impl.util.RankingTestUtil;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.MockExecutor;
-import com.github.rollingmetrics.top.TopTestData;
+import com.github.rollingmetrics.ranking.impl.util.RankingTestData;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -56,50 +57,50 @@ public class ResetByChunksRankingTest {
 
         RankingTestUtil.assertEmpty(ranking);
 
-        RankingTestUtil.update(ranking, TopTestData.fifth);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth);
+        RankingTestUtil.update(ranking, RankingTestData.fifth);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth);
 
         currentTimeMillis.addAndGet(500L); //500
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth);
 
         currentTimeMillis.addAndGet(500L); //1000
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth);
 
-        RankingTestUtil.update(ranking, TopTestData.fourth);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth);
+        RankingTestUtil.update(ranking, RankingTestData.fourth);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth);
 
         currentTimeMillis.addAndGet(1L); //1001
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth);
 
         currentTimeMillis.addAndGet(1000L); //2001
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth);
 
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.update(ranking, TopTestData.second);
-        RankingTestUtil.update(ranking, TopTestData.third);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        RankingTestUtil.update(ranking, RankingTestData.third);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth);
 
         currentTimeMillis.addAndGet(999L); //3000
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth);
 
         currentTimeMillis.addAndGet(1L); //3001
-        RankingTestUtil.update(ranking, TopTestData.second);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth);
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth);
 
         currentTimeMillis.addAndGet(999L); //4000
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fourth);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fourth);
 
         currentTimeMillis.addAndGet(1000L); //5000
-        RankingTestUtil.checkOrder(ranking, TopTestData.third);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.third);
 
         currentTimeMillis.addAndGet(1000L); //6000
-        RankingTestUtil.checkOrder(ranking, TopTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second);
 
         currentTimeMillis.addAndGet(1000L); //7000
-        RankingTestUtil.checkOrder(ranking, TopTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.first);
 
         currentTimeMillis.addAndGet(1000L); //8000
         RankingTestUtil.assertEmpty(ranking);
@@ -107,11 +108,11 @@ public class ResetByChunksRankingTest {
         currentTimeMillis.addAndGet(2999L); //10_999
         RankingTestUtil.assertEmpty(ranking);
 
-        RankingTestUtil.update(ranking, TopTestData.second);
-        RankingTestUtil.checkOrder(ranking, TopTestData.second);
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second);
 
         currentTimeMillis.addAndGet(3000L); //13_999
-        RankingTestUtil.checkOrder(ranking, TopTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second);
 
         currentTimeMillis.addAndGet(1L); //14_000
         RankingTestUtil.assertEmpty(ranking);
@@ -130,50 +131,50 @@ public class ResetByChunksRankingTest {
 
         RankingTestUtil.assertEmpty(ranking);
 
-        RankingTestUtil.update(ranking, TopTestData.fifth);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth);
+        RankingTestUtil.update(ranking, RankingTestData.fifth);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth);
 
         currentTimeMillis.addAndGet(500L); //500
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth);
 
         currentTimeMillis.addAndGet(500L); //1000
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth);
 
-        RankingTestUtil.update(ranking, TopTestData.fourth);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth, TopTestData.fourth);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth, TopTestData.fourth);
+        RankingTestUtil.update(ranking, RankingTestData.fourth);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth, RankingTestData.fourth);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth, RankingTestData.fourth);
 
         currentTimeMillis.addAndGet(1L); //1001
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth, TopTestData.fourth, TopTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth, RankingTestData.fourth, RankingTestData.first);
 
         currentTimeMillis.addAndGet(1000L); //2001
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth, TopTestData.fourth, TopTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth, RankingTestData.fourth, RankingTestData.first);
 
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.update(ranking, TopTestData.second);
-        RankingTestUtil.update(ranking, TopTestData.third);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth, TopTestData.fourth, TopTestData.third);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        RankingTestUtil.update(ranking, RankingTestData.third);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth, RankingTestData.fourth, RankingTestData.third);
 
         currentTimeMillis.addAndGet(999L); //3000
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth, TopTestData.fourth, TopTestData.third);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth, RankingTestData.fourth, RankingTestData.third);
 
         currentTimeMillis.addAndGet(1L); //3001
-        RankingTestUtil.update(ranking, TopTestData.second);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth, TopTestData.fourth, TopTestData.third);
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth, RankingTestData.fourth, RankingTestData.third);
 
         currentTimeMillis.addAndGet(999L); //4000
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fourth, TopTestData.third, TopTestData.second);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fourth, RankingTestData.third, RankingTestData.second);
 
         currentTimeMillis.addAndGet(1000L); //5000
-        RankingTestUtil.checkOrder(ranking, TopTestData.third, TopTestData.second, TopTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.third, RankingTestData.second, RankingTestData.first);
 
         currentTimeMillis.addAndGet(1000L); //6000
-        RankingTestUtil.checkOrder(ranking, TopTestData.second, TopTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second, RankingTestData.first);
 
         currentTimeMillis.addAndGet(1000L); //7000
-        RankingTestUtil.checkOrder(ranking, TopTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.first);
 
         currentTimeMillis.addAndGet(1000L); //8000
         RankingTestUtil.assertEmpty(ranking);
@@ -181,11 +182,11 @@ public class ResetByChunksRankingTest {
         currentTimeMillis.addAndGet(2999L); //10_999
         RankingTestUtil.assertEmpty(ranking);
 
-        RankingTestUtil.update(ranking, TopTestData.second);
-        RankingTestUtil.checkOrder(ranking, TopTestData.second);
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second);
 
         currentTimeMillis.addAndGet(3000L); //13_999
-        RankingTestUtil.checkOrder(ranking, TopTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second);
 
         currentTimeMillis.addAndGet(1L); //14_000
         RankingTestUtil.assertEmpty(ranking);

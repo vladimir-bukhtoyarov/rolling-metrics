@@ -15,36 +15,20 @@
  *   limitations under the License.
  */
 
-package com.github.rollingmetrics.top;
+package com.github.rollingmetrics.ranking;
 
 import org.junit.Test;
-
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
 
 public class PositionTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNullDescription() {
-        new Position(System.currentTimeMillis(), 22, TimeUnit.MILLISECONDS, null, 23);
-    }
-
-    @Test
-    public void shouldCorrectlyConverLatencyToNanoseconds() {
-        Position position = new Position(System.currentTimeMillis(), 2, TimeUnit.MILLISECONDS, "SELECT * FROM DUAL", 1000);
-        assertEquals(2_000_000L, position.getLatencyInNanoseconds());
-    }
-
-    @Test
-    public void shouldCorrectlyFormatDescription() {
-        Position position = new Position(System.currentTimeMillis(), 2, TimeUnit.MILLISECONDS, "SELECT * FROM DUAL", 1000);
-        assertEquals("SELECT * FROM DUAL", position.getQueryDescription());
+        new Position(22,null);
     }
 
     @Test
     public void testToString() {
-        Position position = new Position(System.currentTimeMillis(), 2, TimeUnit.MILLISECONDS, "SELECT * FROM DUAL", 1000);
+        Position position = new Position(2, "SELECT * FROM DUAL");
         System.out.println(position.toString());
     }
 

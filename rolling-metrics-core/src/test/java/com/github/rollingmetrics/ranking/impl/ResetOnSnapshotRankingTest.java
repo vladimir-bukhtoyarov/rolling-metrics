@@ -15,10 +15,11 @@
  *   limitations under the License.
  */
 
-package com.github.rollingmetrics.top.impl;
+package com.github.rollingmetrics.ranking.impl;
 
-import com.github.rollingmetrics.top.Ranking;
-import com.github.rollingmetrics.top.TopTestData;
+import com.github.rollingmetrics.ranking.Ranking;
+import com.github.rollingmetrics.ranking.impl.util.RankingTestData;
+import com.github.rollingmetrics.ranking.impl.util.RankingTestUtil;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -49,22 +50,22 @@ public class ResetOnSnapshotRankingTest {
 
         RankingTestUtil.assertEmpty(ranking);
 
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.checkOrder(ranking, TopTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.first);
         RankingTestUtil.assertEmpty(ranking);
 
-        RankingTestUtil.update(ranking, TopTestData.second);
-        RankingTestUtil.checkOrder(ranking, TopTestData.second);
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second);
         RankingTestUtil.assertEmpty(ranking);
 
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.checkOrder(ranking, TopTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.first);
         RankingTestUtil.assertEmpty(ranking);
 
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.update(ranking, TopTestData.second);
-        RankingTestUtil.update(ranking, TopTestData.third);
-        RankingTestUtil.checkOrder(ranking, TopTestData.third);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        RankingTestUtil.update(ranking, RankingTestData.third);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.third);
         RankingTestUtil.assertEmpty(ranking);
     }
 
@@ -77,19 +78,19 @@ public class ResetOnSnapshotRankingTest {
 
         RankingTestUtil.assertEmpty(ranking);
 
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.checkOrder(ranking, TopTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.first);
         RankingTestUtil.assertEmpty(ranking);
 
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.update(ranking, TopTestData.second);
-        RankingTestUtil.checkOrder(ranking, TopTestData.second, TopTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second, RankingTestData.first);
         RankingTestUtil.assertEmpty(ranking);
 
-        RankingTestUtil.update(ranking, TopTestData.third);
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.update(ranking, TopTestData.second);
-        RankingTestUtil.checkOrder(ranking, TopTestData.third, TopTestData.second, TopTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.third);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.third, RankingTestData.second, RankingTestData.first);
         RankingTestUtil.assertEmpty(ranking);
     }
 

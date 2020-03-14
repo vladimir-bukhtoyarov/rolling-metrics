@@ -83,7 +83,7 @@ public class BufferedActorTest {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                System.out.println(sharedSum[0] + ":" + " action pool size=" + actorRef[0].getActionPoolSize() + " in progress action count " + actorRef[0].getScheduledActionsCount() + " blocked count " + actorRef[0].getBlockedCount());
+                System.out.println(sharedSum[0] + ":" + " action pool size=" + actorRef[0].getActionPoolSize() + " in progress action count " + actorRef[0].getScheduledActionsCount() + " blocked count " + actorRef[0].getOverflowedCount());
             }
         }, 1, 1000);
 
@@ -93,7 +93,7 @@ public class BufferedActorTest {
         timer.cancel();
 
         System.out.println("result sum:" + sharedSum[0]);
-        System.out.println("blocked count:" + actor.getBlockedCount());
+        System.out.println("blocked count:" + actor.getOverflowedCount());
 
         assertEquals(sharedSum[0], iterationsPerThread * threads.length);
     }

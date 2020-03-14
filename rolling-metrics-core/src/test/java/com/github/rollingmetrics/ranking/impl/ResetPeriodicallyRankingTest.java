@@ -15,9 +15,10 @@
  *   limitations under the License.
  */
 
-package com.github.rollingmetrics.top.impl;
+package com.github.rollingmetrics.ranking.impl;
 
-import com.github.rollingmetrics.top.Ranking;
+import com.github.rollingmetrics.ranking.Ranking;
+import com.github.rollingmetrics.ranking.impl.util.RankingTestUtil;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.MockExecutor;
 import org.junit.Test;
@@ -26,10 +27,10 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.github.rollingmetrics.top.TopTestData.*;
-import static com.github.rollingmetrics.top.impl.RankingTestUtil.assertEmpty;
-import static com.github.rollingmetrics.top.impl.RankingTestUtil.checkOrder;
-import static com.github.rollingmetrics.top.impl.RankingTestUtil.update;
+import static com.github.rollingmetrics.ranking.impl.util.RankingTestData.*;
+import static com.github.rollingmetrics.ranking.impl.util.RankingTestUtil.assertEmpty;
+import static com.github.rollingmetrics.ranking.impl.util.RankingTestUtil.checkOrder;
+import static com.github.rollingmetrics.ranking.impl.util.RankingTestUtil.update;
 
 
 public class ResetPeriodicallyRankingTest {

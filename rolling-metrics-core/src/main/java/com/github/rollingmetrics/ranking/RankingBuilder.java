@@ -15,11 +15,11 @@
  *   limitations under the License.
  */
 
-package com.github.rollingmetrics.top;
+package com.github.rollingmetrics.ranking;
 
-import com.github.rollingmetrics.top.impl.*;
-import com.github.rollingmetrics.top.impl.ResetByChunksRanking;
-import com.github.rollingmetrics.top.impl.UniformRanking;
+import com.github.rollingmetrics.ranking.impl.*;
+import com.github.rollingmetrics.ranking.impl.ResetByChunksRanking;
+import com.github.rollingmetrics.ranking.impl.UniformRanking;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.ResilientExecutionUtil;
 
@@ -326,14 +326,14 @@ public class RankingBuilder {
         TopFactory UNIFORM = new TopFactory() {
             @Override
             public Ranking create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
-                return new UniformRanking(size, latencyThreshold.toNanos(), maxDescriptionLength);
+                return new UniformRanking(size, latencyThreshold.toNanos());
             }
         };
 
         TopFactory RESET_ON_SNAPSHOT = new TopFactory() {
             @Override
             public Ranking create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
-                return new ResetOnSnapshotConcurrentRanking(size, latencyThreshold.toNanos(), maxDescriptionLength);
+                return new ResetOnSnapshotRanking(size, latencyThreshold.toNanos());
             }
         };
 
@@ -352,7 +352,7 @@ public class RankingBuilder {
         return new TopFactory() {
             @Override
             public Ranking create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
-                return new ResetByChunksRanking(size, latencyThreshold.toNanos(), maxDescriptionLength, intervalBetweenResettingMillis, numberOfHistoryChunks, ticker, getExecutor());
+                return new ResetByChunksRanking(size, latencyThreshold.toNanos(), intervalBetweenResettingMillis, numberOfHistoryChunks, ticker, getExecutor());
             }
         };
     }

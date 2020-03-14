@@ -19,8 +19,8 @@ package com.github.rollingmetrics.dropwizard.adapter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
-import com.github.rollingmetrics.top.Position;
-import com.github.rollingmetrics.top.Ranking;
+import com.github.rollingmetrics.ranking.Position;
+import com.github.rollingmetrics.ranking.Ranking;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -111,7 +111,7 @@ public class TopMetricSet implements MetricSet {
             if (positions.size() <= i) {
                 return zero;
             }
-            double latencyNanos = positions.get(i).getLatencyInNanoseconds();
+            double latencyNanos = positions.get(i).getWeight();
             long scale = latencyUnit.toNanos(1);
             double result = latencyNanos/scale;
 
@@ -125,7 +125,7 @@ public class TopMetricSet implements MetricSet {
             if (positions.size() <= i) {
                 return "";
             }
-            return positions.get(i).getQueryDescription();
+            return positions.get(i).getIdentity().toString();
         };
     }
 

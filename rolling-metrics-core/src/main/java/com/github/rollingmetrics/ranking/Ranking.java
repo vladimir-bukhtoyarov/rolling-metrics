@@ -15,7 +15,7 @@
  *   limitations under the License.
  */
 
-package com.github.rollingmetrics.top;
+package com.github.rollingmetrics.ranking;
 
 
 import java.util.List;

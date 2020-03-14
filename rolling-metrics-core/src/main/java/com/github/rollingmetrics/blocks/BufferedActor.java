@@ -70,8 +70,9 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
     private final MpscArrayQueue<T> scheduledActions;
 
     private final ReentrantLock lock = new ReentrantLock();
-    private final AtomicLong blockedCounter = new AtomicLong();
+    private final AtomicLong overflowCounter = new AtomicLong();
     private final int batchSize;
+    private final Supplier<T> actionFactory;
 
     /**
      * @param actionFactory factory which used to populate action pool, pool is always populated to maximum during initialization
@@ -83,89 +84,52 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
         actionPool = new SpmcArrayQueue<>(bufferSize);
         scheduledActions = new MpscArrayQueue<>(bufferSize);
         this.batchSize = batchSize;
+        this.actionFactory = actionFactory;
 
-        for (int i = 0; i < bufferSize; i++) {
-            T action = actionFactory.get();
-            actionPool.add(action);
+        if (batchSize < bufferSize) {
+            throw new IllegalArgumentException();
         }
     }
 
     public final T getActionFromPool() {
         T action = actionPool.poll();
-        if (action != null) {
-            // fast path
-            return action;
+        if (action == null) {
+            action = actionFactory.get();
         }
-
-        // if there are no actions in pool we need to help to process already scheduled actions
-        blockedCounter.incrementAndGet();
-        lock.lock();
-
-        boolean actionFromPool = false;
-        T firstAction = null;
-        while (firstAction == null) {
-            firstAction = actionPool.poll();
-            if (firstAction != null) {
-                actionFromPool = true;
-                break;
-            }
-            firstAction = scheduledActions.poll();
-        }
-
-        int dispatchedActions = 0;
-        T currentAction = firstAction;
-        while (currentAction != null) {
-            if (currentAction != firstAction || !actionFromPool) {
-                currentAction.run();
-            }
-            if (currentAction != firstAction) {
-                currentAction.freeGarbage();
-                actionPool.offer(currentAction);
-            }
-            if (dispatchedActions++ >= batchSize) {
-                break;
-            }
-            currentAction = scheduledActions.poll();
-        }
-        lock.unlock();
-
-        firstAction.freeGarbage();
-        return firstAction;
+        return action;
     }
 
     public void doExclusivelyOrSchedule(T action) {
-        scheduledActions.offer(action);
-
-        if (!lock.tryLock()) {
-            return;
+        boolean queued = false;
+        if (!scheduledActions.offer(action)) {
+            queued = true;
+            if (!lock.tryLock()) {
+                return;
+            }
+        } else {
+            overflowCounter.incrementAndGet();
+            lock.lock();
         }
 
-        int dispatchedActions = 0;
-
-        T firstAction = scheduledActions.poll();
-        T currentAction = firstAction;
-
-        while (currentAction != null) {
-            currentAction.run();
-            if (currentAction != firstAction) {
+        try {
+            int dispatchedActions = 0;
+            T currentAction = queued? scheduledActions.poll() : action;
+            while (currentAction != null) {
+                currentAction.run();
                 currentAction.freeGarbage();
                 actionPool.offer(currentAction);
+                if (dispatchedActions++ >= batchSize) {
+                    break;
+                }
+                currentAction = scheduledActions.poll();
             }
-            if (dispatchedActions++ >= batchSize) {
-                break;
-            }
-            currentAction = scheduledActions.poll();
+        } finally {
+            lock.unlock();
         }
-
-        if (firstAction != null) {
-            firstAction.freeGarbage();
-            actionPool.offer(firstAction);
-        }
-        lock.unlock();
     }
 
-    public long getBlockedCount() {
-        return blockedCounter.get();
+    public long getOverflowedCount() {
+        return overflowCounter.get();
     }
 
     public int getActionPoolSize() {
@@ -176,9 +140,9 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
         return scheduledActions.size();
     }
 
-    public void processAllScheduladActions() {
-        T action = scheduledActions.poll();
-        while (action != null) {
+    public void processAllScheduledActions() {
+        T action;
+        while ((action = scheduledActions.poll()) != null) {
             action.run();
             action.freeGarbage();
             actionPool.offer(action);
@@ -186,16 +150,14 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
     }
 
     public void clear() {
-        T action = scheduledActions.poll();
-        while (action != null) {
+        T action;
+        while ((action = scheduledActions.poll()) != null) {
             action.freeGarbage();
             actionPool.offer(action);
         }
     }
 
     public static abstract class ReusableActionContainer {
-
-        private ReusableActionContainer previous;
 
         abstract protected void freeGarbage();
 

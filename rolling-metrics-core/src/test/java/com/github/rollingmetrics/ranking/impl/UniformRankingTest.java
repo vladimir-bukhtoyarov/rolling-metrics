@@ -15,10 +15,11 @@
  *   limitations under the License.
  */
 
-package com.github.rollingmetrics.top.impl;
+package com.github.rollingmetrics.ranking.impl;
 
-import com.github.rollingmetrics.top.Ranking;
-import com.github.rollingmetrics.top.TopTestData;
+import com.github.rollingmetrics.ranking.Ranking;
+import com.github.rollingmetrics.ranking.impl.util.RankingTestData;
+import com.github.rollingmetrics.ranking.impl.util.RankingTestUtil;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -49,14 +50,14 @@ public class UniformRankingTest {
 
         RankingTestUtil.assertEmpty(ranking);
 
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.checkOrder(ranking, TopTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.first);
 
-        RankingTestUtil.update(ranking, TopTestData.second);
-        RankingTestUtil.checkOrder(ranking, TopTestData.second);
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second);
 
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.checkOrder(ranking, TopTestData.second);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second);
     }
 
     @Test
@@ -68,26 +69,26 @@ public class UniformRankingTest {
 
         RankingTestUtil.assertEmpty(ranking);
 
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.checkOrder(ranking, TopTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.first);
 
-        RankingTestUtil.update(ranking, TopTestData.second);
-        RankingTestUtil.checkOrder(ranking, TopTestData.second, TopTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second, RankingTestData.first);
 
-        RankingTestUtil.update(ranking, TopTestData.third);
-        RankingTestUtil.checkOrder(ranking, TopTestData.third, TopTestData.second, TopTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.third);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.third, RankingTestData.second, RankingTestData.first);
 
-        RankingTestUtil.update(ranking, TopTestData.fourth);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fourth, TopTestData.third, TopTestData.second);
+        RankingTestUtil.update(ranking, RankingTestData.fourth);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fourth, RankingTestData.third, RankingTestData.second);
 
-        RankingTestUtil.update(ranking, TopTestData.fifth);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth, TopTestData.fourth, TopTestData.third);
+        RankingTestUtil.update(ranking, RankingTestData.fifth);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth, RankingTestData.fourth, RankingTestData.third);
 
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth, TopTestData.fourth, TopTestData.third);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth, RankingTestData.fourth, RankingTestData.third);
 
-        RankingTestUtil.update(ranking, TopTestData.fifth);
-        RankingTestUtil.checkOrder(ranking, TopTestData.fifth, TopTestData.fourth, TopTestData.third);
+        RankingTestUtil.update(ranking, RankingTestData.fifth);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth, RankingTestData.fourth, RankingTestData.third);
     }
 
     @Test

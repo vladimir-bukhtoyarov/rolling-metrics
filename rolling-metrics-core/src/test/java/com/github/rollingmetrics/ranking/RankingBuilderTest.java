@@ -15,16 +15,17 @@
  *   limitations under the License.
  */
 
-package com.github.rollingmetrics.top;
+package com.github.rollingmetrics.ranking;
 
+import com.github.rollingmetrics.ranking.impl.util.RankingTestData;
 import com.github.rollingmetrics.util.Ticker;
-import com.github.rollingmetrics.top.impl.RankingTestUtil;
+import com.github.rollingmetrics.ranking.impl.util.RankingTestUtil;
 import org.junit.Test;
 
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static com.github.rollingmetrics.top.RankingBuilder.MIN_CHUNK_RESETTING_INTERVAL_MILLIS;
+import static com.github.rollingmetrics.ranking.RankingBuilder.MIN_CHUNK_RESETTING_INTERVAL_MILLIS;
 import static junit.framework.TestCase.assertEquals;
 
 public class RankingBuilderTest {
@@ -131,14 +132,14 @@ public class RankingBuilderTest {
 
         assertEquals(1, ranking.getSize());
 
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.checkOrder(ranking, TopTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.first);
 
-        RankingTestUtil.update(ranking, TopTestData.second);
-        RankingTestUtil.checkOrder(ranking, TopTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.first);
 
         currentTimeMillis.addAndGet(10_000);
-        RankingTestUtil.checkOrder(ranking, TopTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second);
     }
 
     @Test
@@ -150,14 +151,14 @@ public class RankingBuilderTest {
                 .withTicker(ticker)
                 .build();
 
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.checkOrder(ranking, TopTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.first);
 
-        RankingTestUtil.update(ranking, TopTestData.second);
-        RankingTestUtil.checkOrder(ranking, TopTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.first);
 
         currentTimeMillis.addAndGet(1_000);
-        RankingTestUtil.checkOrder(ranking, TopTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second);
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -173,9 +174,9 @@ public class RankingBuilderTest {
     @Test
     public void shouldAllowToReplaceSize() {
         Ranking ranking = Ranking.builder(1).withPositionCount(2).build();
-        RankingTestUtil.update(ranking, TopTestData.first);
-        RankingTestUtil.update(ranking, TopTestData.second);
-        RankingTestUtil.checkOrder(ranking, TopTestData.second, TopTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second, RankingTestData.first);
     }
 
 }

@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright 2017 Vladimir Bukhtoyarov
+ *  Copyright 2020 Vladimir Bukhtoyarov
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,20 +15,20 @@
  *   limitations under the License.
  */
 
-package com.github.rollingmetrics.top.impl;
+package com.github.rollingmetrics.ranking.impl.util;
 
-import com.github.rollingmetrics.top.Position;
-import com.github.rollingmetrics.top.Ranking;
-import com.github.rollingmetrics.top.TopTestData;
+import com.github.rollingmetrics.ranking.Position;
+import com.github.rollingmetrics.ranking.Ranking;
+import com.github.rollingmetrics.ranking.impl.recorder.SingleThreadedRanking;
 import junit.framework.TestCase;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.github.rollingmetrics.ranking.impl.recorder.SingleThreadedRanking.UpdateResult.INSERTED;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -38,11 +38,14 @@ public class RankingTestUtil {
         assertEquals(size, ranking.getSize());
         negativeLatencyShouldBeIgnored(ranking);
         tooShortLatencyShouldBeIgnored(ranking, latencyThresholdNanos);
-        tooLongDescriptionShouldBeReduced(ranking, latencyThresholdNanos, maxDescriptionLength);
+    }
+
+    public static boolean update(SingleThreadedRanking collector, Position position) {
+        return collector.update(position.getWeight(), position.getIdentity()) == INSERTED;
     }
 
     public static void update(Ranking ranking, Position position) {
-        ranking.update(position.getTimestamp(), position.getLatencyTime(), position.getLatencyUnit(), position.getQueryDescription());
+        ranking.update(position.getWeight(), position.getIdentity());
     }
 
     public static void checkOrder(Ranking ranking, Position... positions) {
@@ -66,7 +69,7 @@ public class RankingTestUtil {
                     while (errorRef.get() == null && System.currentTimeMillis() - start < durationMillis) {
                         for (int j = 1; j <= 10; j++) {
                             long latency = minValue + ThreadLocalRandom.current().nextLong(maxValue - minValue);
-                            ranking.update(System.currentTimeMillis(), latency, TimeUnit.NANOSECONDS, "" + latency);
+                            ranking.update(latency, "" + latency);
                         }
                         ranking.getPositionsInDescendingOrder();
                     }
@@ -91,20 +94,13 @@ public class RankingTestUtil {
     }
 
     private static void negativeLatencyShouldBeIgnored(Ranking ranking) {
-        ranking.update(System.currentTimeMillis(), -1, TimeUnit.MILLISECONDS, "SELECT * FROM DUAL");
+        ranking.update(-1, "SELECT * FROM DUAL");
         assertTrue(ranking.getPositionsInDescendingOrder().isEmpty());
     }
 
     private static void tooShortLatencyShouldBeIgnored(Ranking ranking, long latencyThresholdNanos) {
-        ranking.update(System.currentTimeMillis(), latencyThresholdNanos - 1, TimeUnit.NANOSECONDS, "SELECT * FROM DUAL");
+        ranking.update(latencyThresholdNanos - 1, "SELECT * FROM DUAL");
         assertTrue(ranking.getPositionsInDescendingOrder().isEmpty());
-    }
-
-    private static void tooLongDescriptionShouldBeReduced(Ranking ranking, long latencyThresholdNanos, int maxDescriptionLength) {
-        String longDescription = TopTestData.generateString(maxDescriptionLength * 2);
-        ranking.update(System.currentTimeMillis(), latencyThresholdNanos, TimeUnit.NANOSECONDS, longDescription);
-        Position position = ranking.getPositionsInDescendingOrder().get(0);
-        assertEquals(maxDescriptionLength, position.getQueryDescription().length());
     }
 
 }

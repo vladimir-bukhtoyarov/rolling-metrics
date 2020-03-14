@@ -15,22 +15,22 @@
  *   limitations under the License.
  */
 
-package com.github.rollingmetrics.top.impl;
+package com.github.rollingmetrics.ranking.impl;
 
 
-import com.github.rollingmetrics.top.Position;
-import com.github.rollingmetrics.top.Ranking;
-import com.github.rollingmetrics.top.impl.recorder.ConcurrentRanking;
-import com.github.rollingmetrics.top.impl.recorder.RankingRecorder;
+import com.github.rollingmetrics.ranking.Position;
+import com.github.rollingmetrics.ranking.Ranking;
+import com.github.rollingmetrics.ranking.impl.recorder.ConcurrentRanking;
+import com.github.rollingmetrics.ranking.impl.recorder.RankingRecorder;
 
 import java.util.List;
 
-public class ResetOnSnapshotConcurrentRanking implements Ranking {
+public class ResetOnSnapshotRanking implements Ranking {
 
     private final RankingRecorder recorder;
     private ConcurrentRanking intervalRecorder;
 
-    public ResetOnSnapshotConcurrentRanking(int size, long latencyThresholdNanos) {
+    public ResetOnSnapshotRanking(int size, long latencyThresholdNanos) {
         this.recorder = new RankingRecorder(size, latencyThresholdNanos);
         this.intervalRecorder = recorder.getIntervalRecorder();
     }

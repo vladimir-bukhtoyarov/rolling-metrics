@@ -14,9 +14,9 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.top.impl.recorder;
+package com.github.rollingmetrics.ranking.impl.recorder;
 
-import com.github.rollingmetrics.top.Position;
+import com.github.rollingmetrics.ranking.Position;
 
 import java.util.*;
 
@@ -45,7 +45,7 @@ public class SingleThreadedRanking {
     public UpdateResult update(long weight, Object identity) {
         if (currentSize == 0) {
             // corner case for empty collection
-            insert(weight, identity);
+            add(weight, identity);
             return UpdateResult.INSERTED;
         }
 
@@ -81,39 +81,49 @@ public class SingleThreadedRanking {
 
         if (indexToInsert == -1) {
             if (!full) {
-                positions.add(0, asPosition());
+                add(0, weight, identity);
+                return UpdateResult.INSERTED;
             }
-            return;
+            return UpdateResult.SKIPPED_BECAUSE_TOO_SMALL;
         }
 
         if (indexOfDuplicateForRemoval != -1) {
             if (indexToInsert == indexOfDuplicateForRemoval) {
-                positions.set(indexOfDuplicateForRemoval, asPosition());
+                set(indexOfDuplicateForRemoval, weight, identity);
             } else {
-                positions.remove(indexOfDuplicateForRemoval);
-                positions.add(indexToInsert, asPosition());
+                remove(indexOfDuplicateForRemoval);
+                add(indexToInsert, weight, identity);
             }
         }
 
         if (!full) {
-            positions.add(indexToInsert + 1, asPosition());
+            add(indexToInsert + 1, weight, identity);
         } else {
             if (indexToInsert == 0) {
-                positions.set(0, asPosition());
+                set(0, weight, identity);
             } else {
-                positions.remove(0);
-                positions.add(indexToInsert, asPosition());
+                remove(0);
+                add(indexToInsert, weight, identity);
             }
         }
+        return UpdateResult.INSERTED;
     }
 
-    private void insert(int index, long weight, Object identity) {
+    private void remove(int index) {
+
+    }
+
+    private void set(int indexOfDuplicateForRemoval, long weight, Object identity) {
+
+    }
+
+    private void add(int index, long weight, Object identity) {
         weights[currentSize] = weight;
         identities[currentSize] = identity;
         currentSize++;
     }
 
-    private void insert(long weight, Object identity) {
+    private void add(long weight, Object identity) {
         weights[currentSize] = weight;
         identities[currentSize] = identity;
         currentSize++;
@@ -141,28 +151,17 @@ public class SingleThreadedRanking {
     }
 
     public List<Position> getPositionsInDescendingOrder() {
-        if (positions.isEmpty()) {
+        if (currentSize == 0) {
             return Collections.emptyList();
         }
-        ArrayList<Position> result = new ArrayList<>(positions.size());
-        result.addAll(positions.descendingSet());
+        ArrayList<Position> result = new ArrayList<>(currentSize);
+        for (int i = 0; i < currentSize; i++) {
+            result.add(new Position(weights[i], identities[i]));
+        }
         return result;
     }
 
-    static boolean isNeedToAdd(Position newPosition, Position currentMinimum) {
-        if (currentMinimum == null) {
-            return true;
-        }
-        if (newPosition.getLatencyInNanoseconds() > currentMinimum.getLatencyInNanoseconds()) {
-            return true;
-        }
-        if (newPosition.getLatencyInNanoseconds() == currentMinimum.getLatencyInNanoseconds()) {
-            return newPosition.getTimestamp() > currentMinimum.getTimestamp();
-        }
-        return false;
-    }
-
-    static enum UpdateResult {
+    public enum UpdateResult {
 
         SKIPPED_BECAUSE_TOO_SMALL, SKIPPED_BECAUSE_OF_DUPLICATE, INSERTED;
 

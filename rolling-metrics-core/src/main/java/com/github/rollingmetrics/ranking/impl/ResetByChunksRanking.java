@@ -15,15 +15,15 @@
  *   limitations under the License.
  */
 
-package com.github.rollingmetrics.top.impl;
+package com.github.rollingmetrics.ranking.impl;
 
 
-import com.github.rollingmetrics.top.impl.recorder.ConcurrentRanking;
-import com.github.rollingmetrics.top.impl.recorder.RankingRecorder;
-import com.github.rollingmetrics.top.impl.recorder.SingleThreadedRanking;
+import com.github.rollingmetrics.ranking.impl.recorder.ConcurrentRanking;
+import com.github.rollingmetrics.ranking.impl.recorder.RankingRecorder;
+import com.github.rollingmetrics.ranking.impl.recorder.SingleThreadedRanking;
 import com.github.rollingmetrics.util.Printer;
-import com.github.rollingmetrics.top.Position;
-import com.github.rollingmetrics.top.Ranking;
+import com.github.rollingmetrics.ranking.Position;
+import com.github.rollingmetrics.ranking.Ranking;
 import com.github.rollingmetrics.util.Ticker;
 import com.github.rollingmetrics.util.ResilientExecutionUtil;
 

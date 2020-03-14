@@ -14,7 +14,7 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.top.impl.recorder;
+package com.github.rollingmetrics.ranking.impl.recorder;
 import org.HdrHistogram.WriterReaderPhaser;
 
 /**

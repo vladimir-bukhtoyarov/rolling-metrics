@@ -18,9 +18,9 @@ package com.github.rollingmetrics.dropwizard.adapter;import com.codahale.metrics
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
 import com.github.rollingmetrics.dropwizard.Dropwizard;
-import com.github.rollingmetrics.top.Ranking;
-import com.github.rollingmetrics.top.TopTestData;
-import com.github.rollingmetrics.top.impl.RankingTestUtil;
+import com.github.rollingmetrics.ranking.Ranking;
+import com.github.rollingmetrics.ranking.impl.util.RankingTestData;
+import com.github.rollingmetrics.ranking.impl.util.RankingTestUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -77,14 +77,14 @@ public class RankingMetricSetTest {
         MetricSet metricSet = Dropwizard.toMetricSet("my-top", ranking, TimeUnit.MILLISECONDS, 3);
         checkDescriptions(metricSet, "my-top", "", "", "");
 
-        RankingTestUtil.update(ranking, TopTestData.first);
-        checkDescriptions(metricSet, "my-top", TopTestData.first.getQueryDescription(), "", "");
+        RankingTestUtil.update(ranking, RankingTestData.first);
+        checkDescriptions(metricSet, "my-top", (String) RankingTestData.first.getIdentity(), "", "");
 
-        RankingTestUtil.update(ranking, TopTestData.second);
-        checkDescriptions(metricSet, "my-top", TopTestData.second.getQueryDescription(), TopTestData.first.getQueryDescription(), "");
+        RankingTestUtil.update(ranking, RankingTestData.second);
+        checkDescriptions(metricSet, "my-top", (String) RankingTestData.second.getIdentity(), (String) RankingTestData.first.getIdentity(), "");
 
-        RankingTestUtil.update(ranking, TopTestData.third);
-        checkDescriptions(metricSet, "my-top", TopTestData.third.getQueryDescription(), TopTestData.second.getQueryDescription(), TopTestData.first.getQueryDescription());
+        RankingTestUtil.update(ranking, RankingTestData.third);
+        checkDescriptions(metricSet, "my-top", (String) RankingTestData.third.getIdentity(), (String) RankingTestData.second.getIdentity(), (String) RankingTestData.first.getIdentity());
     }
 
     @Test
@@ -92,14 +92,14 @@ public class RankingMetricSetTest {
         MetricSet metricSet = Dropwizard.toMetricSet("my-top", ranking, TimeUnit.MILLISECONDS, 3);
         checkValues(metricSet, "my-top", 3, 0.0d, 0.0d, 0.0d);
 
-        ranking.update(0, 13_345_456, TimeUnit.NANOSECONDS, () -> "SELECT * FROM USERS");
+        ranking.update(13_345_456, "SELECT * FROM USERS");
         checkValues(metricSet, "my-top", 3, 13.345d, 0.0d, 0.0d);
 
 
-        ranking.update(0, 11_666_957, TimeUnit.NANOSECONDS, () -> "SELECT * FROM USERS");
+        ranking.update(11_666_957, "SELECT * FROM USERS");
         checkValues(metricSet, "my-top", 3, 13.345d, 11.666d, 0.0d);
 
-        ranking.update(0, 2_004_123, TimeUnit.NANOSECONDS, () -> "SELECT * FROM DUAL");
+        ranking.update(2_004_123, "SELECT * FROM DUAL");
         checkValues(metricSet, "my-top", 3, 13.345d, 11.666d, 2.004d);
     }
 

@@ -23,7 +23,7 @@ import com.github.rollingmetrics.dropwizard.adapter.ReservoirToRollingHdrHistogr
 import com.github.rollingmetrics.dropwizard.adapter.TopMetricSet;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.hitratio.HitRatio;
-import com.github.rollingmetrics.top.Ranking;
+import com.github.rollingmetrics.ranking.Ranking;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
