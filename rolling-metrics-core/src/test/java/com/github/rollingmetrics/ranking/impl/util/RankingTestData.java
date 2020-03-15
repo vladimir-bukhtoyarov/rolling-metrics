@@ -20,7 +20,6 @@ package com.github.rollingmetrics.ranking.impl.util;
 import com.github.rollingmetrics.ranking.Position;
 
 import java.util.concurrent.TimeUnit;
-import java.util.stream.IntStream;
 
 public class RankingTestData {
 
@@ -34,11 +33,5 @@ public class RankingTestData {
     public static Position fifth = new Position(latency + 3, "fifth");
     public static Position sixth = new Position(latency + 3, "sixth");
     public static Position too_fast = new Position(THRESHOLD_NANOS - 1, "too_fast");
-
-    public static String generateString(int length) {
-        StringBuilder builder = new StringBuilder();
-        IntStream.range(0, length).forEach((i) -> builder.append(" "));
-        return builder.toString();
-    }
 
 }

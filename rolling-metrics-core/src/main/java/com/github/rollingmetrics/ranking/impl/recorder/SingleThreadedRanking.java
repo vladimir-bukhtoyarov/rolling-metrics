@@ -54,7 +54,6 @@ public class SingleThreadedRanking {
             return UpdateResult.SKIPPED_BECAUSE_TOO_SMALL;
         }
 
-        // try to find duplicate
         int indexToInsert = -1;
         int indexOfDuplicateForRemoval = -1;
 
@@ -110,16 +109,27 @@ public class SingleThreadedRanking {
     }
 
     private void remove(int index) {
-
+        int numMoved = currentSize - index - 1;
+        if (numMoved > 0) {
+            System.arraycopy(weights, index + 1, weights, index, numMoved);
+            System.arraycopy(identities, index + 1, identities, index, numMoved);
+            identities[currentSize - 1] = null;
+        }
+        currentSize--;
     }
 
-    private void set(int indexOfDuplicateForRemoval, long weight, Object identity) {
-
+    private void set(int index, long weight, Object identity) {
+        weights[index] = weight;
+        identities[index] = identity;
     }
 
     private void add(int index, long weight, Object identity) {
-        weights[currentSize] = weight;
-        identities[currentSize] = identity;
+        System.arraycopy(weights, index, weights, index + 1, currentSize - index);
+        weights[index] = weight;
+
+        System.arraycopy(identities, index, identities, index + 1, currentSize - index);
+        identities[index] = identity;
+
         currentSize++;
     }
 
@@ -155,7 +165,7 @@ public class SingleThreadedRanking {
             return Collections.emptyList();
         }
         ArrayList<Position> result = new ArrayList<>(currentSize);
-        for (int i = 0; i < currentSize; i++) {
+        for (int i = currentSize - 1; i >= 0 ; i--) {
             result.add(new Position(weights[i], identities[i]));
         }
         return result;

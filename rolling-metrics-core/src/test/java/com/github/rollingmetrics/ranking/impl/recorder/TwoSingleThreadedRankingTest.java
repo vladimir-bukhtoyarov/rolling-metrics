@@ -27,10 +27,10 @@ import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 
-public class SingleSingleThreadedRankingTest {
+public class TwoSingleThreadedRankingTest {
 
-    private SingleThreadedRanking collector = new SingleThreadedRanking(1, 0L);
-    private SingleThreadedRanking collector2 = new SingleThreadedRanking(1, 0L);
+    private SingleThreadedRanking collector = new SingleThreadedRanking(2, 0);
+    private SingleThreadedRanking collector2 = new SingleThreadedRanking(2, 0);
 
     @Test
     public void test() {
@@ -42,14 +42,14 @@ public class SingleSingleThreadedRankingTest {
 
         assertTrue(update(collector, RankingTestData.second));
         assertFalse(update(collector, RankingTestData.second));
-        PositionCollectorTestUtil.checkOrder(collector, RankingTestData.second);
+        PositionCollectorTestUtil.checkOrder(collector, RankingTestData.second, RankingTestData.first);
 
         assertTrue(update(collector, RankingTestData.third));
         assertFalse(update(collector, RankingTestData.third));
-        PositionCollectorTestUtil.checkOrder(collector, RankingTestData.third);
+        PositionCollectorTestUtil.checkOrder(collector, RankingTestData.third, RankingTestData.second);
 
         assertFalse(update(collector, RankingTestData.first));
-        PositionCollectorTestUtil.checkOrder(collector, RankingTestData.third);
+        PositionCollectorTestUtil.checkOrder(collector, RankingTestData.third, RankingTestData.second);
     }
 
     @Test
@@ -60,6 +60,14 @@ public class SingleSingleThreadedRankingTest {
         update(collector, RankingTestData.first);
         collector.addInto(collector2);
         PositionCollectorTestUtil.checkOrder(collector2, RankingTestData.first);
+
+        update(collector, RankingTestData.second);
+        collector.addInto(collector2);
+        PositionCollectorTestUtil.checkOrder(collector2, RankingTestData.second, RankingTestData.first);
+
+        update(collector, RankingTestData.third);
+        collector.addInto(collector2);
+        PositionCollectorTestUtil.checkOrder(collector2, RankingTestData.third, RankingTestData.second);
     }
 
     @Test
