@@ -36,11 +36,6 @@
             <version>${hdr.histogram.version}</version>
             <scope>provided</scope>
         </dependency>
-        <dependency>
-            <groupId>org.jctools</groupId>
-            <artifactId>jctools-core</artifactId>
-            <version>3.0.0</version>
-        </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.openjdk.jol/jol-core -->
         <dependency>

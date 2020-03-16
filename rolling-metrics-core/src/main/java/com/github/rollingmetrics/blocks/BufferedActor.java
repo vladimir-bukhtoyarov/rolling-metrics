@@ -16,8 +16,6 @@
 
 package com.github.rollingmetrics.blocks;
 
-import org.jctools.queues.SpmcArrayQueue;
-
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
@@ -66,7 +64,9 @@ import java.util.function.Supplier;
  */
 public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
 
-    private final SpmcArrayQueue<ReusableActionContainer> actionPool;
+    private final AtomicLong actionPoolHead;
+    private volatile ReusableActionContainer actionPoolTall;
+    private final ReusableActionContainer[] pool;
 
     private final AtomicReference<ReusableActionContainer> scheduledActionsStackTop;
     private ReusableActionContainer scheduledAction;
@@ -83,22 +83,28 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
      *                  intent of this parameter is to avoid live lock of exclusive lock owner
      */
     public BufferedActor(Supplier<T> actionFactory, int bufferSize, int batchSize) {
-        actionPool = new SpmcArrayQueue<>(bufferSize);
         scheduledActionsStackTop = new AtomicReference<>();
         this.batchSize = batchSize;
         this.actionFactory = actionFactory;
 
-        if (batchSize < bufferSize) {
-            throw new IllegalArgumentException();
-        }
+        this.pool = new ReusableActionContainer[bufferSize];
+        pool[0] = actionFactory.get();
+        pool[0].index = 0;
+        this.actionPoolHead = new AtomicLong(toSequencedPointer(pool[0].index, 0));
 
-        for (int i = 0; i < bufferSize; i++) {
-            actionPool.offer(actionFactory.get());
+        ReusableActionContainer previous = pool[0];
+        for (int i = 1; i < bufferSize; i++) {
+            ReusableActionContainer next = actionFactory.get();
+            next.index = i;
+            pool[next.index] = next;
+            previous.poolNext = next;
+            previous = next;
         }
+        actionPoolTall = pool[bufferSize - 1];
     }
 
     public final T getActionFromPool() {
-        ReusableActionContainer action = actionPool.poll();
+        ReusableActionContainer action = pollFromPool();
         if (action == null) {
             action = actionFactory.get();
             action.createdBecauseOfOverflow = true;
@@ -107,10 +113,47 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
         return (T) action;
     }
 
+    private ReusableActionContainer pollFromPool() {
+        while (true) {
+            long sequencedHeadPointer = actionPoolHead.get();
+            int seq = getSequence(sequencedHeadPointer);
+            int index = getIndex(sequencedHeadPointer);
+
+            ReusableActionContainer currentHead = pool[index];
+            ReusableActionContainer currentTail = actionPoolTall;
+            if (sequencedHeadPointer != actionPoolHead.get()) {
+                continue;
+            }
+
+            if (currentHead == currentTail) {
+                // last node used just as Hazard Pointer, we never return it
+                return null;
+            }
+            ReusableActionContainer nextHead = currentHead.poolNext;
+            if (nextHead == null) {
+                continue;
+            }
+
+            long nextSequencedHeadPointer = toSequencedPointer(nextHead.index, seq + 1);
+            if (actionPoolHead.compareAndSet(sequencedHeadPointer, nextSequencedHeadPointer)) {
+                return currentHead;
+            }
+        }
+    }
+
+    private void offerToPool(ReusableActionContainer action) {
+        if (action.isCreatedBecauseOfOverflow()) {
+            return;
+        }
+        ReusableActionContainer currentTail = actionPoolTall;
+        currentTail.poolNext = action;
+        actionPoolTall = action;
+    }
+
     public void doExclusivelyOrSchedule(ReusableActionContainer action) {
         while (true) {
             ReusableActionContainer currentTop = this.scheduledActionsStackTop.get();
-            action.next = currentTop;
+            action.workQueueNext = currentTop;
             if (scheduledActionsStackTop.compareAndSet(currentTop, action)) {
                 break;
             }
@@ -127,9 +170,7 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
             while ((currentAction = pollScheduledAction()) != null) {
                 currentAction.run();
                 currentAction.freeGarbage();
-                if (!currentAction.isCreatedBecauseOfOverflow()) {
-                    actionPool.offer(currentAction);
-                }
+                offerToPool(currentAction);
                 if (dispatchedActions++ >= batchSize) {
                     break;
                 }
@@ -142,8 +183,8 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
     private ReusableActionContainer pollScheduledAction() {
         ReusableActionContainer scheduledActionLocal = scheduledAction;
         if (scheduledActionLocal != null) {
-            scheduledAction = scheduledActionLocal.next;
-            scheduledActionLocal.next = null;
+            scheduledAction = scheduledActionLocal.workQueueNext;
+            scheduledActionLocal.workQueueNext = null;
             return scheduledActionLocal;
         }
 
@@ -151,33 +192,29 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
         if (scheduledActionLocal == null) {
             return null;
         }
-        if (scheduledActionLocal.next == null) {
+        if (scheduledActionLocal.workQueueNext == null) {
             return scheduledActionLocal;
         }
 
         // reverse order of stack items to satisfy FIFO queue contract
         ReusableActionContainer previous = scheduledActionLocal;
-        ReusableActionContainer current = scheduledActionLocal.next;
-        previous.next = null;
+        ReusableActionContainer current = scheduledActionLocal.workQueueNext;
+        previous.workQueueNext = null;
         while (current != null) {
-            ReusableActionContainer tmp = current.next;
-            current.next = previous;
+            ReusableActionContainer tmp = current.workQueueNext;
+            current.workQueueNext = previous;
             previous = current;
             current = tmp;
         }
 
         scheduledActionLocal = previous;
-        scheduledAction = scheduledActionLocal.next;
-        scheduledActionLocal.next = null;
+        scheduledAction = scheduledActionLocal.workQueueNext;
+        scheduledActionLocal.workQueueNext = null;
         return scheduledActionLocal;
     }
 
     public long getOverflowedCount() {
         return overflowCounter.get();
-    }
-
-    public int getActionPoolSize() {
-        return actionPool.size();
     }
 
     public void processAllScheduledActions() {
@@ -186,7 +223,7 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
             action.run();
             action.freeGarbage();
             if (!action.isCreatedBecauseOfOverflow()) {
-                actionPool.offer(action);
+                offerToPool(action);
             }
         }
     }
@@ -196,16 +233,19 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
         while ((action = pollScheduledAction()) != null) {
             action.freeGarbage();
             if (!action.isCreatedBecauseOfOverflow()) {
-                actionPool.offer(action);
+                offerToPool(action);
             }
         }
     }
 
     public static abstract class ReusableActionContainer {
 
+        private int index;
+
         boolean createdBecauseOfOverflow;
 
-        private ReusableActionContainer next;
+        private ReusableActionContainer poolNext;
+        private ReusableActionContainer workQueueNext;
 
         public boolean isCreatedBecauseOfOverflow() {
             return createdBecauseOfOverflow;
@@ -215,6 +255,18 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
 
         abstract protected void run();
 
+    }
+
+    static int getIndex(long sequentialPointer) {
+        return (int) (sequentialPointer >> 32);
+    }
+
+    static int getSequence(long sequentialPointer) {
+        return (int) sequentialPointer;
+    }
+
+    static long toSequencedPointer(int index, int sequence) {
+        return (long) index << 32 | sequence & 0xFFFFFFFFL;
     }
 
 }

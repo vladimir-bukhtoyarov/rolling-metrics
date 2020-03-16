@@ -64,14 +64,18 @@ public class BufferedActorTest {
                     throw new RuntimeException(e);
                 }
                 for (int j = 0; j < iterationsPerThread; j++) {
-                    BufferedActor.ReusableActionContainer action = actor.getActionFromPool();
-                    actor.doExclusivelyOrSchedule(action);
-                    if (j % 1000 == 0) {
-                        try {
-                            TimeUnit.NANOSECONDS.sleep(1);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
+                    try {
+                        BufferedActor.ReusableActionContainer action = actor.getActionFromPool();
+                        actor.doExclusivelyOrSchedule(action);
+                        if (j % 1000 == 0) {
+                            try {
+                                TimeUnit.NANOSECONDS.sleep(1);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
                         }
+                    } catch (RuntimeException e) {
+                        throw new RuntimeException("Error happen on step " + j + " - " + e.getMessage(), e);
                     }
                 }
             });
@@ -83,7 +87,7 @@ public class BufferedActorTest {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                System.out.println(sharedSum[0] + ":" + " action pool size=" + actorRef[0].getActionPoolSize() + " blocked count " + actorRef[0].getOverflowedCount());
+                System.out.println(sharedSum[0] + ":" + " blocked count " + actorRef[0].getOverflowedCount());
             }
         }, 1, 1000);
 
