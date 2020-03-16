@@ -15,8 +15,9 @@
  *   limitations under the License.
  */
 
-package com.github.rollingmetrics.ranking;
+package com.github.rollingmetrics.ranking.updateonly;
 
+import com.github.rollingmetrics.ranking.Ranking;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -25,13 +26,12 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode({Mode.Throughput, Mode.AverageTime})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-public class ResetOnSnapshotRankingBenchmark {
+public class ResetPeriodicallyRanking_Update_Benchmark {
 
     @State(Scope.Benchmark)
     public static class RankingState {
@@ -40,8 +40,8 @@ public class ResetOnSnapshotRankingBenchmark {
 
         final String[] identities = new String[TEST_DATA_COUNT];
 
-        final Ranking<String> resetOnSnapshotRanking_10 = Ranking.builder(10)
-                .resetAllPositionsOnSnapshot()
+        final Ranking<String> periodicallyRanking_10 = Ranking.builder(10)
+                .resetAllPositionsPeriodically(Duration.ofSeconds(1))
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
 
@@ -53,18 +53,9 @@ public class ResetOnSnapshotRankingBenchmark {
         }
     }
 
-    @Group("resetOnSnapshotTop_10")
-    @GroupThreads(3)
     @Benchmark
-    public void update_resetOnSnapshotRanking_10(RankingState state) {
-        state.resetOnSnapshotRanking_10.update(getRandomValue(), state.identities[getRandomValue()]);
-    }
-
-    @Group("resetOnSnapshotTop_10")
-    @GroupThreads(1)
-    @Benchmark
-    public List<Position> getSnapshot_resetOnSnapshotRanking_10(RankingState state) {
-        return state.resetOnSnapshotRanking_10.getPositionsInDescendingOrder();
+    public void update_periodicallyRanking_10(RankingState state) {
+        state.periodicallyRanking_10.update(getRandomValue(), state.identities[getRandomValue()]);
     }
 
     private static int getRandomValue() {
@@ -74,7 +65,7 @@ public class ResetOnSnapshotRankingBenchmark {
     public static class FourThread {
         public static void main(String[] args) throws RunnerException {
             Options opt = new OptionsBuilder()
-                    .include(".*" + ResetOnSnapshotRankingBenchmark.class.getSimpleName() + ".*")
+                    .include(".*" + ResetPeriodicallyRanking_Update_Benchmark.class.getSimpleName() + ".*")
                     .warmupIterations(3)
                     .warmupTime(TimeValue.seconds(2))
                     .measurementIterations(3)

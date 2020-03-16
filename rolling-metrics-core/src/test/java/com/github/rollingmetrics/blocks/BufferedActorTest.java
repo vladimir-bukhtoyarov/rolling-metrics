@@ -17,6 +17,7 @@
 package com.github.rollingmetrics.blocks;
 
 import org.junit.Test;
+import org.openjdk.jol.info.ClassLayout;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -24,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static java.lang.System.out;
 import static org.junit.Assert.*;
 
 public class BufferedActorTest {
@@ -100,6 +102,10 @@ public class BufferedActorTest {
         System.out.println("blocked count:" + actor.getOverflowedCount());
 
         assertEquals(sharedSum[0], iterationsPerThread * threads.length);
+    }
+
+    public static void main(String[] args) {
+        out.println(ClassLayout.parseClass(BufferedActor.class).toPrintable());
     }
 
 }

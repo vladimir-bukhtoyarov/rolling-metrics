@@ -15,8 +15,9 @@
  *   limitations under the License.
  */
 
-package com.github.rollingmetrics.ranking;
+package com.github.rollingmetrics.ranking.updateonly;
 
+import com.github.rollingmetrics.ranking.Ranking;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -25,13 +26,12 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode({Mode.Throughput, Mode.AverageTime})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-public class ChunckedRankingBenchmark {
+public class ChunckedRanking_Update_Benchmark {
 
     @State(Scope.Benchmark)
     public static class RankingState {
@@ -53,18 +53,9 @@ public class ChunckedRankingBenchmark {
         }
     }
 
-    @Group("chunkedTop_10")
-    @GroupThreads(3)
     @Benchmark
     public void update_chunkedRanking_10(RankingState state) {
         state.chunkedRanking_10.update(getRandomValue(), state.identities[getRandomValue()]);
-    }
-
-    @Group("chunkedTop_10")
-    @GroupThreads(1)
-    @Benchmark
-    public List<Position> getSnapshot_chunkedRanking_10(RankingState state) {
-        return state.chunkedRanking_10.getPositionsInDescendingOrder();
     }
 
     private static int getRandomValue() {
@@ -74,7 +65,7 @@ public class ChunckedRankingBenchmark {
     public static class FourThread {
         public static void main(String[] args) throws RunnerException {
             Options opt = new OptionsBuilder()
-                    .include(".*" + ChunckedRankingBenchmark.class.getSimpleName() + ".*")
+                    .include(".*" + ChunckedRanking_Update_Benchmark.class.getSimpleName() + ".*")
                     .warmupIterations(5)
                     .warmupTime(TimeValue.seconds(2))
                     .measurementIterations(3)

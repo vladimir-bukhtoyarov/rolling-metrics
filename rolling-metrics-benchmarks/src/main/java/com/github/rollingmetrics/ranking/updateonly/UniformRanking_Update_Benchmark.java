@@ -1,6 +1,6 @@
 /*
  *
- *  Copyright 2017 Vladimir Bukhtoyarov
+ *  Copyright 2020 Vladimir Bukhtoyarov
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -15,9 +15,11 @@
  *   limitations under the License.
  */
 
-package com.github.rollingmetrics.ranking;
+package com.github.rollingmetrics.ranking.updateonly;
 
 
+import com.github.rollingmetrics.ranking.Position;
+import com.github.rollingmetrics.ranking.Ranking;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -32,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode({Mode.Throughput, Mode.AverageTime})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-public class UniformRankingBenchmark {
+public class UniformRanking_Update_Benchmark {
 
     @State(Scope.Benchmark)
     public static class RankingState {
@@ -54,18 +56,9 @@ public class UniformRankingBenchmark {
         }
     }
 
-    @Group("uniformTop_10")
-    @GroupThreads(3)
     @Benchmark
     public void update_uniformRanking_10(RankingState state) {
         state.uniformRanking_10.update(getRandomValue(), state.identities[getRandomValue()]);
-    }
-
-    @Group("uniformTop_10")
-    @GroupThreads(1)
-    @Benchmark
-    public List<Position> getSnapshot_uniformRanking_10(RankingState state) {
-        return state.uniformRanking_10.getPositionsInDescendingOrder();
     }
 
     private static int getRandomValue() {
@@ -75,7 +68,7 @@ public class UniformRankingBenchmark {
     public static class FourThread {
         public static void main(String[] args) throws RunnerException {
             Options opt = new OptionsBuilder()
-                    .include(".*" + UniformRankingBenchmark.class.getSimpleName() + ".*")
+                    .include(".*" + UniformRanking_Update_Benchmark.class.getSimpleName() + ".*")
                     .warmupIterations(3)
                     .warmupTime(TimeValue.seconds(2))
                     .measurementIterations(3)
