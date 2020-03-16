@@ -31,47 +31,47 @@ import java.util.concurrent.TimeUnit;
 
 @BenchmarkMode({Mode.Throughput, Mode.AverageTime})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-public class TopBenchmark {
+public class RankingBenchmark {
 
     @State(Scope.Benchmark)
     public static class TopState {
 
-        final Ranking chunkedRanking_1 = Ranking.builder(1)
+        final Ranking<String> chunkedRanking_1 = Ranking.builder(1)
                 .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(4), 4)
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
 
-        final Ranking chunkedRanking_10 = Ranking.builder(10)
+        final Ranking<String> chunkedRanking_10 = Ranking.builder(10)
                 .resetPositionsPeriodicallyByChunks(Duration.ofSeconds(4), 4)
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
 
-        final Ranking periodicallyRanking_1 = Ranking.builder(1)
+        final Ranking<String> periodicallyRanking_1 = Ranking.builder(1)
                 .resetAllPositionsPeriodically(Duration.ofSeconds(1))
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
 
-        final Ranking periodicallyRanking_10 = Ranking.builder(10)
+        final Ranking<String> periodicallyRanking_10 = Ranking.builder(10)
                 .resetAllPositionsPeriodically(Duration.ofSeconds(1))
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
 
-        final Ranking resetOnSnapshotRanking_1 = Ranking.builder(1)
+        final Ranking<String> resetOnSnapshotRanking_1 = Ranking.builder(1)
                 .resetAllPositionsOnSnapshot()
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
 
-        final Ranking resetOnSnapshotRanking_10 = Ranking.builder(10)
+        final Ranking<String> resetOnSnapshotRanking_10 = Ranking.builder(10)
                 .resetAllPositionsOnSnapshot()
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
 
-        final Ranking uniformRanking_1 = Ranking.builder(1)
+        final Ranking<String> uniformRanking_1 = Ranking.builder(1)
                 .neverResetPositions()
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
 
-        final Ranking uniformRanking_10 = Ranking.builder(10)
+        final Ranking<String> uniformRanking_10 = Ranking.builder(10)
                 .neverResetPositions()
                 .withSnapshotCachingDuration(Duration.ZERO)
                 .build();
@@ -85,112 +85,112 @@ public class TopBenchmark {
     @Group("chunkedTop_1")
     @GroupThreads(3)
     @Benchmark
-    public void update_chunkedTop_1(TopState state) {
+    public void update_chunkedRanking_1(TopState state) {
         state.chunkedRanking_1.update(getRandomValue(), "Some query to something");
     }
 
     @Group("chunkedTop_1")
     @GroupThreads(1)
     @Benchmark
-    public List<Position> getSnapshot_chunkedTop_1(TopState state) {
+    public List<Position> getSnapshot_chunkedRanking_1(TopState state) {
         return state.chunkedRanking_1.getPositionsInDescendingOrder();
     }
 
     @Group("chunkedTop_10")
     @GroupThreads(3)
     @Benchmark
-    public void update_chunkedTop_10(TopState state) {
+    public void update_chunkedRanking_10(TopState state) {
         state.chunkedRanking_10.update(getRandomValue(), "Some query to something");
     }
 
     @Group("chunkedTop_10")
     @GroupThreads(1)
     @Benchmark
-    public List<Position> getSnapshot_chunkedTop_10(TopState state) {
+    public List<Position> getSnapshot_chunkedRanking_10(TopState state) {
         return state.chunkedRanking_10.getPositionsInDescendingOrder();
     }
 
     @Group("periodicallyTop_1")
     @GroupThreads(3)
     @Benchmark
-    public void update_periodicallyTop_1(TopState state) {
+    public void update_periodicallyRanking_1(TopState state) {
         state.periodicallyRanking_1.update(getRandomValue(), "Some query to something");
     }
 
     @Group("periodicallyTop_1")
     @GroupThreads(1)
     @Benchmark
-    public List<Position> getSnapshot_periodicallyTop_1(TopState state) {
+    public List<Position> getSnapshot_periodicallyRanking_1(TopState state) {
         return state.periodicallyRanking_1.getPositionsInDescendingOrder();
     }
 
     @Group("periodicallyTop_10")
     @GroupThreads(3)
     @Benchmark
-    public void update_periodicallyTop_10(TopState state) {
+    public void update_periodicallyRanking_10(TopState state) {
         state.periodicallyRanking_10.update(getRandomValue(), "Some query to something");
     }
 
     @Group("periodicallyTop_10")
     @GroupThreads(1)
     @Benchmark
-    public List<Position> getSnapshot_periodicallyTop_10(TopState state) {
+    public List<Position> getSnapshot_periodicallyRanking_10(TopState state) {
         return state.periodicallyRanking_10.getPositionsInDescendingOrder();
     }
 
     @Group("resetOnSnapshotTop_1")
     @GroupThreads(3)
     @Benchmark
-    public void update_resetOnSnapshotTop_1(TopState state) {
+    public void update_resetOnSnapshotRanking_1(TopState state) {
         state.resetOnSnapshotRanking_1.update(getRandomValue(), "Some query to something");
     }
 
     @Group("resetOnSnapshotTop_1")
     @GroupThreads(1)
     @Benchmark
-    public List<Position> getSnapshot_resetOnSnapshotTop_1(TopState state) {
+    public List<Position> getSnapshot_resetOnSnapshotRanking_1(TopState state) {
         return state.resetOnSnapshotRanking_1.getPositionsInDescendingOrder();
     }
 
     @Group("resetOnSnapshotTop_10")
     @GroupThreads(3)
     @Benchmark
-    public void update_resetOnSnapshotTop_10(TopState state) {
+    public void update_resetOnSnapshotRanking_10(TopState state) {
         state.resetOnSnapshotRanking_10.update(getRandomValue(), "Some query to something");
     }
 
     @Group("resetOnSnapshotTop_10")
     @GroupThreads(1)
     @Benchmark
-    public List<Position> getSnapshot_resetOnSnapshotTop_10(TopState state) {
+    public List<Position> getSnapshot_resetOnSnapshotRanking_10(TopState state) {
         return state.resetOnSnapshotRanking_10.getPositionsInDescendingOrder();
     }
 
     @Group("uniformTop_1")
     @GroupThreads(3)
     @Benchmark
-    public void update_uniformTop_1(TopState state) {
+    public void update_uniformRanking_1(TopState state) {
         state.uniformRanking_1.update(getRandomValue(), "Some query to something");
     }
 
     @Group("uniformTop_1")
     @GroupThreads(1)
     @Benchmark
-    public List<Position> getSnapshot_uniformTop_1(TopState state) {
+    public List<Position> getSnapshot_uniformRanking_1(TopState state) {
         return state.uniformRanking_1.getPositionsInDescendingOrder();
     }
 
     @Group("uniformTop_10")
     @GroupThreads(3)
     @Benchmark
-    public void update_uniformTop_10(TopState state) {
+    public void update_uniformRanking_10(TopState state) {
         state.uniformRanking_10.update(getRandomValue(), "Some query to something");
     }
 
     @Group("uniformTop_10")
     @GroupThreads(1)
     @Benchmark
-    public List<Position> getSnapshot_uniformTop_10(TopState state) {
+    public List<Position> getSnapshot_uniformRanking_10(TopState state) {
         return state.uniformRanking_10.getPositionsInDescendingOrder();
     }
 
@@ -201,7 +201,7 @@ public class TopBenchmark {
     public static class FourThread {
         public static void main(String[] args) throws RunnerException {
             Options opt = new OptionsBuilder()
-                    .include((TopBenchmark.class).getSimpleName())
+                    .include((RankingBenchmark.class).getSimpleName())
                     .warmupIterations(5)
                     .measurementIterations(5)
                     .threads(4)

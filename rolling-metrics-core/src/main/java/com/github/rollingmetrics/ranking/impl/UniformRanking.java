@@ -25,7 +25,7 @@ import com.github.rollingmetrics.ranking.impl.recorder.SingleThreadedRanking;
 
 import java.util.List;
 
-public class UniformRanking implements Ranking {
+public class UniformRanking<T> implements Ranking<T> {
 
     private final RankingRecorder phasedRecorder;
     private final SingleThreadedRanking uniformCollector;
@@ -38,7 +38,7 @@ public class UniformRanking implements Ranking {
     }
 
     @Override
-    public void update(long weight, Object identity) {
+    public void update(long weight, T identity) {
         phasedRecorder.update(weight, identity);
     }
 

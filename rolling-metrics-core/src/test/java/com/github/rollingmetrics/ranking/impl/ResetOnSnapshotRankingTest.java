@@ -90,7 +90,7 @@ public class ResetOnSnapshotRankingTest {
         RankingTestUtil.update(ranking, RankingTestData.third);
         RankingTestUtil.update(ranking, RankingTestData.first);
         RankingTestUtil.update(ranking, RankingTestData.second);
-        RankingTestUtil.checkOrder(ranking, RankingTestData.third, RankingTestData.second, RankingTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second, RankingTestData.third, RankingTestData.first);
         RankingTestUtil.assertEmpty(ranking);
     }
 

@@ -38,10 +38,10 @@ public class ResetByChunksRanking implements Ranking {
     private final Executor backgroundExecutor;
     private final long intervalBetweenResettingMillis;
     private final long creationTimestamp;
-    private final ArchivedTop[] archive;
+    private final ArchivedRanking[] archive;
     private final boolean historySupported;
     private final Ticker ticker;
-    private final SingleThreadedRanking temporarySnapshotCollector;
+    private final SingleThreadedRanking temporarySnapshotRanking;
 
     private final Phase left;
     private final Phase right;
@@ -63,14 +63,14 @@ public class ResetByChunksRanking implements Ranking {
         Supplier<SingleThreadedRanking> collectorSupplier = () -> new SingleThreadedRanking(size, threshold);
         this.historySupported = numberHistoryChunks > 0;
         if (historySupported) {
-            this.archive = new ArchivedTop[numberHistoryChunks];
+            this.archive = new ArchivedRanking[numberHistoryChunks];
             for (int i = 0; i < numberHistoryChunks; i++) {
-                this.archive[i] = new ArchivedTop(collectorSupplier.get(), Long.MIN_VALUE);
+                this.archive[i] = new ArchivedRanking(collectorSupplier.get(), Long.MIN_VALUE);
             }
         } else {
             archive = null;
         }
-        this.temporarySnapshotCollector = collectorSupplier.get();
+        this.temporarySnapshotRanking = collectorSupplier.get();
     }
 
     @Override
@@ -97,26 +97,26 @@ public class ResetByChunksRanking implements Ranking {
 
     @Override
     synchronized public List<Position> getPositionsInDescendingOrder() {
-        temporarySnapshotCollector.reset();
+        temporarySnapshotRanking.reset();
         long currentTimeMillis = ticker.stableMilliseconds();
 
         for (Phase phase : phases) {
             if (phase.isNeedToBeReportedToSnapshot(currentTimeMillis)) {
                 phase.intervalRecorder = phase.recorder.getIntervalRecorder(phase.intervalRecorder);
                 phase.intervalRecorder.addIntoUnsafe(phase.totalsCollector);
-                phase.totalsCollector.addInto(temporarySnapshotCollector);
+                phase.totalsCollector.addInto(temporarySnapshotRanking);
             }
         }
 
         if (historySupported) {
-            for (ArchivedTop archivedTop : archive) {
-                if (archivedTop.proposedInvalidationTimestamp > currentTimeMillis) {
-                    archivedTop.collector.addInto(temporarySnapshotCollector);
+            for (ArchivedRanking archivedRanking : archive) {
+                if (archivedRanking.proposedInvalidationTimestamp > currentTimeMillis) {
+                    archivedRanking.singleThreadedRanking.addInto(temporarySnapshotRanking);
                 }
             }
         }
 
-        return temporarySnapshotCollector.getPositionsInDescendingOrder();
+        return temporarySnapshotRanking.getPositionsInDescendingOrder();
     }
 
     @Override
@@ -132,10 +132,10 @@ public class ResetByChunksRanking implements Ranking {
                 // move values from recorder to correspondent archived collector
                 long currentPhaseNumber = (currentPhase.proposedInvalidationTimestamp - creationTimestamp) / intervalBetweenResettingMillis;
                 int correspondentArchiveIndex = (int) (currentPhaseNumber - 1) % archive.length;
-                ArchivedTop correspondentArchivedTop = archive[correspondentArchiveIndex];
-                correspondentArchivedTop.collector.reset();
-                currentPhase.totalsCollector.addInto(correspondentArchivedTop.collector);
-                correspondentArchivedTop.proposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp + archive.length * intervalBetweenResettingMillis;
+                ArchivedRanking correspondentArchivedRanking = archive[correspondentArchiveIndex];
+                correspondentArchivedRanking.singleThreadedRanking.reset();
+                currentPhase.totalsCollector.addInto(correspondentArchivedRanking.singleThreadedRanking);
+                correspondentArchivedRanking.proposedInvalidationTimestamp = currentPhase.proposedInvalidationTimestamp + archive.length * intervalBetweenResettingMillis;
             }
             currentPhase.totalsCollector.reset();
         } finally {
@@ -146,21 +146,21 @@ public class ResetByChunksRanking implements Ranking {
         }
     }
 
-    private final class ArchivedTop {
+    private final class ArchivedRanking {
 
-        private final SingleThreadedRanking collector;
+        private final SingleThreadedRanking singleThreadedRanking;
         private volatile long proposedInvalidationTimestamp;
 
-        public ArchivedTop(SingleThreadedRanking collector, long proposedInvalidationTimestamp) {
-            this.collector = collector;
+        public ArchivedRanking(SingleThreadedRanking singleThreadedRanking, long proposedInvalidationTimestamp) {
+            this.singleThreadedRanking = singleThreadedRanking;
             this.proposedInvalidationTimestamp = proposedInvalidationTimestamp;
         }
 
         @Override
         public String toString() {
-            return "ArchivedTop{" +
+            return "ArchivedRanking{" +
                     "\n, proposedInvalidationTimestamp=" + proposedInvalidationTimestamp +
-                    "\n, collector=" + collector +
+                    "\n, collector=" + singleThreadedRanking +
                     "\n}";
         }
     }
@@ -211,7 +211,7 @@ public class ResetByChunksRanking implements Ranking {
                 ",\n left=" + left +
                 ",\n right=" + right +
                 ",\n currentPhase=" + (currentPhaseRef.get() == left? "left": "right") +
-                ",\n temporarySnapshotCollector=" + temporarySnapshotCollector  +
+                ",\n temporarySnapshotCollector=" + temporarySnapshotRanking +
                 '}';
     }
 

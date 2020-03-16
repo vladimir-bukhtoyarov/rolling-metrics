@@ -25,7 +25,7 @@ import com.github.rollingmetrics.ranking.impl.recorder.RankingRecorder;
 
 import java.util.List;
 
-public class ResetOnSnapshotRanking implements Ranking {
+public class ResetOnSnapshotRanking<T> implements Ranking<T> {
 
     private final RankingRecorder recorder;
     private ConcurrentRanking intervalRecorder;
@@ -36,7 +36,7 @@ public class ResetOnSnapshotRanking implements Ranking {
     }
 
     @Override
-    public void update(long weight, Object identity) {
+    public void update(long weight, T identity) {
         recorder.update(weight, identity);
     }
 

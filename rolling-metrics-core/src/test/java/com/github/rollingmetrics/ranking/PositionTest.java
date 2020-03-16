@@ -21,7 +21,7 @@ import org.junit.Test;
 
 public class PositionTest {
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void shouldDisallowNullDescription() {
         new Position(22,null);
     }

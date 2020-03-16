@@ -38,6 +38,8 @@ public class BackgroundExecutionUtilBenchmark {
                                       0L,TimeUnit.MILLISECONDS,
                                       new LinkedBlockingQueue<>(),
                                       new DaemonThreadFactory(""));
+
+        public final Executor forkJoinExecutor = ForkJoinPool.commonPool();
     }
 
     @Benchmark
@@ -46,7 +48,7 @@ public class BackgroundExecutionUtilBenchmark {
     }
 
     @Benchmark
-    public void costOfScheduling(State state) {
+    public void costOfSchedulingOnRollingMetricsExecutor(State state) {
         state.executor.execute(() -> {});
         Blackhole.consumeCPU(1000);
     }
@@ -58,7 +60,13 @@ public class BackgroundExecutionUtilBenchmark {
     }
 
     @Benchmark
-    public void fullCycle(State state) {
+    public void costOfSchedulingOnForkJoinPool(State state) {
+        state.forkJoinExecutor.execute(() -> {});
+        Blackhole.consumeCPU(1000);
+    }
+
+    @Benchmark
+    public void fullCycleOnRollingMetricsExecutor(State state) {
         AtomicBoolean executed = new AtomicBoolean(false);
         state.executor.execute(() -> executed.set(true));
         while (!executed.get());
@@ -68,6 +76,13 @@ public class BackgroundExecutionUtilBenchmark {
     public void fullCycleOnJdkExecutor(State state) {
         AtomicBoolean executed = new AtomicBoolean(false);
         state.jdkExecutor.execute(() -> executed.set(true));
+        while (!executed.get());
+    }
+
+    @Benchmark
+    public void fullCycleOnForkJoinPool(State state) {
+        AtomicBoolean executed = new AtomicBoolean(false);
+        state.forkJoinExecutor.execute(() -> executed.set(true));
         while (!executed.get());
     }
 

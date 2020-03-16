@@ -161,14 +161,14 @@ public class ResetByChunksRankingTest {
 
         currentTimeMillis.addAndGet(1L); //3001
         RankingTestUtil.update(ranking, RankingTestData.second);
-        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth, RankingTestData.fourth, RankingTestData.third);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fifth, RankingTestData.fourth, RankingTestData.second);
 
         currentTimeMillis.addAndGet(999L); //4000
         RankingTestUtil.update(ranking, RankingTestData.first);
-        RankingTestUtil.checkOrder(ranking, RankingTestData.fourth, RankingTestData.third, RankingTestData.second);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.fourth, RankingTestData.second, RankingTestData.third);
 
         currentTimeMillis.addAndGet(1000L); //5000
-        RankingTestUtil.checkOrder(ranking, RankingTestData.third, RankingTestData.second, RankingTestData.first);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second, RankingTestData.third, RankingTestData.first);
 
         currentTimeMillis.addAndGet(1000L); //6000
         RankingTestUtil.checkOrder(ranking, RankingTestData.second, RankingTestData.first);

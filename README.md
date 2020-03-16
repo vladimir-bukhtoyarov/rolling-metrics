@@ -4,7 +4,7 @@ Rolling-Metrics is the monitoring library which provides advanced monitoring str
 ## Supported monitoring primitives
 * Rolling time window counters. [See documentation for counters](doc-pages/counters.md).
 * Rolling time window hit-ratio. [See documentation for hit-ratio](doc-pages/hit-ratio.md).
-* Top of queries by latency. [See documentation for ranking](doc-pages/ranking.md).
+* Ranking of queries by latency. [See documentation for ranking](doc-pages/ranking.md).
 * Loss-less capturing histograms(based on HdrHistogram). [See documentation for histograms](doc-pages/histograms.md).
 
 ## Integrations

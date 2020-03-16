@@ -26,18 +26,18 @@ import com.github.rollingmetrics.util.Ticker;
 import java.time.Duration;
 import java.util.List;
 
-public class SnapshotCachingRanking implements Ranking {
+public class SnapshotCachingRanking<T> implements Ranking<T> {
 
-    private final Ranking target;
+    private final Ranking<T> target;
     private final CachingSupplier<List<Position>> cache;
 
-    public SnapshotCachingRanking(Ranking target, Duration cachingDuration, Ticker ticker) {
+    public SnapshotCachingRanking(Ranking<T> target, Duration cachingDuration, Ticker ticker) {
         this.target = target;
         this.cache = new CachingSupplier<>(cachingDuration, ticker, target::getPositionsInDescendingOrder);
     }
 
     @Override
-    public void update(long weight, Object identity) {
+    public void update(long weight, T identity) {
         target.update(weight, identity);
     }
 
@@ -53,7 +53,7 @@ public class SnapshotCachingRanking implements Ranking {
 
     @Override
     public String toString() {
-        return "SnapshotCachingTop{" +
+        return "SnapshotCachingRanking{" +
                 "target=" + target +
                 ", cache=" + cache +
                 '}';

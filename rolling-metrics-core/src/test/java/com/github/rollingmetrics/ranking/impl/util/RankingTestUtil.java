@@ -65,7 +65,7 @@ public class RankingTestUtil {
         for (int i = 0; i < threads.length; i++) {
             threads[i] = new Thread(() -> {
                 try {
-                    // update top 10 times and take snapshot on each cycle
+                    // update ranking 10 times and take snapshot on each cycle
                     while (errorRef.get() == null && System.currentTimeMillis() - start < durationMillis) {
                         for (int j = 1; j <= 10; j++) {
                             long latency = minValue + ThreadLocalRandom.current().nextLong(maxValue - minValue);

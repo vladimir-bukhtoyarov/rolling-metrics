@@ -22,7 +22,7 @@ import com.github.rollingmetrics.ranking.Position;
 import java.util.List;
 
 /**
- *  Is not a part of public API, this class just used as building block for other QueryTop implementations.
+ *  Is not a part of public API, this class just used as building block for other Ranking implementations.
  */
 public class ConcurrentRanking {
 

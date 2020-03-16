@@ -17,6 +17,7 @@
 package com.github.rollingmetrics.blocks;
 
 import org.jctools.queues.MpscArrayQueue;
+import org.jctools.queues.MpscLinkedQueue;
 import org.jctools.queues.SpmcArrayQueue;
 
 import java.util.concurrent.atomic.AtomicLong;
@@ -67,7 +68,7 @@ import java.util.function.Supplier;
 public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
 
     private final SpmcArrayQueue<T> actionPool;
-    private final MpscArrayQueue<T> scheduledActions;
+    private final MpscLinkedQueue<T> scheduledActions;
 
     private final ReentrantLock lock = new ReentrantLock();
     private final AtomicLong overflowCounter = new AtomicLong();
@@ -82,7 +83,7 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
      */
     public BufferedActor(Supplier<T> actionFactory, int bufferSize, int batchSize) {
         actionPool = new SpmcArrayQueue<>(bufferSize);
-        scheduledActions = new MpscArrayQueue<>(bufferSize);
+        scheduledActions = new MpscLinkedQueue<>();
         this.batchSize = batchSize;
         this.actionFactory = actionFactory;
 
@@ -95,33 +96,32 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
         T action = actionPool.poll();
         if (action == null) {
             action = actionFactory.get();
+            action.createdBecauseOfOverflow = true;
+            overflowCounter.incrementAndGet();
         }
         return action;
     }
 
     public void doExclusivelyOrSchedule(T action) {
-        boolean queued = false;
-        if (!scheduledActions.offer(action)) {
-            queued = true;
-            if (!lock.tryLock()) {
-                return;
-            }
-        } else {
-            overflowCounter.incrementAndGet();
+        scheduledActions.offer(action);
+        if (action.isCreatedBecauseOfOverflow()) {
             lock.lock();
+        } else if (!lock.tryLock()) {
+            return;
         }
 
         try {
             int dispatchedActions = 0;
-            T currentAction = queued? scheduledActions.poll() : action;
-            while (currentAction != null) {
+            T currentAction;
+            while ((currentAction = scheduledActions.poll()) != null) {
                 currentAction.run();
                 currentAction.freeGarbage();
-                actionPool.offer(currentAction);
+                if (!currentAction.isCreatedBecauseOfOverflow()) {
+                    actionPool.offer(currentAction);
+                }
                 if (dispatchedActions++ >= batchSize) {
                     break;
                 }
-                currentAction = scheduledActions.poll();
             }
         } finally {
             lock.unlock();
@@ -145,7 +145,9 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
         while ((action = scheduledActions.poll()) != null) {
             action.run();
             action.freeGarbage();
-            actionPool.offer(action);
+            if (!action.isCreatedBecauseOfOverflow()) {
+                actionPool.offer(action);
+            }
         }
     }
 
@@ -153,11 +155,19 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
         T action;
         while ((action = scheduledActions.poll()) != null) {
             action.freeGarbage();
-            actionPool.offer(action);
+            if (!action.isCreatedBecauseOfOverflow()) {
+                actionPool.offer(action);
+            }
         }
     }
 
     public static abstract class ReusableActionContainer {
+
+        boolean createdBecauseOfOverflow;
+
+        public boolean isCreatedBecauseOfOverflow() {
+            return createdBecauseOfOverflow;
+        }
 
         abstract protected void freeGarbage();
 

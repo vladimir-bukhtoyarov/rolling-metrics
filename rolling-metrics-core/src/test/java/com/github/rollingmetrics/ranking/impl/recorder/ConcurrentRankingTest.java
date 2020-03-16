@@ -25,48 +25,49 @@ import org.junit.Test;
 public class ConcurrentRankingTest {
 
     private SingleThreadedRanking snaphsot = new SingleThreadedRanking(2, 0L);
-    private ConcurrentRanking recorder = new ConcurrentRanking(2, RankingTestData.THRESHOLD_NANOS);
+    private ConcurrentRanking ranking = new ConcurrentRanking(2, 0L);
 
     @Test
     public void test() {
-        RankingRecorderTestUtil.assertEmpty(recorder);
+        RankingRecorderTestUtil.assertEmpty(ranking);
 
-        RankingRecorderTestUtil.update(recorder, RankingTestData.first);
-        RankingRecorderTestUtil.update(recorder, RankingTestData.first);
-        RankingRecorderTestUtil.checkOrder(recorder, RankingTestData.first);
+        RankingRecorderTestUtil.update(ranking, RankingTestData.first);
+        RankingRecorderTestUtil.checkOrder(ranking, RankingTestData.first);
+        RankingRecorderTestUtil.update(ranking, RankingTestData.first);
+        RankingRecorderTestUtil.checkOrder(ranking, RankingTestData.first);
 
-        RankingRecorderTestUtil.update(recorder, RankingTestData.second);
-        RankingRecorderTestUtil.update(recorder, RankingTestData.second);
-        RankingRecorderTestUtil.checkOrder(recorder, RankingTestData.second, RankingTestData.first);
+        RankingRecorderTestUtil.update(ranking, RankingTestData.second);
+        RankingRecorderTestUtil.update(ranking, RankingTestData.second);
+        RankingRecorderTestUtil.checkOrder(ranking, RankingTestData.second, RankingTestData.first);
 
-        RankingRecorderTestUtil.update(recorder, RankingTestData.third);
-        RankingRecorderTestUtil.update(recorder, RankingTestData.third);
-        RankingRecorderTestUtil.checkOrder(recorder, RankingTestData.third, RankingTestData.second);
+        RankingRecorderTestUtil.update(ranking, RankingTestData.third);
+        RankingRecorderTestUtil.update(ranking, RankingTestData.third);
+        RankingRecorderTestUtil.checkOrder(ranking, RankingTestData.third, RankingTestData.second);
 
-        RankingRecorderTestUtil.update(recorder, RankingTestData.first);
-        RankingRecorderTestUtil.checkOrder(recorder, RankingTestData.third, RankingTestData.second);
+        RankingRecorderTestUtil.update(ranking, RankingTestData.first);
+        RankingRecorderTestUtil.checkOrder(ranking, RankingTestData.third, RankingTestData.second);
     }
 
     @Test
     public void testAddInto() {
-        recorder.addIntoUnsafe(snaphsot);
+        ranking.addIntoUnsafe(snaphsot);
         PositionCollectorTestUtil.assertEmpty(snaphsot);
 
-        RankingRecorderTestUtil.update(recorder, RankingTestData.first);
-        recorder.addIntoUnsafe(snaphsot);
+        RankingRecorderTestUtil.update(ranking, RankingTestData.first);
+        ranking.addIntoUnsafe(snaphsot);
         PositionCollectorTestUtil.checkOrder(snaphsot, RankingTestData.first);
 
-        RankingRecorderTestUtil.update(recorder, RankingTestData.second);
-        recorder.addIntoUnsafe(snaphsot);
+        RankingRecorderTestUtil.update(ranking, RankingTestData.second);
+        ranking.addIntoUnsafe(snaphsot);
         PositionCollectorTestUtil.checkOrder(snaphsot, RankingTestData.second, RankingTestData.first);
     }
 
     @Test
     public void testReset() {
-        RankingRecorderTestUtil.update(recorder, RankingTestData.first);
+        RankingRecorderTestUtil.update(ranking, RankingTestData.first);
 
-        recorder.resetUnsafe();
-        RankingRecorderTestUtil.assertEmpty(recorder);
+        ranking.resetUnsafe();
+        RankingRecorderTestUtil.assertEmpty(ranking);
     }
 
 }

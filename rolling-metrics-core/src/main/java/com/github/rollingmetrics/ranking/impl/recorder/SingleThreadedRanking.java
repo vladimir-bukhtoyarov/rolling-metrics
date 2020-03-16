@@ -21,7 +21,7 @@ import com.github.rollingmetrics.ranking.Position;
 import java.util.*;
 
 /**
- * Is not a part of public API, this class just used as building block for high-level Top implementations.
+ * Is not a part of public API, this class just used as building block for high-level Ranking implementations.
  *
  * This implementation does not support concurrent access at all, synchronization aspects should be managed outside.
  */
@@ -43,6 +43,13 @@ public class SingleThreadedRanking {
     }
 
     public UpdateResult update(long weight, Object identity) {
+        return update(weight, identity, true);
+    }
+
+    private UpdateResult update(long weight, Object identity, boolean freshReplacesOldWithSameWeight) {
+        if (weight < threshold) {
+            return UpdateResult.SKIPPED_BECAUSE_TOO_SMALL;
+        }
         if (currentSize == 0) {
             // corner case for empty collection
             add(weight, identity);
@@ -69,12 +76,10 @@ public class SingleThreadedRanking {
                 }
             }
 
-            if (weight < existedWeight) {
-                if (indexOfDuplicateForRemoval != -1) {
-                    break;
-                }
-            } else {
+            if (weight > existedWeight || (freshReplacesOldWithSameWeight && weight == existedWeight)) {
                 indexToInsert = i;
+            } else if (indexOfDuplicateForRemoval != -1) {
+                break;
             }
         }
 
@@ -140,8 +145,8 @@ public class SingleThreadedRanking {
     }
 
     public void addInto(SingleThreadedRanking other) {
-        for (int i = 0; i < currentSize; i++) {
-            if (other.update(weights[i], identities[i]) == UpdateResult.SKIPPED_BECAUSE_TOO_SMALL) {
+        for (int i = currentSize - 1; i >= 0; i--) {
+            if (other.update(weights[i], identities[i], false) == UpdateResult.SKIPPED_BECAUSE_TOO_SMALL) {
                 return;
             }
         }
@@ -175,6 +180,11 @@ public class SingleThreadedRanking {
 
         SKIPPED_BECAUSE_TOO_SMALL, SKIPPED_BECAUSE_OF_DUPLICATE, INSERTED;
 
+    }
+
+    @Override
+    public String toString() {
+        return getPositionsInDescendingOrder().toString();
     }
 
 }

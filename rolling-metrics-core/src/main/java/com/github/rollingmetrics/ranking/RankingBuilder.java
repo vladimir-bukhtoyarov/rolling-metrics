@@ -33,8 +33,8 @@ import java.util.concurrent.ThreadFactory;
  * <p><br> Basic examples of usage:
  * <pre> {@code
  *
- *  Top top = Top.builder(3).resetAllPositionsOnSnapshot().build();
- *  MetricSet metricSet = new TopMetricSet("my-top", top, TimeUnit.MILLISECONDS, 5);
+ *  Ranking ranking = Ranking.builder(3).resetAllPositionsOnSnapshot().build();
+ *  MetricSet metricSet = new RankingMetricSet("my-top", top, TimeUnit.MILLISECONDS, 5);
  *  registry.registerAll(metricSet);
  * }</pre>
  *
@@ -52,7 +52,7 @@ public class RankingBuilder {
     public static final Duration DEFAULT_SNAPSHOT_CACHING_DURATION = Duration.ofSeconds(1);
 
     private static final Executor DEFAULT_BACKGROUND_EXECUTOR = null;
-    private static final TopFactory DEFAULT_TOP_FACTORY = TopFactory.UNIFORM;
+    private static final RankingFactory DEFAULT_RANKING_FACTORY = RankingFactory.UNIFORM;
 
     private int size;
     private Duration latencyThreshold;
@@ -60,9 +60,9 @@ public class RankingBuilder {
     private int maxDescriptionLength;
     private Ticker ticker;
     private Executor backgroundExecutor;
-    private TopFactory factory;
+    private RankingFactory factory;
 
-    private RankingBuilder(int size, Duration latencyThreshold, Duration snapshotCachingDuration, int maxDescriptionLength, Ticker ticker, Executor backgroundExecutor, TopFactory factory) {
+    private RankingBuilder(int size, Duration latencyThreshold, Duration snapshotCachingDuration, int maxDescriptionLength, Ticker ticker, Executor backgroundExecutor, RankingFactory factory) {
         this.size = size;
         this.latencyThreshold = latencyThreshold;
         this.snapshotCachingDuration = snapshotCachingDuration;
@@ -77,8 +77,8 @@ public class RankingBuilder {
      *
      * @return new {@link Ranking} instance
      */
-    public Ranking build() {
-        Ranking ranking = factory.create(size, latencyThreshold, maxDescriptionLength, ticker);
+    public <T> Ranking<T> build() {
+        Ranking<T> ranking = factory.create(size, latencyThreshold, maxDescriptionLength, ticker);
         if (!snapshotCachingDuration.isZero()) {
             ranking = new SnapshotCachingRanking(ranking, snapshotCachingDuration, ticker);
         }
@@ -88,16 +88,16 @@ public class RankingBuilder {
     /**
      * Creates new builder instance.
      *
-     * @param size the count of positions for tops which will be constructed by this builder
+     * @param size the count of positions for ranking which will be constructed by this builder
      * @return this builder instance
      */
     public static RankingBuilder newBuilder(int size) {
         validateSize(size);
-        return new RankingBuilder(size, DEFAULT_LATENCY_THRESHOLD, DEFAULT_SNAPSHOT_CACHING_DURATION, DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION, Ticker.defaultTicker(), DEFAULT_BACKGROUND_EXECUTOR, DEFAULT_TOP_FACTORY);
+        return new RankingBuilder(size, DEFAULT_LATENCY_THRESHOLD, DEFAULT_SNAPSHOT_CACHING_DURATION, DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION, Ticker.defaultTicker(), DEFAULT_BACKGROUND_EXECUTOR, DEFAULT_RANKING_FACTORY);
     }
 
     /**
-     * Configures the maximum count of positions for tops which will be constructed by this builder.
+     * Configures the maximum count of positions for ranking which will be constructed by this builder.
      *
      * @param size the maximum count of positions
      * @return this builder instance
@@ -109,7 +109,7 @@ public class RankingBuilder {
     }
 
     /**
-     * Configures the latency threshold. The queries having latency which shorter than threshold, will not be tracked in the top.
+     * Configures the latency threshold. The queries having latency which shorter than threshold, will not be tracked in the ranking.
      * The default value is zero {@link #DEFAULT_LATENCY_THRESHOLD}, means that all queries can be recorded independent of its latency.
      *
      * Specify this parameter when you want not to track queries which fast,
@@ -151,7 +151,7 @@ public class RankingBuilder {
     }
 
     /**
-     * Specifies the max length of description position int the top. The characters upper {@code maxLengthOfQueryDescription} limit will be truncated
+     * Specifies the max length of description position int the ranking. The characters upper {@code maxLengthOfQueryDescription} limit will be truncated
      *
      * <p>
      * The default value is 1000 symbol {@link #DEFAULT_MAX_LENGTH_OF_QUERY_DESCRIPTION}.
@@ -210,11 +210,11 @@ public class RankingBuilder {
     }
 
     /**
-     * Top configured with this strategy will store all values since the top was created.
+     * Top configured with this strategy will store all values since the ranking was created.
      *
      * <p>This is default strategy for {@link RankingBuilder}.
      * This strategy is useless for long running applications, because very slow queries happen in the past
-     * will not provide chances to fresh queries to take place in the top.
+     * will not provide chances to fresh queries to take place in the ranking.
      * So, it is strongly recommended to switch eviction strategy to one of:
      * <ul>
      *     <li>{@link #resetAllPositionsPeriodically(Duration)}</li>
@@ -229,33 +229,33 @@ public class RankingBuilder {
      * @see #resetAllPositionsOnSnapshot()
      */
     public RankingBuilder neverResetPositions() {
-        this.factory = TopFactory.UNIFORM;
+        this.factory = RankingFactory.UNIFORM;
         return this;
     }
 
     /**
-     * Top configured with this strategy will be cleared each time when {@link Ranking#getPositionsInDescendingOrder()} invoked.
+     * Ranking configured with this strategy will be cleared each time when {@link Ranking#getPositionsInDescendingOrder()} invoked.
      *
      * @return this builder instance
      * @see #resetPositionsPeriodicallyByChunks(Duration, int)
      * @see #resetAllPositionsPeriodically(Duration)
      */
     public RankingBuilder resetAllPositionsOnSnapshot() {
-        this.factory = TopFactory.RESET_ON_SNAPSHOT;
+        this.factory = RankingFactory.RESET_ON_SNAPSHOT;
         return this;
     }
 
     /**
-     * Top configured with this strategy will be cleared at all after each {@code intervalBetweenResetting} elapsed.
+     * Ranking configured with this strategy will be cleared at all after each {@code intervalBetweenResetting} elapsed.
      *
      * <p>
      *     If You use this strategy inside JEE environment,
      *     then it would be better to call {@code ResilientExecutionUtil.getInstance().shutdownBackgroundExecutor()}
      *     once in application shutdown listener,
-     *     in order to avoid leaking reference to classloader through the thread which this library creates for resetting of top in background.
+     *     in order to avoid leaking reference to classloader through the thread which this library creates for resetting of ranking in background.
      * </p>
      *
-     * @param intervalBetweenResetting specifies how often need to reset the top
+     * @param intervalBetweenResetting specifies how often need to reset the ranking
      * @return this builder instance
      */
     public RankingBuilder resetAllPositionsPeriodically(Duration intervalBetweenResetting) {
@@ -275,24 +275,24 @@ public class RankingBuilder {
     }
 
     /**
-     * Top configured with this strategy will be divided to <tt>numberChunks</tt> parts,
+     * Ranking configured with this strategy will be divided to <tt>numberChunks</tt> parts,
      * and one chunk will be cleared after each <tt>rollingTimeWindow / numberChunks</tt> elapsed.
-     * This strategy is more smoothly then <tt>resetAllPositionsPeriodically</tt> because top never zeroed at whole,
+     * This strategy is more smoothly then <tt>resetAllPositionsPeriodically</tt> because ranking never zeroed at whole,
      * so user experience provided by <tt>resetPositionsPeriodicallyByChunks</tt> should look more pretty.
      * <p>
-     * The value recorded to top will take affect at least <tt>rollingTimeWindow</tt> and at most <tt>rollingTimeWindow *(1 + 1/numberChunks)</tt> time,
-     * for example when you configure <tt>rollingTimeWindow=60 seconds and numberChunks=6</tt> then each value recorded to top will be stored at <tt>60-70 seconds</tt>
+     * The value recorded to ranking will take affect at least <tt>rollingTimeWindow</tt> and at most <tt>rollingTimeWindow *(1 + 1/numberChunks)</tt> time,
+     * for example when you configure <tt>rollingTimeWindow=60 seconds and numberChunks=6</tt> then each value recorded to ranking will be stored at <tt>60-70 seconds</tt>
      * </p>
      *
      * <p>
      *     If You use this strategy inside JEE environment,
      *     then it would be better to call {@code ResilientExecutionUtil.getInstance().shutdownBackgroundExecutor()}
      *     once in application shutdown listener,
-     *     in order to avoid leaking reference to classloader through the thread which this library creates for rotation of top in background.
+     *     in order to avoid leaking reference to classloader through the thread which this library creates for rotation of ranking in background.
      * </p>
      *
-     * @param rollingTimeWindow the total rolling time window, any value recorded to top will not be evicted from it at least <tt>rollingTimeWindow</tt>
-     * @param numberChunks specifies number of chunks by which the top will be slitted
+     * @param rollingTimeWindow the total rolling time window, any value recorded to ranking will not be evicted from it at least <tt>rollingTimeWindow</tt>
+     * @param numberChunks specifies number of chunks by which the ranking will be slitted
      * @return this builder instance
      */
     public RankingBuilder resetPositionsPeriodicallyByChunks(Duration rollingTimeWindow, int numberChunks) {
@@ -319,18 +319,18 @@ public class RankingBuilder {
     }
 
 
-    private interface TopFactory {
+    private interface RankingFactory {
 
         Ranking create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker);
 
-        TopFactory UNIFORM = new TopFactory() {
+        RankingFactory UNIFORM = new RankingFactory() {
             @Override
             public Ranking create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
                 return new UniformRanking(size, latencyThreshold.toNanos());
             }
         };
 
-        TopFactory RESET_ON_SNAPSHOT = new TopFactory() {
+        RankingFactory RESET_ON_SNAPSHOT = new RankingFactory() {
             @Override
             public Ranking create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
                 return new ResetOnSnapshotRanking(size, latencyThreshold.toNanos());
@@ -348,8 +348,8 @@ public class RankingBuilder {
         }
     }
 
-    private TopFactory resetByChunks(final long intervalBetweenResettingMillis, int numberOfHistoryChunks) {
-        return new TopFactory() {
+    private RankingFactory resetByChunks(final long intervalBetweenResettingMillis, int numberOfHistoryChunks) {
+        return new RankingFactory() {
             @Override
             public Ranking create(int size, Duration latencyThreshold, int maxDescriptionLength, Ticker ticker) {
                 return new ResetByChunksRanking(size, latencyThreshold.toNanos(), intervalBetweenResettingMillis, numberOfHistoryChunks, ticker, getExecutor());

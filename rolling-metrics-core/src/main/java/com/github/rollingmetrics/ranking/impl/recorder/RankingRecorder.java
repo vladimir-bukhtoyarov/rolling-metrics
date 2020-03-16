@@ -18,7 +18,7 @@ package com.github.rollingmetrics.ranking.impl.recorder;
 import org.HdrHistogram.WriterReaderPhaser;
 
 /**
- * Is not a part of public API, this class just used as building block for different QueryTop implementations.
+ * Is not a part of public API, this class just used as building block for different Ranking implementations.
  */
 public class RankingRecorder {
 
@@ -48,9 +48,9 @@ public class RankingRecorder {
     public synchronized ConcurrentRanking getIntervalRecorder(ConcurrentRanking recorderToRecycle) {
         inactive = recorderToRecycle;
         performIntervalSample();
-        ConcurrentRanking sampledQueryTop = inactive;
+        ConcurrentRanking sampledRanking = inactive;
         inactive = null; // Once we expose the sample, we can't reuse it internally until it is recycled
-        return sampledQueryTop;
+        return sampledRanking;
     }
 
     private void performIntervalSample() {
@@ -64,7 +64,7 @@ public class RankingRecorder {
                 inactive.resetUnsafe();
             }
 
-            // Swap active and inactive top:
+            // Swap active and inactive ranking:
             final ConcurrentRanking temp = inactive;
             inactive = active;
             active = temp;

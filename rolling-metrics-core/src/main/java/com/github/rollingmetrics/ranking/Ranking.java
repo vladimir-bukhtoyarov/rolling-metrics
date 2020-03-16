@@ -21,16 +21,18 @@ package com.github.rollingmetrics.ranking;
 import java.util.List;
 
 /**
- * The top of queries sorted by its latency.
+ * The ranking of queries sorted by its latency.
  * The top is sized, independent of count of recorded queries, the top always stores no more than {@link #getSize} positions,
  * the longer queries displace shorter queries when ranking reaches it max size.
+ *
+ * @param <T>
  */
-public interface Ranking {
+public interface Ranking<T> {
 
     /**
      * Creates new instance of {@link RankingBuilder}
      *
-     * @param size maximum count of positions in the top
+     * @param size maximum count of positions in the ranking
      *
      * @return new instance of {@link RankingBuilder}
      */
@@ -44,7 +46,7 @@ public interface Ranking {
      * @param weight the weight of query
      * @param identity the identity by which one query can be distinguished from another.
      */
-    void update(long weight, Object identity);
+    void update(long weight, T identity);
 
     /**
      * Returns the top of queries in descend order, slowest query will be at first place.
