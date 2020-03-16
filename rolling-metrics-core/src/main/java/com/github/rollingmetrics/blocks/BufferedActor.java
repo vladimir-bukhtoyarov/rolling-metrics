@@ -16,11 +16,10 @@
 
 package com.github.rollingmetrics.blocks;
 
-import org.jctools.queues.MpscArrayQueue;
-import org.jctools.queues.MpscLinkedQueue;
 import org.jctools.queues.SpmcArrayQueue;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
 
@@ -67,8 +66,10 @@ import java.util.function.Supplier;
  */
 public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
 
-    private final SpmcArrayQueue<T> actionPool;
-    private final MpscLinkedQueue<T> scheduledActions;
+    private final SpmcArrayQueue<ReusableActionContainer> actionPool;
+
+    private final AtomicReference<ReusableActionContainer> scheduledActionsStackTop;
+    private ReusableActionContainer scheduledAction;
 
     private final ReentrantLock lock = new ReentrantLock();
     private final AtomicLong overflowCounter = new AtomicLong();
@@ -83,27 +84,37 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
      */
     public BufferedActor(Supplier<T> actionFactory, int bufferSize, int batchSize) {
         actionPool = new SpmcArrayQueue<>(bufferSize);
-        scheduledActions = new MpscLinkedQueue<>();
+        scheduledActionsStackTop = new AtomicReference<>();
         this.batchSize = batchSize;
         this.actionFactory = actionFactory;
 
         if (batchSize < bufferSize) {
             throw new IllegalArgumentException();
         }
+
+        for (int i = 0; i < bufferSize; i++) {
+            actionPool.offer(actionFactory.get());
+        }
     }
 
     public final T getActionFromPool() {
-        T action = actionPool.poll();
+        ReusableActionContainer action = actionPool.poll();
         if (action == null) {
             action = actionFactory.get();
             action.createdBecauseOfOverflow = true;
             overflowCounter.incrementAndGet();
         }
-        return action;
+        return (T) action;
     }
 
-    public void doExclusivelyOrSchedule(T action) {
-        scheduledActions.offer(action);
+    public void doExclusivelyOrSchedule(ReusableActionContainer action) {
+        while (true) {
+            ReusableActionContainer currentTop = this.scheduledActionsStackTop.get();
+            action.next = currentTop;
+            if (scheduledActionsStackTop.compareAndSet(currentTop, action)) {
+                break;
+            }
+        }
         if (action.isCreatedBecauseOfOverflow()) {
             lock.lock();
         } else if (!lock.tryLock()) {
@@ -112,8 +123,8 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
 
         try {
             int dispatchedActions = 0;
-            T currentAction;
-            while ((currentAction = scheduledActions.poll()) != null) {
+            ReusableActionContainer currentAction;
+            while ((currentAction = pollScheduledAction()) != null) {
                 currentAction.run();
                 currentAction.freeGarbage();
                 if (!currentAction.isCreatedBecauseOfOverflow()) {
@@ -128,6 +139,39 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
         }
     }
 
+    private ReusableActionContainer pollScheduledAction() {
+        ReusableActionContainer scheduledActionLocal = scheduledAction;
+        if (scheduledActionLocal != null) {
+            scheduledAction = scheduledActionLocal.next;
+            scheduledActionLocal.next = null;
+            return scheduledActionLocal;
+        }
+
+        scheduledActionLocal = scheduledActionsStackTop.getAndSet(null);
+        if (scheduledActionLocal == null) {
+            return null;
+        }
+        if (scheduledActionLocal.next == null) {
+            return scheduledActionLocal;
+        }
+
+        // reverse order of stack items to satisfy FIFO queue contract
+        ReusableActionContainer previous = scheduledActionLocal;
+        ReusableActionContainer current = scheduledActionLocal.next;
+        previous.next = null;
+        while (current != null) {
+            ReusableActionContainer tmp = current.next;
+            current.next = previous;
+            previous = current;
+            current = tmp;
+        }
+
+        scheduledActionLocal = previous;
+        scheduledAction = scheduledActionLocal.next;
+        scheduledActionLocal.next = null;
+        return scheduledActionLocal;
+    }
+
     public long getOverflowedCount() {
         return overflowCounter.get();
     }
@@ -136,13 +180,9 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
         return actionPool.size();
     }
 
-    public int getScheduledActionsCount() {
-        return scheduledActions.size();
-    }
-
     public void processAllScheduledActions() {
-        T action;
-        while ((action = scheduledActions.poll()) != null) {
+        ReusableActionContainer action;
+        while ((action = pollScheduledAction()) != null) {
             action.run();
             action.freeGarbage();
             if (!action.isCreatedBecauseOfOverflow()) {
@@ -152,8 +192,8 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
     }
 
     public void clear() {
-        T action;
-        while ((action = scheduledActions.poll()) != null) {
+        ReusableActionContainer action;
+        while ((action = pollScheduledAction()) != null) {
             action.freeGarbage();
             if (!action.isCreatedBecauseOfOverflow()) {
                 actionPool.offer(action);
@@ -164,6 +204,8 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> {
     public static abstract class ReusableActionContainer {
 
         boolean createdBecauseOfOverflow;
+
+        private ReusableActionContainer next;
 
         public boolean isCreatedBecauseOfOverflow() {
             return createdBecauseOfOverflow;
