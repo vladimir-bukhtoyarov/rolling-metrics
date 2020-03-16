@@ -27,7 +27,6 @@ class BufferedActor_SharedFields<T extends BufferedActor.ReusableActionContainer
     final BufferedActor.ReusableActionContainer[] pool;
     final AtomicLong actionPoolHead;
     final AtomicReference<BufferedActor.ReusableActionContainer> scheduledActionsStackTop;
-
     final ReentrantLock lock = new ReentrantLock();
 
     BufferedActor_SharedFields(Supplier<T> actionFactory, int bufferSize) {
@@ -55,8 +54,40 @@ class BufferedActor_SharedFields_Padding<T extends BufferedActor.ReusableActionC
     long p1, p2, p3, p4, p5, p6, p7, p8,
          p9, p10, p11, p12, p13, p14, p15, p16;
 
-    BufferedActor_SharedFields_Padding(Supplier actionFactory, int bufferSize) {
+    BufferedActor_SharedFields_Padding(Supplier<T> actionFactory, int bufferSize) {
         super(actionFactory, bufferSize);
+    }
+
+}
+
+class BufferedActor_FinalFields<T extends BufferedActor.ReusableActionContainer> extends BufferedActor_SharedFields_Padding<T> {
+
+    final BufferedActor.ReusableActionContainer[] pool;
+    final AtomicLong actionPoolHead;
+    final AtomicReference<BufferedActor.ReusableActionContainer> scheduledActionsStackTop;
+    final ReentrantLock lock;
+    final int batchSize;
+    final Supplier<BufferedActor.ReusableActionContainer> actionFactory;
+
+    BufferedActor_FinalFields(Supplier<T> actionFactory, int bufferSize, int batchSize) {
+        super(actionFactory, bufferSize);
+        this.pool = super.pool;
+        this.actionPoolHead = super.actionPoolHead;
+        this.scheduledActionsStackTop = super.scheduledActionsStackTop;
+        this.lock = super.lock;
+        this.batchSize = batchSize;
+        this.actionFactory = (Supplier<BufferedActor.ReusableActionContainer>) actionFactory;
+    }
+
+}
+
+class BufferedActor_FinalFields_Paddind<T extends BufferedActor.ReusableActionContainer> extends BufferedActor_FinalFields<T> {
+
+    long pf1, pf2, pf3, pf4, pf5, pf6, pf7, pf8,
+            pf9, pf10, pf11, pf12, pf13, pf14, pf15, pf16;
+
+    BufferedActor_FinalFields_Paddind(Supplier<T> actionFactory, int bufferSize, int batchSize) {
+        super(actionFactory, bufferSize, batchSize);
     }
 
 }
@@ -102,13 +133,9 @@ class BufferedActor_SharedFields_Padding<T extends BufferedActor.ReusableActionC
  *
  * @param <T>
  */
-public class BufferedActor<T extends BufferedActor.ReusableActionContainer> extends BufferedActor_SharedFields_Padding<T> {
-
-    private final int batchSize;
-    private final Supplier<T> actionFactory;
+public class BufferedActor<T extends BufferedActor.ReusableActionContainer> extends BufferedActor_FinalFields_Paddind<T> {
 
     private volatile ReusableActionContainer actionPoolTail;
-
     private ReusableActionContainer scheduledAction;
     private long overflowCounter;
 
@@ -119,16 +146,14 @@ public class BufferedActor<T extends BufferedActor.ReusableActionContainer> exte
      *                  intent of this parameter is to avoid live lock of exclusive lock owner
      */
     public BufferedActor(Supplier<T> actionFactory, int bufferSize, int batchSize) {
-        super(actionFactory, bufferSize);
-        this.batchSize = batchSize;
-        this.actionFactory = actionFactory;
+        super(actionFactory, bufferSize, batchSize);
         actionPoolTail = pool[bufferSize - 1];
     }
 
     public final T getActionFromPool() {
         ReusableActionContainer action = pollFromPool();
         if (action == null) {
-            action = actionFactory.get();
+            action = super.actionFactory.get();
             action.createdBecauseOfOverflow = true;
         }
         return (T) action;
