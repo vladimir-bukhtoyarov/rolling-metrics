@@ -94,7 +94,7 @@ public class ResetByChunksRankingTest {
         RankingTestUtil.checkOrder(ranking, RankingTestData.fourth);
 
         currentTimeMillis.addAndGet(1000L); //5000
-        RankingTestUtil.checkOrder(ranking, RankingTestData.third);
+        RankingTestUtil.checkOrder(ranking, RankingTestData.second);
 
         currentTimeMillis.addAndGet(1000L); //6000
         RankingTestUtil.checkOrder(ranking, RankingTestData.second);

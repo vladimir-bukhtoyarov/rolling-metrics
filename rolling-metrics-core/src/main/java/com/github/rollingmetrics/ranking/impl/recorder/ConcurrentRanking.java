@@ -63,9 +63,13 @@ public class ConcurrentRanking {
         singleThreadedRanking.reset();
     }
 
-    public void addIntoUnsafe(SingleThreadedRanking collector) {
+    public void addIntoUnsafe(SingleThreadedRanking ranking) {
+        addIntoUnsafe(ranking, false);
+    }
+
+    public void addIntoUnsafe(SingleThreadedRanking ranking, boolean freshReplacesOldWithSameWeight) {
         bufferedActor.processAllScheduledActions();
-        singleThreadedRanking.addInto(collector);
+        singleThreadedRanking.addInto(ranking, freshReplacesOldWithSameWeight);
     }
 
     public List<Position> getPositionsInDescendingOrderUnsafe() {

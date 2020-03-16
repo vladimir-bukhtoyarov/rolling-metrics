@@ -57,8 +57,10 @@ public class SingleThreadedRanking {
         }
 
         boolean full = currentSize == maxSize;
-        if (full && weight < weights[0]) {
-            return UpdateResult.SKIPPED_BECAUSE_TOO_SMALL;
+        if (full) {
+            if (freshReplacesOldWithSameWeight && weight < weights[0] || !freshReplacesOldWithSameWeight && weight <= weights[0]) {
+                return UpdateResult.SKIPPED_BECAUSE_TOO_SMALL;
+            }
         }
 
         int indexToInsert = -1;
@@ -145,8 +147,12 @@ public class SingleThreadedRanking {
     }
 
     public void addInto(SingleThreadedRanking other) {
+        addInto(other, false);
+    }
+
+    public void addInto(SingleThreadedRanking other, boolean freshReplacesOldWithSameWeight) {
         for (int i = currentSize - 1; i >= 0; i--) {
-            if (other.update(weights[i], identities[i], false) == UpdateResult.SKIPPED_BECAUSE_TOO_SMALL) {
+            if (other.update(weights[i], identities[i], freshReplacesOldWithSameWeight) == UpdateResult.SKIPPED_BECAUSE_TOO_SMALL) {
                 return;
             }
         }

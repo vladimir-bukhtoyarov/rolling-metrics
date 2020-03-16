@@ -100,19 +100,26 @@ public class ResetByChunksRanking implements Ranking {
         temporarySnapshotRanking.reset();
         long currentTimeMillis = ticker.stableMilliseconds();
 
-        for (Phase phase : phases) {
-            if (phase.isNeedToBeReportedToSnapshot(currentTimeMillis)) {
-                phase.intervalRecorder = phase.recorder.getIntervalRecorder(phase.intervalRecorder);
-                phase.intervalRecorder.addIntoUnsafe(phase.totalsCollector);
-                phase.totalsCollector.addInto(temporarySnapshotRanking);
-            }
-        }
-
         if (historySupported) {
+            // TODO need to rewrite iteration order from legacy to fresh
             for (ArchivedRanking archivedRanking : archive) {
                 if (archivedRanking.proposedInvalidationTimestamp > currentTimeMillis) {
                     archivedRanking.singleThreadedRanking.addInto(temporarySnapshotRanking);
                 }
+            }
+        }
+
+        Phase first = phases[0];
+        Phase second = phases[1];
+        if (second.proposedInvalidationTimestamp > first.proposedInvalidationTimestamp) {
+            first = phases[1];
+            second = phases[0];
+        }
+        for (Phase phase : new Phase[] { first, second }) {
+            if (phase.isNeedToBeReportedToSnapshot(currentTimeMillis)) {
+                phase.intervalRecorder = phase.recorder.getIntervalRecorder(phase.intervalRecorder);
+                phase.intervalRecorder.addIntoUnsafe(phase.totalsCollector);
+                phase.totalsCollector.addInto(temporarySnapshotRanking);
             }
         }
 

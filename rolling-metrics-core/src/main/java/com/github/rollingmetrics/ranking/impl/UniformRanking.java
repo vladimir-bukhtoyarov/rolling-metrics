@@ -45,7 +45,7 @@ public class UniformRanking<T> implements Ranking<T> {
     @Override
     synchronized public List<Position> getPositionsInDescendingOrder() {
         intervalRecorder = phasedRecorder.getIntervalRecorder(intervalRecorder);
-        intervalRecorder.addIntoUnsafe(uniformCollector);
+        intervalRecorder.addIntoUnsafe(uniformCollector, true);
         return uniformCollector.getPositionsInDescendingOrder();
     }
 

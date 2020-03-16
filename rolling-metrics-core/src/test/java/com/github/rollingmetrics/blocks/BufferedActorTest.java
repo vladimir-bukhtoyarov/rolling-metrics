@@ -83,7 +83,7 @@ public class BufferedActorTest {
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
-                System.out.println(sharedSum[0] + ":" + " action pool size=" + actorRef[0].getActionPoolSize() + " in progress action count " + actorRef[0].getScheduledActionsCount() + " blocked count " + actorRef[0].getOverflowedCount());
+                System.out.println(sharedSum[0] + ":" + " action pool size=" + actorRef[0].getActionPoolSize() + " blocked count " + actorRef[0].getOverflowedCount());
             }
         }, 1, 1000);
 
