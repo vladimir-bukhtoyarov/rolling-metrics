@@ -31,7 +31,7 @@
 
     <properties>
         <benchmark.jar.name>benchmark</benchmark.jar.name>
-        <benchmark.jmh.version>1.19</benchmark.jmh.version>
+        <benchmark.jmh.version>1.23</benchmark.jmh.version>
         <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
