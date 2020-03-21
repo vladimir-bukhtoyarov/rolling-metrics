@@ -31,7 +31,7 @@ public class ConcurrentRanking {
 
     public ConcurrentRanking(int maxSize, long threshold) {
         this.singleThreadedRanking = new SingleThreadedRanking(maxSize, threshold);
-        this.bufferedActor = new BufferedActor<>(ModifyRankingAction::new, 256, 256);
+        this.bufferedActor = new BufferedActor<>(ModifyRankingAction::new, 1024, 64, 1024);
     }
 
     public void update(long weight, Object identity) {
@@ -41,6 +41,7 @@ public class ConcurrentRanking {
         }
 
         ModifyRankingAction action = bufferedActor.getActionFromPool();
+
         action.weight = weight;
         action.identity = identity;
         bufferedActor.doExclusivelyOrSchedule(action);

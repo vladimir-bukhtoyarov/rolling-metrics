@@ -18,7 +18,6 @@
 package com.github.rollingmetrics.ranking.updateonly;
 
 
-import com.github.rollingmetrics.ranking.Position;
 import com.github.rollingmetrics.ranking.Ranking;
 import org.openjdk.jmh.annotations.*;
 import org.openjdk.jmh.runner.Runner;
@@ -28,7 +27,6 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 import org.openjdk.jmh.runner.options.TimeValue;
 
 import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -73,6 +71,24 @@ public class UniformRanking_Update_Benchmark {
                     .warmupTime(TimeValue.seconds(2))
                     .measurementIterations(3)
                     .threads(4)
+                    .forks(1)
+                    .build();
+            try {
+                new Runner(opt).run();
+            } catch (RunnerException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public static class OneThread {
+        public static void main(String[] args) throws RunnerException {
+            Options opt = new OptionsBuilder()
+                    .include(".*" + UniformRanking_Update_Benchmark.class.getSimpleName() + ".*")
+                    .warmupIterations(3)
+                    .warmupTime(TimeValue.seconds(2))
+                    .measurementIterations(3)
+                    .threads(1)
                     .forks(1)
                     .build();
             try {

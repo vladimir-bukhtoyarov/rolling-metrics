@@ -51,7 +51,7 @@ public class BufferedActorTest {
             }
         };
 
-        BufferedActor<BufferedActor.ReusableActionContainer> actor = new BufferedActor<>(actionFactory, 512, 1024);
+        BufferedActor<BufferedActor.ReusableActionContainer> actor = new BufferedActor<>(actionFactory, 1024, 32,1024);
         actorRef[0] = actor;
 
         int iterationsPerThread = 10_000_000;
@@ -80,6 +80,7 @@ public class BufferedActorTest {
                         throw new RuntimeException("Error happen on step " + j + " - " + e.getMessage(), e);
                     }
                 }
+                out.println(Thread.currentThread().getName() + " finished");
             });
             threads[i].setName("Incrementor-" + (i+1));
             threads[i].start();
@@ -97,6 +98,7 @@ public class BufferedActorTest {
             threads[i].join();
         }
         timer.cancel();
+        actor.processAllScheduledActions();
 
         System.out.println("result sum:" + sharedSum[0]);
         System.out.println("blocked count:" + actor.getOverflowedCount());
