@@ -38,14 +38,13 @@ public class RollingDistributionSummary implements DistributionSummary {
         if (percentilePrecision == null) {
             percentilePrecision = 1;
         }
-        Long maximumExpectedValue = config.getMaximumExpectedValue();
-        if (maximumExpectedValue == null) {
-            maximumExpectedValue = Long.MAX_VALUE;
-        }
+        Double maximumExpectedValue = config.getMaximumExpectedValueAsDouble();
         rollingHdrHistogram = RollingHdrHistogram.builder()
                 .withSignificantDigits(percentilePrecision)
                 .resetReservoirPeriodicallyByChunks(config.getExpiry(), config.getBufferLength())
-                .withHighestTrackableValue(maximumExpectedValue, OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
+                .withHighestTrackableValue(
+                        maximumExpectedValue == null ? Long.MAX_VALUE : maximumExpectedValue.longValue(),
+                        OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
                 .withPredefinedPercentiles(percentiles)
                 .withTicker(tickerClock)
                 .build();
