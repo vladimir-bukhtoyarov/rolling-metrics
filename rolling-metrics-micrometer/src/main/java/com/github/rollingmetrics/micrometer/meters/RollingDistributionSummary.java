@@ -3,6 +3,7 @@ package com.github.rollingmetrics.micrometer.meters;
 import com.github.rollingmetrics.counter.SmoothlyDecayingRollingCounter;
 import com.github.rollingmetrics.histogram.OverflowResolver;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
+import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramBuilder;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
 import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.DistributionSummary;
@@ -38,16 +39,22 @@ public class RollingDistributionSummary implements DistributionSummary {
         if (percentilePrecision == null) {
             percentilePrecision = 1;
         }
+
+        RollingHdrHistogramBuilder builder = RollingHdrHistogram.builder();
+
+        builder.withSignificantDigits(percentilePrecision);
+        builder.resetReservoirPeriodicallyByChunks(config.getExpiry(), config.getBufferLength());
+
         Double maximumExpectedValue = config.getMaximumExpectedValueAsDouble();
-        rollingHdrHistogram = RollingHdrHistogram.builder()
-                .withSignificantDigits(percentilePrecision)
-                .resetReservoirPeriodicallyByChunks(config.getExpiry(), config.getBufferLength())
-                .withHighestTrackableValue(
-                        maximumExpectedValue == null ? Long.MAX_VALUE : maximumExpectedValue.longValue(),
-                        OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE)
-                .withPredefinedPercentiles(percentiles)
-                .withTicker(tickerClock)
-                .build();
+        if (maximumExpectedValue != null) {
+            builder.withHighestTrackableValue(
+                    maximumExpectedValue.longValue(),
+                    OverflowResolver.REDUCE_TO_HIGHEST_TRACKABLE);
+        }
+
+        builder.withPredefinedPercentiles(percentiles);
+        builder.withTicker(tickerClock);
+        rollingHdrHistogram = builder.build();
 
         totalAmountCounter = new SmoothlyDecayingRollingCounter(config.getExpiry(), config.getBufferLength(), tickerClock);
         countCounter = new SmoothlyDecayingRollingCounter(config.getExpiry(), config.getBufferLength(), tickerClock);
