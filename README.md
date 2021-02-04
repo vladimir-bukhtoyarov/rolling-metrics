@@ -34,7 +34,7 @@ TODO https://github.com/vladimir-bukhtoyarov/rolling-metrics/issues/17
 
 #### You can add rolling-metrics to your project as maven dependency
 
-The Rolling-Metrics library is distributed through both [JCenter](https://bintray.com/bintray/jcenter?filterByPkgName=rolling-metrics) and [Maven Central](http://search.maven.org/),
+The Rolling-Metrics library is distributed through [Maven Central](http://search.maven.org/),
 use any of them:
 ```xml
 <dependency>

@@ -27,6 +27,7 @@
     <name>Rolling metrics</name>
 
     <properties>
+        <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
         <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 

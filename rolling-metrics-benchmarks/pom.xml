@@ -32,6 +32,7 @@
     <properties>
         <benchmark.jar.name>benchmark</benchmark.jar.name>
         <benchmark.jmh.version>1.23</benchmark.jmh.version>
+        <skipNexusStagingDeployMojo>true</skipNexusStagingDeployMojo>
         <maven.deploy.skip>true</maven.deploy.skip>
     </properties>
 
