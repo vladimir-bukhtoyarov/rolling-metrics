@@ -38,6 +38,7 @@
         <module>rolling-metrics-dropwizard</module>
         <module>rolling-metrics-jmx</module>
         <module>rolling-metrics-micrometer</module>
+        <module>gc-monitor</module>
     </modules>
 
 </project>
