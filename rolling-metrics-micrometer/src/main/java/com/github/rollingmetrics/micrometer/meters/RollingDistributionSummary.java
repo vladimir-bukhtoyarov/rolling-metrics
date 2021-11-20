@@ -1,6 +1,5 @@
 package com.github.rollingmetrics.micrometer.meters;
 
-import com.github.rollingmetrics.counter.SmoothlyDecayingRollingCounter;
 import com.github.rollingmetrics.histogram.OverflowResolver;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogramBuilder;
@@ -15,8 +14,6 @@ import io.micrometer.core.instrument.distribution.ValueAtPercentile;
 
 public class RollingDistributionSummary implements DistributionSummary {
     private final RollingHdrHistogram rollingHdrHistogram;
-    private final SmoothlyDecayingRollingCounter totalAmountCounter;
-    private final SmoothlyDecayingRollingCounter countCounter;
     private final Id id;
     private final double scale;
     private final double[] percentiles;
@@ -56,26 +53,23 @@ public class RollingDistributionSummary implements DistributionSummary {
         builder.withTicker(tickerClock);
         rollingHdrHistogram = builder.build();
 
-        totalAmountCounter = new SmoothlyDecayingRollingCounter(config.getExpiry(), config.getBufferLength(), tickerClock);
-        countCounter = new SmoothlyDecayingRollingCounter(config.getExpiry(), config.getBufferLength(), tickerClock);
     }
 
     @Override
     public void record(double v) {
         long value = (long) (v * scale);
-        totalAmountCounter.add(value);
-        countCounter.add(1);
         rollingHdrHistogram.update(value);
     }
 
     @Override
     public long count() {
-        return countCounter.getSum();
+        return rollingHdrHistogram.getSnapshot().getSamplesCount();
     }
 
     @Override
     public double totalAmount() {
-        return totalAmountCounter.getSum();
+        RollingSnapshot snapshot = rollingHdrHistogram.getSnapshot();
+        return snapshot.getMean() * snapshot.size();
     }
 
     @Override
@@ -93,8 +87,8 @@ public class RollingDistributionSummary implements DistributionSummary {
             valuesAtPercentile[i] = new ValueAtPercentile(percentile, value);
         }
         return new HistogramSnapshot(
-                countCounter.getSum(),
-                totalAmountCounter.getSum(),
+                snapshot.getSamplesCount(),
+                snapshot.getMean() * snapshot.getSamplesCount(),
                 snapshot.getMax(),
                 valuesAtPercentile,
                 new CountAtBucket[0],

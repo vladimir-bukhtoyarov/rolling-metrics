@@ -37,4 +37,6 @@ public interface RollingSnapshot {
 
     double getStdDev();
 
+    long getSamplesCount();
+
 }
