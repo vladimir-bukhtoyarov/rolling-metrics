@@ -69,7 +69,7 @@ public class RollingDistributionSummary implements DistributionSummary {
     @Override
     public double totalAmount() {
         RollingSnapshot snapshot = rollingHdrHistogram.getSnapshot();
-        return snapshot.getMean() * snapshot.size();
+        return snapshot.getMean() * snapshot.getSamplesCount();
     }
 
     @Override

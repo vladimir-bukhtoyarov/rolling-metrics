@@ -35,8 +35,8 @@ public class EmptyRollingSnapshotTest {
     }
 
     @Test
-    public void testSize() throws Exception {
-        assertEquals(0, EmptyRollingSnapshot.INSTANCE.size());
+    public void testSampleCount() throws Exception {
+        assertEquals(0, EmptyRollingSnapshot.INSTANCE.getSamplesCount());
     }
 
     @Test

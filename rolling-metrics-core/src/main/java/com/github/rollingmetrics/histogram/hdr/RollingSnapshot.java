@@ -17,15 +17,29 @@
 package com.github.rollingmetrics.histogram.hdr;
 
 /**
- * TODO
+ * Represents immutable statistics about histogram
  */
 public interface RollingSnapshot {
 
+    /**
+     * Get the value at a given percentile.
+     *
+     * @param quantile the number between 0 and 1
+     *
+     * @return the value at a given percentile.
+     */
     double getValue(double quantile);
 
+    /**
+     * Depending on whether optimization of percentiles was configured this method can return
+     * <ul>
+     *     <li>Value for each configured quantile when optimization of percentiles is configured</li>
+     *     <li>All recorded values(but without duplicates) when optimization of percentiles is switched-off</li>
+     * </ul>
+     *
+     * @return recorded values
+     */
     long[] getValues();
-
-    int size();
 
     double getMedian();
 

@@ -117,11 +117,6 @@ public abstract class AbstractRollingHdrHistogram implements RollingHdrHistogram
             }
 
             @Override
-            public int size() {
-                return values.length;
-            }
-
-            @Override
             public double getMedian() {
                 return median;
             }
@@ -190,11 +185,6 @@ public abstract class AbstractRollingHdrHistogram implements RollingHdrHistogram
                     }
                 }
                 return Arrays.copyOf(values, i);
-            }
-
-            @Override
-            public int size() {
-                return (int) histogram.getTotalCount();
             }
 
             @Override

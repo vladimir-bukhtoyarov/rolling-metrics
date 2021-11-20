@@ -69,8 +69,6 @@ public class PercentileCalculationTest {
         assertEquals(hdrHistogram.getValueAtPercentile(99.9), (long) snapshot.getValue(0.999));
         assertEquals(hdrHistogram.getMaxValue(), (long) snapshot.getValue(0.9999));
 
-        assertEquals(predefinedPercentiles.length, snapshot.size());
-
         assertTrue(Arrays.equals(
                 snapshot.getValues(),
                 new long[] {
@@ -109,7 +107,7 @@ public class PercentileCalculationTest {
         assertEquals(hdrHistogram.getValueAtPercentile(99.0), (long) snapshot.getValue(0.99));
         assertEquals(hdrHistogram.getValueAtPercentile(99.9), (long) snapshot.getValue(0.999));
 
-        assertEquals(hdrHistogram.getTotalCount(), snapshot.size());
+        assertEquals(hdrHistogram.getTotalCount(), snapshot.getSamplesCount());
 
         int i = 0;
         long[] values = snapshot.getValues();

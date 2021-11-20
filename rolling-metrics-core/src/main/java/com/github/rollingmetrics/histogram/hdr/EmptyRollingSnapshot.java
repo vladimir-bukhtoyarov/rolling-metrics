@@ -33,11 +33,6 @@ public class EmptyRollingSnapshot implements RollingSnapshot {
     }
 
     @Override
-    public int size() {
-        return 0;
-    }
-
-    @Override
     public double getMedian() {
         return 0;
     }
