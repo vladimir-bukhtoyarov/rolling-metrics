@@ -41,16 +41,41 @@ public interface RollingSnapshot {
      */
     long[] getValues();
 
+    /**
+     * Get median from recorded values
+     *
+     * @return the median from recorded values
+     */
     double getMedian();
 
+    /**
+     * Get maximum from recorded values
+     *
+     * @return the maximum from recorded values
+     */
     long getMax();
 
+    /**
+     * Get average from recorded values
+     *
+     * @return the average from recorded values
+     */
     double getMean();
 
+    /**
+     * Get minimum from recorded values
+     *
+     * @return the minimum from recorded values
+     */
     long getMin();
 
     double getStdDev();
 
+    /**
+     * Get the total count of all recorded values in the histogram
+     *
+     * @return the total count of all recorded values in the histogram
+     */
     long getSamplesCount();
 
 }

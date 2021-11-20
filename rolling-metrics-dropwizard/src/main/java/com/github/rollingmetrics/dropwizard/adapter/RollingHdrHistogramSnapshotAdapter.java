@@ -49,7 +49,7 @@ public class RollingHdrHistogramSnapshotAdapter extends Snapshot {
 
     @Override
     public int size() {
-        return target.size();
+        return getValues().length;
     }
 
     @Override

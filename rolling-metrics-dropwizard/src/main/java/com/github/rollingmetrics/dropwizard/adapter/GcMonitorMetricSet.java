@@ -38,20 +38,21 @@ import java.util.TreeMap;
 public class GcMonitorMetricSet {
 
     /**
-     * TODO add javadocs
+     * Creates Dropwizard Metrics compatible collections of metric for gcMonitor
      *
-     * @param namePrefix
-     * @param monitor
-     * @return
+     * @param namePrefix the prefix that will be added for each metric name
+     * @param gcMonitor garbage collector monitor
+     *
+     * @return the Dropwizard Metrics compatible collections of metric for gcMonitor
      */
-    public static MetricSet toMetricSet(String namePrefix, GcMonitor monitor) {
+    public static MetricSet toMetricSet(String namePrefix, GcMonitor gcMonitor) {
         Map<String, Metric> metrics = new TreeMap<>();
-        GcMonitorConfiguration configuration = monitor.getConfiguration();
+        GcMonitorConfiguration configuration = gcMonitor.getConfiguration();
         for (String collectorName : configuration.getCollectorNames()) {
             for (String windowName : configuration.getWindowNames()) {
-                addHistogram(namePrefix, metrics, collectorName, windowName, monitor);
-                addPercentageGauge(namePrefix, metrics, collectorName, windowName, monitor);
-                addGcDurationGauge(namePrefix, metrics, collectorName, windowName, monitor);
+                addHistogram(namePrefix, metrics, collectorName, windowName, gcMonitor);
+                addPercentageGauge(namePrefix, metrics, collectorName, windowName, gcMonitor);
+                addGcDurationGauge(namePrefix, metrics, collectorName, windowName, gcMonitor);
             }
         }
         return () -> metrics;

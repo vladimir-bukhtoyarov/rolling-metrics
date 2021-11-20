@@ -17,10 +17,15 @@
 package com.github.rollingmetrics.histogram.hdr;
 
 /**
- * TODO
+ * The histogram with rolling time window retention.
  */
 public interface RollingHdrHistogram {
 
+    /**
+     * Creates new instance of histogram builder
+     *
+     * @return new instance of histogram builder
+     */
     static RollingHdrHistogramBuilder builder() {
         return new RollingHdrHistogramBuilder();
     }
@@ -32,8 +37,20 @@ public interface RollingHdrHistogram {
      */
     int getEstimatedFootprintInBytes();
 
+    /**
+     * Takes immutable snapshot of this histogram
+     *
+     * @return the immutable snapshot of this histogram
+     */
     RollingSnapshot getSnapshot();
 
+    /**
+     * Records value into this histogram
+     *
+     * @param value the number to record
+     *
+     * @throws IllegalArgumentException if number < 0
+     */
     void update(long value);
 
 }

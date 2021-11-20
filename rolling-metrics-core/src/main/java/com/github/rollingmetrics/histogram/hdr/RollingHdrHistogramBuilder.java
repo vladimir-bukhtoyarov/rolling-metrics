@@ -29,34 +29,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * The builder for creation and registration histograms, timers and reservoirs.
- *
- * <p><br> Basic examples of usage:
- * <pre><code>
- *         RollingHdrHistogramBuilder builder = RollingHdrHistogramBuilder();
- *
- *         // build and register timer
- *         Timer timer1 = builder.buildAndRegisterTimer(registry, "my-timer-1");
- *
- *         // build and register timer in another way
- *         Timer timer2 = builder.buildTimer();
- *         registry.register(timer2, "my-timer-2");
- *
- *         // build and register histogram
- *         Histogram histogram1 = builder.buildAndRegisterHistogram(registry, "my-histogram-1");
- *
- *         // build and register histogram in another way
- *         Histogram histogram2 = builder.buildHistogram();
- *         registry.register(histogram2, "my-histogram-2");
- *     </code>
- * </pre>
- * <p>
- * In order to be sure that Reservoir with provided settings does not consume too much memory you can use {@link #getEstimatedFootprintInBytes()} method which returns conservatively high estimation of the Reservoir's total footprint in bytes:
- * <pre><code>
- *         RollingHdrHistogramBuilder builder = new RollingHdrHistogramBuilder().withSignificantDigits(3);
- *         System.out.println(builder.getEstimatedFootprintInBytes());
- * </code>
- * </pre>
+ * The builder for histograms.
  *
  * @see org.HdrHistogram.Histogram
  */

@@ -19,8 +19,10 @@ package com.github.rollingmetrics.dropwizard;
 
 import com.codahale.metrics.*;
 import com.github.rollingmetrics.counter.WindowCounter;
+import com.github.rollingmetrics.dropwizard.adapter.GcMonitorMetricSet;
 import com.github.rollingmetrics.dropwizard.adapter.ReservoirToRollingHdrHistogramAdapter;
 import com.github.rollingmetrics.dropwizard.adapter.TopMetricSet;
+import com.github.rollingmetrics.gcmonitor.GcMonitor;
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.hitratio.HitRatio;
 import com.github.rollingmetrics.ranking.Ranking;
@@ -94,6 +96,18 @@ public class Dropwizard {
      */
     public static MetricSet toMetricSet(String name, Ranking ranking, TimeUnit latencyUnit, int digitsAfterDecimalPoint) {
         return new TopMetricSet(name, ranking, latencyUnit, digitsAfterDecimalPoint);
+    }
+
+    /**
+     * Creates Dropwizard Metrics compatible collections of metric for gcMonitor
+     *
+     * @param namePrefix the prefix that will be added for each metric name
+     * @param gcMonitor garbage collector monitor
+     *
+     * @return the Dropwizard Metrics compatible collections of metric for gcMonitor
+     */
+    public static MetricSet toMetricSet(String namePrefix, GcMonitor gcMonitor) {
+        return GcMonitorMetricSet.toMetricSet(namePrefix, gcMonitor);
     }
 
 }
