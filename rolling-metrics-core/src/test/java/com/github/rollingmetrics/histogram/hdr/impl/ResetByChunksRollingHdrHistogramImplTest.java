@@ -122,4 +122,27 @@ public class ResetByChunksRollingHdrHistogramImplTest {
         HistogramTestUtil.runInParallel(histogram, TimeUnit.SECONDS.toMillis(30));
     }
 
+    @Test
+    public void testIsolationOfFullSnapshot() {
+        RollingHdrHistogram histogram = RollingHdrHistogram.builder()
+                .withoutSnapshotOptimization()
+                .resetReservoirPeriodicallyByChunks(Duration.ofSeconds(60), 3)
+                .build();
+
+        histogram.update(13);
+        RollingSnapshot snapshot1 = histogram.getSnapshot();
+
+        histogram.update(42);
+        RollingSnapshot snapshot2 = histogram.getSnapshot();
+
+        assertEquals(13, snapshot1.getMax());
+        assertEquals(42, snapshot2.getMax());
+
+        assertEquals( 13, snapshot1.getMin());
+        assertEquals(13, snapshot2.getMin());
+
+        assertEquals(1, snapshot1.getSamplesCount());
+        assertEquals(2, snapshot2.getSamplesCount());
+    }
+
 }

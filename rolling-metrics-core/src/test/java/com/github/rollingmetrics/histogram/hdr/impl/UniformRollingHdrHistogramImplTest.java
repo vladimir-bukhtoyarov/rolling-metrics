@@ -19,7 +19,10 @@ package com.github.rollingmetrics.histogram.hdr.impl;
 
 import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import com.github.rollingmetrics.histogram.hdr.RollingSnapshot;
+import junit.framework.TestCase;
 import org.junit.Test;
+
+import java.time.Duration;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
@@ -49,6 +52,29 @@ public class UniformRollingHdrHistogramImplTest {
         assertNotSame(secondSnapshot, thirdSnapshot);
         assertEquals(9, thirdSnapshot.getMin());
         assertEquals(60, thirdSnapshot.getMax());
+    }
+
+    @Test
+    public void testIsolationOfFullSnapshot() {
+        RollingHdrHistogram histogram = RollingHdrHistogram.builder()
+                .withoutSnapshotOptimization()
+                .neverResetReservoir()
+                .build();
+
+        histogram.update(13);
+        RollingSnapshot snapshot1 = histogram.getSnapshot();
+
+        histogram.update(42);
+        RollingSnapshot snapshot2 = histogram.getSnapshot();
+
+        TestCase.assertEquals(13, snapshot1.getMax());
+        TestCase.assertEquals(42, snapshot2.getMax());
+
+        TestCase.assertEquals( 13, snapshot1.getMin());
+        TestCase.assertEquals(13, snapshot2.getMin());
+
+        TestCase.assertEquals(1, snapshot1.getSamplesCount());
+        TestCase.assertEquals(2, snapshot2.getSamplesCount());
     }
 
     @Test

@@ -168,7 +168,9 @@ public abstract class AbstractRollingHdrHistogram implements RollingHdrHistogram
         };
     }
 
-    private static RollingSnapshot takeFullSnapshot(final Histogram histogram) {
+    private static RollingSnapshot takeFullSnapshot(final Histogram temporaryHistogram) {
+        Histogram histogram = temporaryHistogram.copy();
+
         return new RollingSnapshot() {
             @Override
             public double getValue(double quantile) {
@@ -221,7 +223,7 @@ public abstract class AbstractRollingHdrHistogram implements RollingHdrHistogram
             }
 
             @Override
-            public long getSamplesCount(){
+            public long getSamplesCount() {
                 return histogram.getTotalCount();
             }
 
