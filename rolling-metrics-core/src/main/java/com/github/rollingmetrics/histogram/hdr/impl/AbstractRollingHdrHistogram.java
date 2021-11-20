@@ -82,6 +82,7 @@ public abstract class AbstractRollingHdrHistogram implements RollingHdrHistogram
         final double mean = histogram.getMean();
         final double median = histogram.getValueAtPercentile(50.0);
         final double stdDeviation = histogram.getStdDeviation();
+        final long samplesCount = histogram.getTotalCount();
 
         final double[] values = new double[predefinedQuantiles.length];
         for (int i = 0; i < predefinedQuantiles.length; i++) {
@@ -90,10 +91,11 @@ public abstract class AbstractRollingHdrHistogram implements RollingHdrHistogram
             values[i] = histogram.getValueAtPercentile(percentile);
         }
 
-        return createSmartSnapshot(predefinedQuantiles, max, min, mean, median, stdDeviation, values);
+        return createSmartSnapshot(predefinedQuantiles, max, min, mean, median, stdDeviation, values, samplesCount);
     }
 
-    static RollingSnapshot createSmartSnapshot(final double[] predefinedQuantiles, final long max, final long min, final double mean, final double median, final double stdDeviation, final double[] values) {
+    static RollingSnapshot createSmartSnapshot(final double[] predefinedQuantiles, final long max, final long min, final double mean,
+                                               final double median, final double stdDeviation, final double[] values, final long samplesCount) {
         return new RollingSnapshot() {
             @Override
             public double getValue(double quantile) {
@@ -142,6 +144,11 @@ public abstract class AbstractRollingHdrHistogram implements RollingHdrHistogram
             @Override
             public double getStdDev() {
                 return stdDeviation;
+            }
+
+            @Override
+            public long getSamplesCount(){
+                return samplesCount;
             }
 
             @Override
@@ -211,6 +218,11 @@ public abstract class AbstractRollingHdrHistogram implements RollingHdrHistogram
             @Override
             public double getStdDev() {
                 return histogram.getStdDeviation();
+            }
+
+            @Override
+            public long getSamplesCount(){
+                return histogram.getTotalCount();
             }
 
             @Override

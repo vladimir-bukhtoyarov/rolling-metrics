@@ -62,4 +62,9 @@ public class EmptyRollingSnapshot implements RollingSnapshot {
         return 0;
     }
 
+    @Override
+    public long getSamplesCount(){
+        return 0;
+    }
+
 }
