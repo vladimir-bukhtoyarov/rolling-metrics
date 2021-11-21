@@ -33,7 +33,7 @@ import java.util.TreeMap;
 
 
 /**
- * TODO add javadocs
+ * Factory for Dropwizard Metrics compatible metric set.
  */
 public class GcMonitorMetricSet {
 

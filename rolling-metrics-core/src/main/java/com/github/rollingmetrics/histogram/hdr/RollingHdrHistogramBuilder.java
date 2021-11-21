@@ -290,7 +290,7 @@ public class RollingHdrHistogramBuilder {
     }
 
     /**
-     * TODO
+     * Configures custom time
      *
      * @param ticker
      * @return
@@ -301,9 +301,9 @@ public class RollingHdrHistogramBuilder {
     }
 
     /**
-     * TODO
+     * Builds new instance of rolling histogram
      *
-     * @return
+     * @return new instance of rolling histogram
      */
     public RollingHdrHistogram build() {
         recorderSettings.validateParameters();

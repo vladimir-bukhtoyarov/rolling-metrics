@@ -19,12 +19,12 @@ package com.github.rollingmetrics.jmx.gcmonitor;
 import javax.management.openmbean.CompositeData;
 
 /**
- * TODO add javadoc
+ * JMX compatible GC-Monitor statistics
  */
 public interface GcStatisticsMBean {
 
     /**
-     * TODO add javadoc
+     * Return JMX compatible statistics
      */
     CompositeData getGcMonitorData();
 

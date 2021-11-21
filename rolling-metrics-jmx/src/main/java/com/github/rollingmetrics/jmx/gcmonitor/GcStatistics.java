@@ -23,9 +23,6 @@ import com.github.rollingmetrics.gcmonitor.stat.GcMonitorSnapshot;
 import javax.management.openmbean.CompositeData;
 import javax.management.openmbean.OpenDataException;
 
-/**
- * TODO add javadoc
- */
 public class GcStatistics implements GcStatisticsMBean {
 
     private final GcMonitor gcMonitor;

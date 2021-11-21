@@ -30,7 +30,7 @@ import io.micrometer.core.instrument.distribution.HistogramGauges;
 
 
 /**
- * TODO add javadocs
+ * Micrometer compatible adapter for GC-Monitor.
  */
 public class GcMonitorMeterBinder implements MeterBinder {
     // https://micrometer.io/docs/concepts#_why_is_my_gauge_reporting_nan_or_disappearing

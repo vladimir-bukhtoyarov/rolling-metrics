@@ -23,7 +23,7 @@ import com.github.rollingmetrics.histogram.hdr.RollingHdrHistogram;
 import java.util.Objects;
 
 /**
- * TODO
+ * The adapter for {@link com.codahale.metrics.Reservoir}
  */
 public class ReservoirToRollingHdrHistogramAdapter implements Reservoir {
 

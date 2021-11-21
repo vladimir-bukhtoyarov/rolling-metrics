@@ -27,7 +27,7 @@ import java.util.Objects;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
- * TODO
+ * The adapter for {@link com.codahale.metrics.Reservoir}
  */
 public class RollingHdrHistogramSnapshotAdapter extends Snapshot {
 
