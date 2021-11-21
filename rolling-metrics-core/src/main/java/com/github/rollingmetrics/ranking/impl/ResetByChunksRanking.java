@@ -118,8 +118,8 @@ public class ResetByChunksRanking implements Ranking {
         for (Phase phase : new Phase[] { first, second }) {
             if (phase.isNeedToBeReportedToSnapshot(currentTimeMillis)) {
                 phase.intervalRecorder = phase.recorder.getIntervalRecorder(phase.intervalRecorder);
-                phase.intervalRecorder.addIntoUnsafe(phase.totalsCollector);
-                phase.totalsCollector.addInto(temporarySnapshotRanking);
+                phase.intervalRecorder.addIntoUnsafe(phase.totalsCollector, true);
+                phase.totalsCollector.addInto(temporarySnapshotRanking, true);
             }
         }
 

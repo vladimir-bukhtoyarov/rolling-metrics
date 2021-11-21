@@ -25,13 +25,14 @@ public class RankingTestData {
 
     public static long THRESHOLD_NANOS = TimeUnit.MICROSECONDS.toNanos(100);
 
-    private static long latency = 1;
-    public static Position first = new Position(latency, "first");
-    public static Position second = new Position(latency + 1, "second");
-    public static Position third = new Position(latency + 1, "third");
-    public static Position fourth = new Position(latency + 2, "fourth");
-    public static Position fifth = new Position(latency + 3, "fifth");
-    public static Position sixth = new Position(latency + 3, "sixth");
+    private static long latency = 0;
+    public static Position first = new Position(latency + 1, "first");
+    public static Position second = new Position(latency + 2, "second");
+    public static Position third = new Position(latency + 3, "third");
+    public static Position third_2 = new Position(latency + 3, "third-2");
+    public static Position fourth = new Position(latency + 4, "fourth");
+    public static Position fifth = new Position(latency + 5, "fifth");
+    public static Position sixth = new Position(latency + 6, "sixth");
     public static Position too_fast = new Position(THRESHOLD_NANOS - 1, "too_fast");
 
 }

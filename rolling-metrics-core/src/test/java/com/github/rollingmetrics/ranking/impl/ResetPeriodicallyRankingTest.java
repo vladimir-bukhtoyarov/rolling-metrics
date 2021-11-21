@@ -125,23 +125,23 @@ public class ResetPeriodicallyRankingTest {
         currentTimeMillis.addAndGet(1L); //1001
         update(ranking, first);
         update(ranking, third);
-//        checkOrder(ranking, third, second, first);
-//
-//        currentTimeMillis.addAndGet(1000L); //2001
-//        assertEmpty(ranking);
-//
-//
-//        update(ranking, fourth);
-//        update(ranking, first);
-//        update(ranking, second);
-//        update(ranking, third);
-//        checkOrder(ranking, fourth, third, second);
-//
-//        currentTimeMillis.addAndGet(999L); //3000
-//        assertEmpty(ranking);
-//
-//        currentTimeMillis.addAndGet(1000L); //4000
-//        assertEmpty(ranking);
+        checkOrder(ranking, third, second, first);
+
+        currentTimeMillis.addAndGet(1000L); //2001
+        assertEmpty(ranking);
+
+
+        update(ranking, fourth);
+        update(ranking, first);
+        update(ranking, second);
+        update(ranking, third);
+        checkOrder(ranking, fourth, third, second);
+
+        currentTimeMillis.addAndGet(999L); //3000
+        assertEmpty(ranking);
+
+        currentTimeMillis.addAndGet(1000L); //4000
+        assertEmpty(ranking);
     }
 
     @Test

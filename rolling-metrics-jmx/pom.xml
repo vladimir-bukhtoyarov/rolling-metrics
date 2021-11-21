@@ -42,6 +42,12 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.hdrhistogram</groupId>
+            <artifactId>HdrHistogram</artifactId>
+            <version>${hdr.histogram.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>com.github.vladimir-bukhtoyarov</groupId>
             <artifactId>rolling-metrics-core</artifactId>
             <version>${project.version}</version>

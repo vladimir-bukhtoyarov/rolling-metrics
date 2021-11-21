@@ -14,7 +14,8 @@
  *     limitations under the License.
  */
 
-package com.github.rollingmetrics.dropwizard.adapter;import com.codahale.metrics.Gauge;
+package com.github.rollingmetrics.dropwizard.adapter;
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricSet;
 import com.github.rollingmetrics.dropwizard.Dropwizard;
@@ -27,6 +28,7 @@ import org.junit.Test;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -34,7 +36,7 @@ import static org.junit.Assert.*;
 
 public class RankingMetricSetTest {
 
-    private Ranking ranking = Ranking.builder(3).withSnapshotCachingDuration(Duration.ZERO).build();
+    private Ranking<String> ranking = Ranking.builder(3).withSnapshotCachingDuration(Duration.ZERO).build();
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldDisallowNullName() {
@@ -95,12 +97,11 @@ public class RankingMetricSetTest {
         ranking.update(13_345_456, "SELECT * FROM USERS");
         checkValues(metricSet, "my-top", 3, 13.345d, 0.0d, 0.0d);
 
-
         ranking.update(11_666_957, "SELECT * FROM USERS");
-        checkValues(metricSet, "my-top", 3, 13.345d, 11.666d, 0.0d);
+        checkValues(metricSet, "my-top", 3, 13.345d, 0.0d, 0.0d);
 
         ranking.update(2_004_123, "SELECT * FROM DUAL");
-        checkValues(metricSet, "my-top", 3, 13.345d, 11.666d, 2.004d);
+        checkValues(metricSet, "my-top", 3, 13.345d, 2.004d, 0.0d);
     }
 
     private void checkDescriptions(MetricSet metricSet, String name, String... requiredDescriptions) {
