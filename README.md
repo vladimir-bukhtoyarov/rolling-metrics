@@ -1,3 +1,6 @@
+# PROJECT STATUS
+This project **is not maintained anymore**, functionality has been migrated to [RingCentral Metrics Facade](https://github.com/ringcentral/metrics-facade).
+
 # Rolling-Metrics
 The library contains collection of advanced metrics which missed in the original [Metrics Core](https://dropwizard.github.io/metrics/3.1.0/manual/core/) such as:
 * Rolling time window counters. [See documentation for counters](counters.md).
